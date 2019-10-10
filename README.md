@@ -33,29 +33,3 @@ Version 2.1.1
 April 23, 2019
 
 1, fix a problem in BalanceCheckMod.F90 that prevented using green roofs without irrigation. Now one can have green roofs without irrigation. 
-
-
-===============================
-Version 2.1.2
-
-May 26, 2019
-
-1, add temperature scaling for studying white roof
-
-
-===============================
-Version 2.1.3
-
-July 23, 2019
-
-1, add urban surface flux output for studying white roof
-
-
-===============================
-Version 2.1.4
-
-Aug 19, 2019
-
-1, modify temperature scaling for studying white roof 
-
-2, add output to compute relative efficiency of urban surface energy flux
