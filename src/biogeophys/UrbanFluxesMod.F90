@@ -63,7 +63,7 @@ contains
     use clm_varcon          , only : cpair, vkc, spval, grav, pondmx_urban, rpi, rgas
     use clm_varcon          , only : ht_wasteheat_factor, ac_wasteheat_factor, wasteheat_limit
     use column_varcon       , only : icol_shadewall, icol_road_perv, icol_road_imperv
-    use column_varcon       , only : icol_roof, icol_sunwall
+    use column_varcon       , only : icol_roof,icol_whiteroof,icol_greenroof, icol_sunwall
     use filterMod           , only : filter
     use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni, frictionvel_parms_inst
     use QSatMod             , only : QSat
@@ -72,6 +72,8 @@ contains
     use HumanIndexMod       , only : calc_human_stress_indices, Wet_Bulb, Wet_BulbS, HeatIndex, AppTemp, &
                                      swbgt, hmdex, dis_coi, dis_coiS, THIndex, &
                                      SwampCoolEff, KtoC, VaporPres
+    use UrbanParamsType    , only : white_roof_fraction, green_roof_fraction
+                                    
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds    
@@ -137,7 +139,13 @@ contains
     real(r8) :: qstar                                                ! moisture scaling parameter
     real(r8) :: thvstar                                              ! virtual potential temperature scaling parameter
     real(r8) :: wtus_roof(bounds%begl:bounds%endl)                   ! sensible heat conductance for roof (scaled) (m/s)
+    real(r8) :: wtus_whiteroof(bounds%begl:bounds%endl)                   ! sensible heat conductance for white roof (scaled) (m/s)    
+    real(r8) :: wtus_greenroof(bounds%begl:bounds%endl)                   ! sensible heat conductance for green roof (scaled) (m/s)    
+    
     real(r8) :: wtuq_roof(bounds%begl:bounds%endl)                   ! latent heat conductance for roof (scaled) (m/s)
+    real(r8) :: wtuq_whiteroof(bounds%begl:bounds%endl)                   ! latent heat conductance for white roof (scaled) (m/s)    
+    real(r8) :: wtuq_greenroof(bounds%begl:bounds%endl)                   ! latent heat conductance for green roof (scaled) (m/s)        
+    
     real(r8) :: wtus_road_perv(bounds%begl:bounds%endl)              ! sensible heat conductance for pervious road (scaled) (m/s)
     real(r8) :: wtuq_road_perv(bounds%begl:bounds%endl)              ! latent heat conductance for pervious road (scaled) (m/s)
     real(r8) :: wtus_road_imperv(bounds%begl:bounds%endl)            ! sensible heat conductance for impervious road (scaled) (m/s)
@@ -146,8 +154,15 @@ contains
     real(r8) :: wtuq_sunwall(bounds%begl:bounds%endl)                ! latent heat conductance for sunwall (scaled) (m/s)
     real(r8) :: wtus_shadewall(bounds%begl:bounds%endl)              ! sensible heat conductance for shadewall (scaled) (m/s)
     real(r8) :: wtuq_shadewall(bounds%begl:bounds%endl)              ! latent heat conductance for shadewall (scaled) (m/s)
+    
     real(r8) :: wtus_roof_unscl(bounds%begl:bounds%endl)             ! sensible heat conductance for roof (not scaled) (m/s)
+    real(r8) :: wtus_whiteroof_unscl(bounds%begl:bounds%endl)             ! sensible heat conductance for white roof (not scaled) (m/s)
+    real(r8) :: wtus_greenroof_unscl(bounds%begl:bounds%endl)             ! sensible heat conductance for green roof (not scaled) (m/s)
+    
     real(r8) :: wtuq_roof_unscl(bounds%begl:bounds%endl)             ! latent heat conductance for roof (not scaled) (m/s)
+    real(r8) :: wtuq_whiteroof_unscl(bounds%begl:bounds%endl)             ! latent heat conductance for white roof (not scaled) (m/s)
+    real(r8) :: wtuq_greenroof_unscl(bounds%begl:bounds%endl)             ! latent heat conductance for green roof (not scaled) (m/s)
+    
     real(r8) :: wtus_road_perv_unscl(bounds%begl:bounds%endl)        ! sensible heat conductance for pervious road (not scaled) (m/s)
     real(r8) :: wtuq_road_perv_unscl(bounds%begl:bounds%endl)        ! latent heat conductance for pervious road (not scaled) (m/s)
     real(r8) :: wtus_road_imperv_unscl(bounds%begl:bounds%endl)      ! sensible heat conductance for impervious road (not scaled) (m/s)
@@ -161,9 +176,16 @@ contains
     real(r8) :: eflx_sh_grnd_scale(bounds%begp:bounds%endp)          ! scaled sensible heat flux from ground (W/m**2) [+ to atm] 
     real(r8) :: qflx_evap_soi_scale(bounds%begp:bounds%endp)         ! scaled soil evaporation (mm H2O/s) (+ = to atm) 
     real(r8) :: eflx_wasteheat_roof(bounds%begl:bounds%endl)         ! sensible heat flux from urban heating/cooling sources of waste heat for roof (W/m**2)
+    real(r8) :: eflx_wasteheat_whiteroof(bounds%begl:bounds%endl)         ! sensible heat flux from urban heating/cooling sources of waste heat for white roof (W/m**2)
+    real(r8) :: eflx_wasteheat_greenroof(bounds%begl:bounds%endl)         ! sensible heat flux from urban heating/cooling sources of waste heat for green roof (W/m**2)
+    
     real(r8) :: eflx_wasteheat_sunwall(bounds%begl:bounds%endl)      ! sensible heat flux from urban heating/cooling sources of waste heat for sunwall (W/m**2)
     real(r8) :: eflx_wasteheat_shadewall(bounds%begl:bounds%endl)    ! sensible heat flux from urban heating/cooling sources of waste heat for shadewall (W/m**2)
+    
     real(r8) :: eflx_heat_from_ac_roof(bounds%begl:bounds%endl)      ! sensible heat flux put back into canyon due to heat removal by AC for roof (W/m**2)
+    real(r8) :: eflx_heat_from_ac_whiteroof(bounds%begl:bounds%endl)      ! sensible heat flux put back into canyon due to heat removal by AC for white roof (W/m**2)
+    real(r8) :: eflx_heat_from_ac_greenroof(bounds%begl:bounds%endl)      ! sensible heat flux put back into canyon due to heat removal by AC for green roof (W/m**2)
+    
     real(r8) :: eflx_heat_from_ac_sunwall(bounds%begl:bounds%endl)   ! sensible heat flux put back into canyon due to heat removal by AC for sunwall (W/m**2)
     real(r8) :: eflx_heat_from_ac_shadewall(bounds%begl:bounds%endl) ! sensible heat flux put back into canyon due to heat removal by AC for shadewall (W/m**2)
     real(r8) :: eflx(bounds%begl:bounds%endl)                        ! total sensible heat flux for error check (W/m**2)
@@ -173,6 +195,9 @@ contains
     real(r8) :: eflx_err(bounds%begl:bounds%endl)                    ! sensible heat flux error (W/m**2)
     real(r8) :: qflx_err(bounds%begl:bounds%endl)                    ! water vapor flux error (kg/m**2/s)
     real(r8) :: fwet_roof                                            ! fraction of roof surface that is wet (-)
+    real(r8) :: fwet_whiteroof                                            ! fraction of white roof surface that is wet (-)
+    real(r8) :: fwet_greenroof                                            ! fraction of green roof surface that is wet (-)
+    
     real(r8) :: fwet_road_imperv                                     ! fraction of impervious road surface that is wet (-)
     integer  :: local_secp1(bounds%begl:bounds%endl)                 ! seconds into current date in local time (sec)
     real(r8) :: dtime                                                ! land model time step (sec)
@@ -211,6 +236,7 @@ contains
          eflx_traffic_factor =>   urbanparams_inst%eflx_traffic_factor      , & ! Input:  [real(r8) (:)   ]  multiplicative urban traffic factor for sensible heat flux
 
          rootr_road_perv     =>   soilstate_inst%rootr_road_perv_col        , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer for urban pervious road
+         rootr_greenroof     =>   soilstate_inst%rootr_greenroof_col        , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer for urban green roof       
          soilalpha_u         =>   soilstate_inst%soilalpha_u_col            , & ! Input:  [real(r8) (:)   ]  Urban factor that reduces ground saturated specific humidity (-)
          rootr               =>   soilstate_inst%rootr_patch                , & ! Output: [real(r8) (:,:) ]  effective fraction of roots in each soil layer  
 
@@ -395,21 +421,29 @@ contains
 
       ! Initialize conductances
       wtus_roof(begl:endl)        = 0._r8
+      wtus_whiteroof(begl:endl)        = 0._r8
+      wtus_greenroof(begl:endl)        = 0._r8      
       wtus_road_perv(begl:endl)   = 0._r8
       wtus_road_imperv(begl:endl) = 0._r8
       wtus_sunwall(begl:endl)     = 0._r8
       wtus_shadewall(begl:endl)   = 0._r8
       wtuq_roof(begl:endl)        = 0._r8
+      wtuq_whiteroof(begl:endl)        = 0._r8
+      wtuq_greenroof(begl:endl)        = 0._r8
       wtuq_road_perv(begl:endl)   = 0._r8
       wtuq_road_imperv(begl:endl) = 0._r8
       wtuq_sunwall(begl:endl)     = 0._r8
       wtuq_shadewall(begl:endl)   = 0._r8
       wtus_roof_unscl(begl:endl)        = 0._r8
+      wtus_whiteroof_unscl(begl:endl)        = 0._r8
+      wtus_greenroof_unscl(begl:endl)        = 0._r8      
       wtus_road_perv_unscl(begl:endl)   = 0._r8
       wtus_road_imperv_unscl(begl:endl) = 0._r8
       wtus_sunwall_unscl(begl:endl)     = 0._r8
       wtus_shadewall_unscl(begl:endl)   = 0._r8
       wtuq_roof_unscl(begl:endl)        = 0._r8
+      wtuq_whiteroof_unscl(begl:endl)        = 0._r8
+      wtuq_greenroof_unscl(begl:endl)        = 0._r8      
       wtuq_road_perv_unscl(begl:endl)   = 0._r8
       wtuq_road_imperv_unscl(begl:endl) = 0._r8
       wtuq_sunwall_unscl(begl:endl)     = 0._r8
@@ -484,7 +518,7 @@ contains
             if (ctype(c) == icol_roof) then
 
                ! scaled sensible heat conductance
-               wtus(c) = wtlunit_roof(l)/canyon_resistance(l)
+               wtus(c) = wtlunit_roof(l)*(1._r8 - white_roof_fraction - green_roof_fraction)/canyon_resistance(l)
                wtus_roof(l) = wtus(c)
                ! unscaled sensible heat conductance
                wtus_roof_unscl(l) = 1._r8/canyon_resistance(l)
@@ -499,7 +533,7 @@ contains
                   fwet_roof = 1._r8
                end if
                ! scaled latent heat conductance
-               wtuq(c) = fwet_roof*(wtlunit_roof(l)/canyon_resistance(l))
+               wtuq(c) = fwet_roof*(wtlunit_roof(l)*(1._r8 - white_roof_fraction - green_roof_fraction)/canyon_resistance(l))
                wtuq_roof(l) = wtuq(c)
                ! unscaled latent heat conductance
                wtuq_roof_unscl(l) = fwet_roof*(1._r8/canyon_resistance(l))
@@ -507,6 +541,63 @@ contains
                eflx_urban_ac_col(c), eflx_urban_heat_col(c), eflx_wasteheat_roof(l), &
                eflx_heat_from_ac_roof(l) )
 
+            else if (ctype(c) == icol_whiteroof) then
+
+               ! scaled sensible heat conductance
+               wtus(c) = wtlunit_roof(l)*white_roof_fraction/canyon_resistance(l)
+               wtus_whiteroof(l) = wtus(c)
+               ! unscaled sensible heat conductance
+               wtus_whiteroof_unscl(l) = 1._r8/canyon_resistance(l)
+
+               if (snow_depth(c) > 0._r8) then
+                  fwet_whiteroof = min(snow_depth(c)/0.05_r8, 1._r8)
+               else
+                  fwet_whiteroof = (max(0._r8, h2osoi_liq(c,1)+h2osoi_ice(c,1))/pondmx_urban)**0.666666666666_r8
+                  fwet_whiteroof = min(fwet_whiteroof,1._r8)
+               end if
+               if (qaf(l) > qg(c)) then 
+                  fwet_whiteroof = 1._r8
+               end if
+               
+               
+               ! scaled latent heat conductance
+               wtuq(c) = fwet_whiteroof*(wtlunit_roof(l)*white_roof_fraction/canyon_resistance(l))
+               wtuq_whiteroof(l) = wtuq(c)
+               ! unscaled latent heat conductance
+               wtuq_whiteroof_unscl(l) = fwet_whiteroof*(1._r8/canyon_resistance(l))
+               
+               if ( IsSimpleBuildTemp() ) call simple_wasteheatfromac( &
+               eflx_urban_ac_col(c), eflx_urban_heat_col(c), eflx_wasteheat_whiteroof(l), &
+               eflx_heat_from_ac_whiteroof(l) )
+               
+            else if (ctype(c) == icol_greenroof) then
+
+               ! scaled sensible heat conductance
+               wtus(c) = wtlunit_roof(l)*green_roof_fraction/canyon_resistance(l)
+               wtus_greenroof(l) = wtus(c)
+               ! unscaled sensible heat conductance
+               wtus_greenroof_unscl(l) = 1._r8/canyon_resistance(l)
+
+               !if (snow_depth(c) > 0._r8) then
+               !   fwet_greenroof = min(snow_depth(c)/0.05_r8, 1._r8)
+               !else
+               !   fwet_greenroof = (max(0._r8, h2osoi_liq(c,1)+h2osoi_ice(c,1))/pondmx_urban)**0.666666666666_r8
+               !   fwet_greenroof = min(fwet_greenroof,1._r8)
+               !end if
+               !if (qaf(l) > qg(c)) then 
+               !   fwet_greenroof = 1._r8
+               !end if
+               fwet_greenroof = 1._r8				
+               ! scaled latent heat conductance
+               wtuq(c) = fwet_greenroof*(wtlunit_roof(l)*green_roof_fraction/canyon_resistance(l))
+               wtuq_greenroof(l) = wtuq(c)
+               ! unscaled latent heat conductance
+               wtuq_greenroof_unscl(l) = fwet_greenroof*(1._r8/canyon_resistance(l))
+               
+               if ( IsSimpleBuildTemp() ) call simple_wasteheatfromac( &
+               eflx_urban_ac_col(c), eflx_urban_heat_col(c), eflx_wasteheat_greenroof(l), &
+               eflx_heat_from_ac_greenroof(l) )               
+               
             else if (ctype(c) == icol_road_perv) then
 
                ! scaled sensible heat conductance
@@ -594,8 +685,8 @@ contains
 
          ! Calculate new urban canopy air temperature and specific humidity
 
-         call wasteheat( bounds, num_urbanl, filter_urbanl, eflx_wasteheat_roof, eflx_wasteheat_sunwall, &
-                         eflx_wasteheat_shadewall, eflx_heat_from_ac_roof, eflx_heat_from_ac_sunwall,    &
+         call wasteheat( bounds, num_urbanl, filter_urbanl, eflx_wasteheat_roof, eflx_wasteheat_whiteroof, eflx_wasteheat_greenroof, eflx_wasteheat_sunwall, &
+                         eflx_wasteheat_shadewall, eflx_heat_from_ac_roof, eflx_heat_from_ac_whiteroof, eflx_heat_from_ac_greenroof, eflx_heat_from_ac_sunwall,    &
                          eflx_heat_from_ac_shadewall, energyflux_inst )
 
          do fl = 1, num_urbanl
@@ -610,10 +701,10 @@ contains
             taf(l) = taf_numer(l)/taf_denom(l)
             qaf(l) = qaf_numer(l)/qaf_denom(l)
 
-            wts_sum(l) = wtas(l) + wtus_roof(l) + wtus_road_perv(l) + &
+            wts_sum(l) = wtas(l) + wtus_roof(l) + wtus_whiteroof(l) + wtus_greenroof(l) + wtus_road_perv(l) + &
                  wtus_road_imperv(l) + wtus_sunwall(l) + wtus_shadewall(l)
 
-            wtq_sum(l) = wtaq(l) + wtuq_roof(l) + wtuq_road_perv(l) + &
+            wtq_sum(l) = wtaq(l) + wtuq_roof(l) + wtuq_whiteroof(l) + wtuq_greenroof(l) + wtuq_road_perv(l) + &
                  wtuq_road_imperv(l) + wtuq_sunwall(l) + wtuq_shadewall(l)
 
          end do
@@ -671,33 +762,47 @@ contains
          ! ground temperature
 
          if (ctype(c) == icol_roof) then
-            cgrnds(p) = forc_rho(g) * cpair * (wtas(l) + wtus_road_perv(l) +  &
+            cgrnds(p) = forc_rho(g) * cpair * (wtas(l) + wtus_whiteroof(l) + wtus_greenroof(l) + wtus_road_perv(l) +  &
                  wtus_road_imperv(l) + wtus_sunwall(l) + wtus_shadewall(l)) * &
                  (wtus_roof_unscl(l)/wts_sum(l))
-            cgrndl(p) = forc_rho(g) * (wtaq(l) + wtuq_road_perv(l) +  &
+            cgrndl(p) = forc_rho(g) * (wtaq(l) + wtuq_whiteroof(l) + wtuq_greenroof(l) + wtuq_road_perv(l) +  &
                  wtuq_road_imperv(l) + wtuq_sunwall(l) + wtuq_shadewall(l)) * &
                  (wtuq_roof_unscl(l)/wtq_sum(l))*dqgdT(c)
+         else if (ctype(c) == icol_whiteroof) then
+            cgrnds(p) = forc_rho(g) * cpair * (wtas(l) + wtus_roof(l) + wtus_greenroof(l) + wtus_road_perv(l) +  &
+                 wtus_road_imperv(l) + wtus_sunwall(l) + wtus_shadewall(l)) * &
+                 (wtus_whiteroof_unscl(l)/wts_sum(l))
+            cgrndl(p) = forc_rho(g) * (wtaq(l) + wtuq_roof(l) + wtuq_greenroof(l) + wtuq_road_perv(l) +   &
+                 wtuq_road_imperv(l) + wtuq_sunwall(l) + wtuq_shadewall(l)) * &
+                 (wtuq_whiteroof_unscl(l)/wtq_sum(l))*dqgdT(c)
+         else if (ctype(c) == icol_greenroof) then
+            cgrnds(p) = forc_rho(g) * cpair * (wtas(l) + wtus_roof(l) + wtus_whiteroof(l) + wtus_road_perv(l) +  &
+                 wtus_road_imperv(l) + wtus_sunwall(l) + wtus_shadewall(l)) * &
+                 (wtus_greenroof_unscl(l)/wts_sum(l))
+            cgrndl(p) = forc_rho(g) * (wtaq(l) + wtuq_roof(l) + wtuq_whiteroof(l) + wtuq_road_perv(l) +  &
+                 wtuq_road_imperv(l) + wtuq_sunwall(l) + wtuq_shadewall(l)) * &
+                 (wtuq_greenroof_unscl(l)/wtq_sum(l))*dqgdT(c)
          else if (ctype(c) == icol_road_perv) then
-            cgrnds(p) = forc_rho(g) * cpair * (wtas(l) + wtus_roof(l) +  &
+            cgrnds(p) = forc_rho(g) * cpair * (wtas(l) + wtus_roof(l) + wtus_whiteroof(l) + wtus_greenroof(l) +  &
                  wtus_road_imperv(l) + wtus_sunwall(l) + wtus_shadewall(l)) * &
                  (wtus_road_perv_unscl(l)/wts_sum(l))
-            cgrndl(p) = forc_rho(g) * (wtaq(l) + wtuq_roof(l) +  &
+            cgrndl(p) = forc_rho(g) * (wtaq(l) + wtuq_roof(l) + wtuq_whiteroof(l) + wtuq_greenroof(l) +  &
                  wtuq_road_imperv(l) + wtuq_sunwall(l) + wtuq_shadewall(l)) * &
                  (wtuq_road_perv_unscl(l)/wtq_sum(l))*dqgdT(c)
          else if (ctype(c) == icol_road_imperv) then
-            cgrnds(p) = forc_rho(g) * cpair * (wtas(l) + wtus_roof(l) +  &
+            cgrnds(p) = forc_rho(g) * cpair * (wtas(l) + wtus_roof(l) + wtus_whiteroof(l) + wtus_greenroof(l) +  &
                  wtus_road_perv(l) + wtus_sunwall(l) + wtus_shadewall(l)) * &
                  (wtus_road_imperv_unscl(l)/wts_sum(l))
-            cgrndl(p) = forc_rho(g) * (wtaq(l) + wtuq_roof(l) +  &
+            cgrndl(p) = forc_rho(g) * (wtaq(l) + wtuq_roof(l) + wtuq_whiteroof(l) + wtuq_greenroof(l) +  &
                  wtuq_road_perv(l) + wtuq_sunwall(l) + wtuq_shadewall(l)) * &
                  (wtuq_road_imperv_unscl(l)/wtq_sum(l))*dqgdT(c)
          else if (ctype(c) == icol_sunwall) then
-            cgrnds(p) = forc_rho(g) * cpair * (wtas(l) + wtus_roof(l) +  &
+            cgrnds(p) = forc_rho(g) * cpair * (wtas(l) + wtus_roof(l) + wtus_whiteroof(l) + wtus_greenroof(l) +  &
                  wtus_road_perv(l) + wtus_road_imperv(l) + wtus_shadewall(l)) * &
                  (wtus_sunwall_unscl(l)/wts_sum(l))
             cgrndl(p) = 0._r8
          else if (ctype(c) == icol_shadewall) then
-            cgrnds(p) = forc_rho(g) * cpair * (wtas(l) + wtus_roof(l) +  &
+            cgrnds(p) = forc_rho(g) * cpair * (wtas(l) + wtus_roof(l) + wtus_whiteroof(l) + wtus_greenroof(l) +  &
                  wtus_road_perv(l) + wtus_road_imperv(l) + wtus_sunwall(l)) * &
                  (wtus_shadewall_unscl(l)/wts_sum(l))
             cgrndl(p) = 0._r8
@@ -714,6 +819,16 @@ contains
 
          if (ctype(c) == icol_roof) then
             eflx_sh_grnd(p)  = -forc_rho(g)*cpair*wtus_roof_unscl(l)*dth(l)
+            eflx_sh_snow(p)  = 0._r8
+            eflx_sh_soil(p)  = 0._r8
+            eflx_sh_h2osfc(p)= 0._r8
+         else if (ctype(c) == icol_whiteroof) then
+            eflx_sh_grnd(p)  = -forc_rho(g)*cpair*wtus_whiteroof_unscl(l)*dth(l)
+            eflx_sh_snow(p)  = 0._r8
+            eflx_sh_soil(p)  = 0._r8
+            eflx_sh_h2osfc(p)= 0._r8
+         else if (ctype(c) == icol_greenroof) then
+            eflx_sh_grnd(p)  = -forc_rho(g)*cpair*wtus_greenroof_unscl(l)*dth(l)
             eflx_sh_snow(p)  = 0._r8
             eflx_sh_soil(p)  = 0._r8
             eflx_sh_h2osfc(p)= 0._r8
@@ -746,6 +861,17 @@ contains
 
          if (ctype(c) == icol_roof) then
             qflx_evap_soi(p) = -forc_rho(g)*wtuq_roof_unscl(l)*dqh(l)
+         else if (ctype(c) == icol_whiteroof) then
+            qflx_evap_soi(p) = -forc_rho(g)*wtuq_whiteroof_unscl(l)*dqh(l)
+         else if (ctype(c) == icol_greenroof) then
+         	if (dqh(l) > 0._r8 .or. frac_sno(c) > 0._r8 .or. soilalpha_u(c) <= 0._r8) then
+            	qflx_evap_soi(p) = -forc_rho(g)*wtuq_greenroof_unscl(l)*dqh(l) 
+            	qflx_tran_veg(p) = 0._r8
+            else
+               	qflx_evap_soi(p) = 0._r8
+               	qflx_tran_veg(p) = -forc_rho(g)*wtuq_greenroof_unscl(l)*dqh(l)
+            end if
+            qflx_evap_veg(p) = qflx_tran_veg(p)                                   
          else if (ctype(c) == icol_road_perv) then
             ! Evaporation assigned to soil term if dew or snow
             ! or if no liquid water available in soil column
@@ -841,6 +967,8 @@ contains
             c = patch%column(p)
             if (ctype(c) == icol_road_perv) then
                rootr(p,j) = rootr_road_perv(c,j)
+            else if (ctype(c) == icol_greenroof) then
+             	rootr(p,j) = rootr_greenroof(c,j)
             else
                rootr(p,j) = 0._r8
             end if
@@ -916,8 +1044,8 @@ contains
   ! !IROUTINE: wasteheat
   !
   ! !INTERFACE:
-  subroutine wasteheat( bounds, num_urbanl, filter_urbanl, eflx_wasteheat_roof, eflx_wasteheat_sunwall, &
-                        eflx_wasteheat_shadewall, eflx_heat_from_ac_roof, eflx_heat_from_ac_sunwall,    &
+  subroutine wasteheat( bounds, num_urbanl, filter_urbanl, eflx_wasteheat_roof, eflx_wasteheat_whiteroof, eflx_wasteheat_greenroof, eflx_wasteheat_sunwall, &
+                        eflx_wasteheat_shadewall, eflx_heat_from_ac_roof, eflx_heat_from_ac_whiteroof, eflx_heat_from_ac_greenroof, eflx_heat_from_ac_sunwall,    &
                         eflx_heat_from_ac_shadewall, energyflux_inst )
     ! !DESCRIPTION:
     !
@@ -927,16 +1055,20 @@ contains
     use clm_varcon         , only : ht_wasteheat_factor, ac_wasteheat_factor, &
                                     wasteheat_limit
     use EnergyFluxType     , only : energyflux_type
-    use UrbanParamsType    , only : IsProgBuildTemp
+    use UrbanParamsType    , only : IsProgBuildTemp, white_roof_fraction, green_roof_fraction
     implicit none
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds  ! bounds
     integer , intent(in) :: num_urbanl       ! number of urban landunits in clump
     integer , intent(in) :: filter_urbanl(:) ! urban landunit filter
     real(r8)            , intent(in)  :: eflx_wasteheat_roof(bounds%begl:bounds%endl)
+    real(r8)            , intent(in)  :: eflx_wasteheat_whiteroof(bounds%begl:bounds%endl)
+    real(r8)            , intent(in)  :: eflx_wasteheat_greenroof(bounds%begl:bounds%endl)    
     real(r8)            , intent(in)  :: eflx_wasteheat_sunwall(bounds%begl:bounds%endl)
     real(r8)            , intent(in)  :: eflx_wasteheat_shadewall(bounds%begl:bounds%endl)
     real(r8)            , intent(in)  :: eflx_heat_from_ac_roof(bounds%begl:bounds%endl)
+    real(r8)            , intent(in)  :: eflx_heat_from_ac_whiteroof(bounds%begl:bounds%endl)
+    real(r8)            , intent(in)  :: eflx_heat_from_ac_greenroof(bounds%begl:bounds%endl)    
     real(r8)            , intent(in)  :: eflx_heat_from_ac_sunwall(bounds%begl:bounds%endl)
     real(r8)            , intent(in)  :: eflx_heat_from_ac_shadewall(bounds%begl:bounds%endl)
     type(energyflux_type) , intent(inout)  :: energyflux_inst  ! data on landunit energy flux
@@ -961,7 +1093,7 @@ contains
        if      ( IsSimpleBuildTemp() )then
           ! Total waste heat and heat from AC is sum of heat for walls and roofs
           ! accounting for different surface areas
-          eflx_wasteheat(l) = wtlunit_roof(l)*eflx_wasteheat_roof(l) + &
+          eflx_wasteheat(l) = wtlunit_roof(l)*((1._r8-white_roof_fraction - green_roof_fraction)*eflx_wasteheat_roof(l) + white_roof_fraction*eflx_wasteheat_whiteroof(l) + green_roof_fraction*eflx_wasteheat_greenroof(l)) + &
              (1._r8-wtlunit_roof(l))*(canyon_hwr(l)*(eflx_wasteheat_sunwall(l) + &
              eflx_wasteheat_shadewall(l)))
 
@@ -980,7 +1112,7 @@ contains
        eflx_wasteheat(l) = min(eflx_wasteheat(l),wasteheat_limit)
 
        if      ( IsSimpleBuildTemp() )then
-          eflx_heat_from_ac(l) = wtlunit_roof(l)*eflx_heat_from_ac_roof(l) + &
+          eflx_heat_from_ac(l) = wtlunit_roof(l)*((1._r8-white_roof_fraction - green_roof_fraction)*eflx_heat_from_ac_roof(l) + white_roof_fraction* eflx_heat_from_ac_whiteroof(l)+ green_roof_fraction* eflx_heat_from_ac_greenroof(l) )+ &
           (1._r8-wtlunit_roof(l))*(canyon_hwr(l)*(eflx_heat_from_ac_sunwall(l) + &
           eflx_heat_from_ac_shadewall(l)))
 
@@ -1051,12 +1183,13 @@ contains
   ! in CLM4.5.
   !
   ! !USES:
-    use clm_varpar     , only : nlevurb
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use clm_varpar     , only : nlevurb, nlevgrnd
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_greenroof, icol_sunwall, icol_shadewall
     use LandunitType   , only : landunit_type
     use ColumnType     , only : column_type
     use TemperatureType, only : temperature_type
-
+	use UrbanParamsType, only : white_roof_fraction, green_roof_fraction
+	
     implicit none
   ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds           ! bounds
@@ -1071,6 +1204,9 @@ contains
     real(r8) :: t_sunwall_innerl(bounds%begl:bounds%endl)    ! temp of inner layer of sunwall (K)
     real(r8) :: t_shadewall_innerl(bounds%begl:bounds%endl)  ! temp of inner layer of shadewall (K)
     real(r8) :: t_roof_innerl(bounds%begl:bounds%endl)       ! temp of inner layer of roof (K)
+    real(r8) :: t_whiteroof_innerl(bounds%begl:bounds%endl)       ! temp of inner layer of white roof (K)
+    real(r8) :: t_greenroof_innerl(bounds%begl:bounds%endl)       ! temp of inner layer of green roof (K)
+    
     real(r8) :: lngth_roof                                   ! length of roof (m)
   !EOP
   !----------------------------------------------------------------------- 
@@ -1080,7 +1216,10 @@ contains
      ht_roof       =>    lun%ht_roof                    , & ! Input:  [real(r8) (:)]    height of urban roof (m)
      canyon_hwr    =>    lun%canyon_hwr                 , & ! Input:  [real(r8) (:)]    ratio of building height to street width 
      wtlunit_roof  =>    lun%wtlunit_roof               , & ! Input:  [real(r8) (:)]    weight of roof with respect to landunit
-     t_building    =>    temperature_inst%t_building_lun  & ! Output: [real(r8) (:)]  internal building temperature (K) 
+     t_building             =>    temperature_inst%t_building_lun           , & ! Output: [real(r8) (:)]  internal building temperature (K) 
+     t_roof_surface         =>    temperature_inst%t_roof_surface_lun       , & ! Output: [real(r8) (:)]  roof surface temperature (K) 
+     t_whiteroof_surface    =>    temperature_inst%t_whiteroof_surface_lun  , & ! Output: [real(r8) (:)]  white roof surface temperature (K)   
+     t_greenroof_surface    =>    temperature_inst%t_greenroof_surface_lun    & ! Output: [real(r8) (:)]  green roof surface temperature (K)           
     )
 
     do fc = 1,num_urbanc
@@ -1089,6 +1228,13 @@ contains
 
        if      (col%itype(c) == icol_roof     ) then
           t_roof_innerl(l)      = t_soisno(c,nlevurb)
+          t_roof_surface(l)     = t_soisno(c,1)         
+       else if (col%itype(c) == icol_whiteroof     ) then
+          t_whiteroof_innerl(l)  = t_soisno(c,nlevurb)
+          t_whiteroof_surface(l) = t_soisno(c,1)          
+       else if (col%itype(c) == icol_greenroof     ) then
+          t_greenroof_innerl(l)  = t_soisno(c,nlevgrnd)    !! this might need to be changed
+          t_greenroof_surface(l) = t_soisno(c,1)                   
        else if (col%itype(c) == icol_sunwall  ) then
           t_sunwall_innerl(l)   = t_soisno(c,nlevurb)
        else if (col%itype(c) == icol_shadewall) then
@@ -1103,7 +1249,7 @@ contains
      
        lngth_roof = (ht_roof(l)/canyon_hwr(l))*wtlunit_roof(l)/(1._r8-wtlunit_roof(l))
        t_building(l) = (ht_roof(l)*(t_shadewall_innerl(l) + t_sunwall_innerl(l)) &
-                       +lngth_roof*t_roof_innerl(l))/(2._r8*ht_roof(l)+lngth_roof)
+                       +lngth_roof*((1._r8 - white_roof_fraction - green_roof_fraction)*t_roof_innerl(l) + white_roof_fraction*t_whiteroof_innerl(l) + green_roof_fraction*t_greenroof_innerl(l)))/(2._r8*ht_roof(l)+lngth_roof)
     end do
 
   end associate

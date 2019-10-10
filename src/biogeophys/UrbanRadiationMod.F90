@@ -60,7 +60,7 @@ contains
     ! !USES:
     use clm_varcon          , only : spval, sb, tfrz
     use column_varcon       , only : icol_road_perv, icol_road_imperv
-    use column_varcon       , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon       , only : icol_roof, icol_whiteroof, icol_greenroof, icol_sunwall, icol_shadewall
     use clm_time_manager    , only : get_curr_date, get_step_size
     !
     ! !ARGUMENTS:
@@ -92,24 +92,35 @@ contains
     real(r8), parameter :: snoem  = 0.97_r8   ! snow emissivity (should use value from Biogeophysics1)
 
     real(r8) :: lwnet_roof(bounds%begl:bounds%endl)     ! net (outgoing-incoming) longwave radiation (per unit ground area), roof (W/m**2)
+    real(r8) :: lwnet_whiteroof(bounds%begl:bounds%endl)     ! net (outgoing-incoming) longwave radiation (per unit ground area), white roof (W/m**2)
+    real(r8) :: lwnet_greenroof(bounds%begl:bounds%endl)     ! net (outgoing-incoming) longwave radiation (per unit ground area), green roof (W/m**2)
     real(r8) :: lwnet_improad(bounds%begl:bounds%endl)  ! net (outgoing-incoming) longwave radiation (per unit ground area), impervious road (W/m**2)
     real(r8) :: lwnet_perroad(bounds%begl:bounds%endl)  ! net (outgoing-incoming) longwave radiation (per unit ground area), pervious road (W/m**2)
     real(r8) :: lwnet_sunwall(bounds%begl:bounds%endl)  ! net (outgoing-incoming) longwave radiation (per unit wall area), sunlit wall (W/m**2)
     real(r8) :: lwnet_shadewall(bounds%begl:bounds%endl)! net (outgoing-incoming) longwave radiation (per unit wall area), shaded wall (W/m**2)
     real(r8) :: lwnet_canyon(bounds%begl:bounds%endl)   ! net (outgoing-incoming) longwave radiation for canyon, per unit ground area (W/m**2)
+
     real(r8) :: lwup_roof(bounds%begl:bounds%endl)      ! upward longwave radiation (per unit ground area), roof (W/m**2)
+    real(r8) :: lwup_whiteroof(bounds%begl:bounds%endl)      ! upward longwave radiation (per unit ground area), white roof (W/m**2)
+    real(r8) :: lwup_greenroof(bounds%begl:bounds%endl)      ! upward longwave radiation (per unit ground area), green roof (W/m**2)
     real(r8) :: lwup_improad(bounds%begl:bounds%endl)   ! upward longwave radiation (per unit ground area), impervious road (W/m**2)
     real(r8) :: lwup_perroad(bounds%begl:bounds%endl)   ! upward longwave radiation (per unit ground area), pervious road (W/m**2)
     real(r8) :: lwup_sunwall(bounds%begl:bounds%endl)   ! upward longwave radiation, (per unit wall area), sunlit wall (W/m**2)
     real(r8) :: lwup_shadewall(bounds%begl:bounds%endl) ! upward longwave radiation, (per unit wall area), shaded wall (W/m**2)
     real(r8) :: lwup_canyon(bounds%begl:bounds%endl)    ! upward longwave radiation for canyon, per unit ground area (W/m**2)
+
     real(r8) :: t_roof(bounds%begl:bounds%endl)         ! roof temperature (K)
+    real(r8) :: t_whiteroof(bounds%begl:bounds%endl)         ! white roof temperature (K)
+    real(r8) :: t_greenroof(bounds%begl:bounds%endl)         ! green roof temperature (K)
     real(r8) :: t_improad(bounds%begl:bounds%endl)      ! imppervious road temperature (K)
     real(r8) :: t_perroad(bounds%begl:bounds%endl)      ! pervious road temperature (K)
     real(r8) :: t_sunwall(bounds%begl:bounds%endl)      ! sunlit wall temperature (K)
     real(r8) :: t_shadewall(bounds%begl:bounds%endl)    ! shaded wall temperature (K)
     real(r8) :: lwdown(bounds%begl:bounds%endl)         ! atmospheric downward longwave radiation (W/m**2)
+ 
     real(r8) :: em_roof_s(bounds%begl:bounds%endl)      ! roof emissivity with snow effects
+    real(r8) :: em_whiteroof_s(bounds%begl:bounds%endl)      ! white roof emissivity with snow effects
+    real(r8) :: em_greenroof_s(bounds%begl:bounds%endl)      ! green roof emissivity with snow effects   
     real(r8) :: em_improad_s(bounds%begl:bounds%endl)   ! impervious road emissivity with snow effects
     real(r8) :: em_perroad_s(bounds%begl:bounds%endl)   ! pervious road emissivity with snow effects
     !-----------------------------------------------------------------------
@@ -141,6 +152,12 @@ contains
          
          sabs_roof_dir      =>    solarabs_inst%sabs_roof_dir_lun            , & ! Output: [real(r8) (:,:) ]  direct  solar absorbed  by roof per unit ground area per unit incident flux
          sabs_roof_dif      =>    solarabs_inst%sabs_roof_dif_lun            , & ! Output: [real(r8) (:,:) ]  diffuse solar absorbed  by roof per unit ground area per unit incident flux
+         sabs_whiteroof_dir      =>    solarabs_inst%sabs_whiteroof_dir_lun            , & ! Output: [real(r8) (:,:) ]  direct  solar absorbed  by roof per unit ground area per unit incident flux
+         sabs_whiteroof_dif      =>    solarabs_inst%sabs_whiteroof_dif_lun            , & ! Output: [real(r8) (:,:) ]  diffuse solar absorbed  by roof per unit ground area per unit incident flux
+         sabs_greenroof_dir      =>    solarabs_inst%sabs_greenroof_dir_lun            , & ! Output: [real(r8) (:,:) ]  direct  solar absorbed  by roof per unit ground area per unit incident flux
+         sabs_greenroof_dif      =>    solarabs_inst%sabs_greenroof_dif_lun            , & ! Output: [real(r8) (:,:) ]  diffuse solar absorbed  by roof per unit ground area per unit incident flux
+
+
          sabs_sunwall_dir   =>    solarabs_inst%sabs_sunwall_dir_lun         , & ! Output: [real(r8) (:,:) ]  direct  solar absorbed  by sunwall per unit wall area per unit incident flux
          sabs_sunwall_dif   =>    solarabs_inst%sabs_sunwall_dif_lun         , & ! Output: [real(r8) (:,:) ]  diffuse solar absorbed  by sunwall per unit wall area per unit incident flux
          sabs_shadewall_dir =>    solarabs_inst%sabs_shadewall_dir_lun       , & ! Output: [real(r8) (:,:) ]  direct  solar absorbed  by shadewall per unit wall area per unit incident flux
@@ -168,6 +185,11 @@ contains
          l = filter_nourbanl(fl)
          sabs_roof_dir(l,:)      = spval
          sabs_roof_dif(l,:)      = spval
+         sabs_whiteroof_dir(l,:)      = spval
+         sabs_whiteroof_dif(l,:)      = spval
+         sabs_greenroof_dir(l,:)      = spval
+         sabs_greenroof_dif(l,:)      = spval
+         
          sabs_sunwall_dir(l,:)   = spval
          sabs_sunwall_dif(l,:)   = spval
          sabs_shadewall_dir(l,:) = spval
@@ -187,6 +209,8 @@ contains
          ! does not appear in the urban landunit for the net_longwave computation
 
          t_roof(l)      = 19._r8 + tfrz
+         t_whiteroof(l) = 19._r8 + tfrz
+         t_greenroof(l) = 19._r8 + tfrz        
          t_sunwall(l)   = 19._r8 + tfrz
          t_shadewall(l) = 19._r8 + tfrz
          t_improad(l)   = 19._r8 + tfrz
@@ -194,6 +218,8 @@ contains
 
          ! Initial assignment of emissivity
          em_roof_s(l)    = em_roof(l)
+         em_whiteroof_s(l)    = em_roof(l)
+         em_greenroof_s(l)    = em_roof(l)        
          em_improad_s(l) = em_improad(l)
          em_perroad_s(l) = em_perroad(l)
 
@@ -212,6 +238,12 @@ contains
                t_sunwall(l)   = t_grnd(c)
             else if (ctype(c) == icol_shadewall  ) then
                t_shadewall(l) = t_grnd(c)
+            else if (ctype(c) == icol_whiteroof  ) then
+               t_whiteroof(l) = t_grnd(c)
+               em_whiteroof_s(l) = em_roof(l)*(1._r8-frac_sno(c)) + snoem*frac_sno(c)               
+            else if (ctype(c) == icol_greenroof  ) then
+               t_greenroof(l) = t_grnd(c)   
+               em_greenroof_s(l) = em_roof(l)*(1._r8-frac_sno(c)) + snoem*frac_sno(c)                                                         
             end if
          end do
          lwdown(l) = forc_lwrad(g)
@@ -226,21 +258,29 @@ contains
               wtroad_perv(begl:endl),     &
               lwdown(begl:endl),          &
               em_roof_s(begl:endl),       &
+              em_whiteroof_s(begl:endl),       &
+              em_greenroof_s(begl:endl),       &              
               em_improad_s(begl:endl),    &
               em_perroad_s(begl:endl),    &
               em_wall(begl:endl),         &
               t_roof(begl:endl),          &
+              t_whiteroof(begl:endl),          &
+              t_greenroof(begl:endl),          &              
               t_improad(begl:endl),       &
               t_perroad(begl:endl),       &
               t_sunwall(begl:endl),       &
               t_shadewall(begl:endl),     &
               lwnet_roof(begl:endl),      &
+              lwnet_whiteroof(begl:endl),      &
+              lwnet_greenroof(begl:endl),      &                            
               lwnet_improad(begl:endl),   &
               lwnet_perroad(begl:endl),   &
               lwnet_sunwall(begl:endl),   &
               lwnet_shadewall(begl:endl), &
               lwnet_canyon(begl:endl),    &
               lwup_roof(begl:endl),       &
+              lwup_whiteroof(begl:endl),       &
+              lwup_greenroof(begl:endl),       &                            
               lwup_improad(begl:endl),    &
               lwup_perroad(begl:endl),    &
               lwup_sunwall(begl:endl),    &
@@ -309,6 +349,25 @@ contains
                  sabs_improad_dif(l,1)*forc_solai(g,1) + &
                  sabs_improad_dir(l,2)*forc_solad(g,2) + &
                  sabs_improad_dif(l,2)*forc_solai(g,2) 
+
+         else if (ctype(c) == icol_whiteroof) then   
+            eflx_lwrad_out(p) = lwup_whiteroof(l)
+            eflx_lwrad_net(p) = lwnet_whiteroof(l)
+            eflx_lwrad_net_u(p) = lwnet_whiteroof(l)
+            sabg(p) = sabs_whiteroof_dir(l,1)*forc_solad(g,1) + &
+                 sabs_whiteroof_dif(l,1)*forc_solai(g,1) + &
+                 sabs_whiteroof_dir(l,2)*forc_solad(g,2) + &
+                 sabs_whiteroof_dif(l,2)*forc_solai(g,2) 
+                 
+         else if (ctype(c) == icol_greenroof) then   
+            eflx_lwrad_out(p) = lwup_greenroof(l)
+            eflx_lwrad_net(p) = lwnet_greenroof(l)
+            eflx_lwrad_net_u(p) = lwnet_greenroof(l)
+            sabg(p) = sabs_greenroof_dir(l,1)*forc_solad(g,1) + &
+                 sabs_greenroof_dif(l,1)*forc_solai(g,1) + &
+                 sabs_greenroof_dir(l,2)*forc_solad(g,2) + &
+                 sabs_greenroof_dif(l,2)*forc_solai(g,2) 
+                                  
          end if
 
          sabv(p)   = 0._r8
@@ -324,10 +383,10 @@ contains
   !-----------------------------------------------------------------------
   subroutine net_longwave (bounds                                                             , &
        num_urbanl, filter_urbanl, canyon_hwr, wtroad_perv                                     , &
-       lwdown, em_roof, em_improad, em_perroad, em_wall                                       , &
-       t_roof,  t_improad, t_perroad, t_sunwall, t_shadewall                                  , &
-       lwnet_roof, lwnet_improad, lwnet_perroad, lwnet_sunwall, lwnet_shadewall, lwnet_canyon , &
-       lwup_roof, lwup_improad, lwup_perroad, lwup_sunwall, lwup_shadewall, lwup_canyon, &
+       lwdown, em_roof, em_whiteroof, em_greenroof, em_improad, em_perroad, em_wall                                       , &
+       t_roof,  t_whiteroof, t_greenroof, t_improad, t_perroad, t_sunwall, t_shadewall                                  , &
+       lwnet_roof, lwnet_whiteroof, lwnet_greenroof,  lwnet_improad, lwnet_perroad, lwnet_sunwall, lwnet_shadewall, lwnet_canyon , &
+       lwup_roof, lwup_whiteroof,lwup_greenroof, lwup_improad, lwup_perroad, lwup_sunwall, lwup_shadewall, lwup_canyon, &
        urbanparams_inst)
     !
     ! !DESCRIPTION: 
@@ -346,17 +405,25 @@ contains
 
     real(r8), intent(in)  :: lwdown( bounds%begl: )          ! atmospheric longwave radiation (W/m**2) [landunit]
     real(r8), intent(in)  :: em_roof( bounds%begl: )         ! roof emissivity [landunit]
+    real(r8), intent(in)  :: em_whiteroof( bounds%begl: )         ! roof emissivity [landunit]
+    real(r8), intent(in)  :: em_greenroof( bounds%begl: )         ! roof emissivity [landunit]
     real(r8), intent(in)  :: em_improad( bounds%begl: )      ! impervious road emissivity [landunit]
     real(r8), intent(in)  :: em_perroad( bounds%begl: )      ! pervious road emissivity [landunit]
     real(r8), intent(in)  :: em_wall( bounds%begl: )         ! wall emissivity [landunit]
 
     real(r8), intent(in)  :: t_roof( bounds%begl: )          ! roof temperature (K) [landunit]
+    real(r8), intent(in)  :: t_whiteroof( bounds%begl: )          ! white roof temperature (K) [landunit]
+    real(r8), intent(in)  :: t_greenroof( bounds%begl: )          ! green roof temperature (K) [landunit]
+
     real(r8), intent(in)  :: t_improad( bounds%begl: )       ! impervious road temperature (K) [landunit]
     real(r8), intent(in)  :: t_perroad( bounds%begl: )       ! ervious road temperature (K) [landunit]
     real(r8), intent(in)  :: t_sunwall( bounds%begl: )       ! sunlit wall temperature (K) [landunit]
     real(r8), intent(in)  :: t_shadewall( bounds%begl: )     ! shaded wall temperature (K) [landunit]
 
     real(r8), intent(out) :: lwnet_roof( bounds%begl: )      ! net (outgoing-incoming) longwave radiation, roof (W/m**2) [landunit]
+    real(r8), intent(out) :: lwnet_whiteroof( bounds%begl: )      ! net (outgoing-incoming) longwave radiation, white roof (W/m**2) [landunit]
+    real(r8), intent(out) :: lwnet_greenroof( bounds%begl: )      ! net (outgoing-incoming) longwave radiation, green roof (W/m**2) [landunit]
+
     real(r8), intent(out) :: lwnet_improad( bounds%begl: )   ! net (outgoing-incoming) longwave radiation, impervious road (W/m**2) [landunit]
     real(r8), intent(out) :: lwnet_perroad( bounds%begl: )   ! net (outgoing-incoming) longwave radiation, pervious road (W/m**2) [landunit]
     real(r8), intent(out) :: lwnet_sunwall( bounds%begl: )   ! net (outgoing-incoming) longwave radiation (per unit wall area), sunlit wall (W/m**2) [landunit]
@@ -364,6 +431,9 @@ contains
     real(r8), intent(out) :: lwnet_canyon( bounds%begl: )    ! net (outgoing-incoming) longwave radiation for canyon, per unit ground area (W/m**2) [landunit]
 
     real(r8), intent(out) :: lwup_roof( bounds%begl: )       ! upward longwave radiation, roof (W/m**2) [landunit]
+    real(r8), intent(out) :: lwup_whiteroof( bounds%begl: )       ! upward longwave radiation, white roof (W/m**2) [landunit]
+    real(r8), intent(out) :: lwup_greenroof( bounds%begl: )       ! upward longwave radiation, green roof (W/m**2) [landunit]
+
     real(r8), intent(out) :: lwup_improad( bounds%begl: )    ! upward longwave radiation, impervious road (W/m**2) [landunit]
     real(r8), intent(out) :: lwup_perroad( bounds%begl: )    ! upward longwave radiation, pervious road (W/m**2) [landunit]
     real(r8), intent(out) :: lwup_sunwall( bounds%begl: )    ! upward longwave radiation (per unit wall area), sunlit wall (W/m**2) [landunit]
@@ -440,21 +510,29 @@ contains
     SHR_ASSERT_ALL((ubound(wtroad_perv)     == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(lwdown)          == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(em_roof)         == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
+    SHR_ASSERT_ALL((ubound(em_whiteroof)         == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
+    SHR_ASSERT_ALL((ubound(em_greenroof)         == (/bounds%endl/)), errMsg(sourcefile, __LINE__))    
     SHR_ASSERT_ALL((ubound(em_improad)      == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(em_perroad)      == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(em_wall)         == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(t_roof)          == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
+    SHR_ASSERT_ALL((ubound(t_whiteroof)          == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
+    SHR_ASSERT_ALL((ubound(t_greenroof)          == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(t_improad)       == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(t_perroad)       == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(t_sunwall)       == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(t_shadewall)     == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(lwnet_roof)      == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
+    SHR_ASSERT_ALL((ubound(lwnet_whiteroof)      == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
+    SHR_ASSERT_ALL((ubound(lwnet_greenroof)      == (/bounds%endl/)), errMsg(sourcefile, __LINE__))    
     SHR_ASSERT_ALL((ubound(lwnet_improad)   == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(lwnet_perroad)   == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(lwnet_sunwall)   == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(lwnet_shadewall) == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(lwnet_canyon)    == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(lwup_roof)       == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
+    SHR_ASSERT_ALL((ubound(lwup_whiteroof)      == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
+    SHR_ASSERT_ALL((ubound(lwup_greenroof)      == (/bounds%endl/)), errMsg(sourcefile, __LINE__)) 
     SHR_ASSERT_ALL((ubound(lwup_improad)    == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(lwup_perroad)    == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(lwup_sunwall)    == (/bounds%endl/)), errMsg(sourcefile, __LINE__))
@@ -711,6 +789,12 @@ contains
          l = filter_urbanl(fl)
          lwup_roof(l) = em_roof(l)*sb*(t_roof(l)**4) + (1._r8-em_roof(l))*lwdown(l)
          lwnet_roof(l) = lwup_roof(l) - lwdown(l)
+         
+         lwup_whiteroof(l) = em_whiteroof(l)*sb*(t_whiteroof(l)**4) + (1._r8-em_whiteroof(l))*lwdown(l)
+         lwnet_whiteroof(l) = lwup_whiteroof(l) - lwdown(l)
+         
+         lwup_greenroof(l) = em_greenroof(l)*sb*(t_greenroof(l)**4) + (1._r8-em_greenroof(l))*lwdown(l)
+         lwnet_greenroof(l) = lwup_greenroof(l) - lwdown(l)
       end do
 
     end associate

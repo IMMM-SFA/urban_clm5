@@ -223,6 +223,7 @@ contains
      use landunit_varcon , only : istice_mec, istwet, istsoil, istcrop
      use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
      use column_varcon   , only : icol_road_imperv, icol_road_perv
+     use column_varcon   , only : icol_whiteroof, icol_greenroof    
      use ColumnType      , only : col
      use LandunitType    , only : lun
      !
@@ -275,6 +276,8 @@ contains
                 soilbeta(c) = 0._r8          
              else if (col%itype(c) == icol_roof .or. col%itype(c) == icol_road_imperv) then
                 soilbeta(c) = 0._r8
+             else if (col%itype(c) == icol_whiteroof .or. col%itype(c) == icol_greenroof) then
+                soilbeta(c) = 0._r8                
              endif
           else
              soilbeta(c) =   1._r8
@@ -320,6 +323,7 @@ contains
      use landunit_varcon , only : istice_mec, istwet, istsoil, istcrop
      use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
      use column_varcon   , only : icol_road_imperv, icol_road_perv
+     use column_varcon   , only : icol_whiteroof, icol_greenroof         
      use ColumnType      , only : col
      use LandunitType    , only : lun
      !
@@ -387,6 +391,8 @@ contains
             soilresis(c) = 1.e6_r8          
          else if (col%itype(c) == icol_roof .or. col%itype(c) == icol_road_imperv) then
             soilresis(c) = 1.e6_r8
+         else if (col%itype(c) == icol_whiteroof .or. col%itype(c) == icol_greenroof) then
+            soilresis(c) = 1.e6_r8            
          endif   
       else
          soilresis(c) =   0._r8
