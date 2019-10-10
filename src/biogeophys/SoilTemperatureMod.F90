@@ -146,7 +146,7 @@ contains
     use clm_varctl               , only : iulog
     use clm_varcon               , only : cnfac, cpice, cpliq, denh2o
     use landunit_varcon          , only : istsoil, istcrop
-    use column_varcon            , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
+    use column_varcon            , only : icol_roof, icol_whiteroof, icol_greenroof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
     use BandDiagonalMod          , only : BandDiagonal
     use UrbanParamsType          , only : IsSimpleBuildTemp, IsProgBuildTemp
     use UrbBuildTempOleson2015Mod, only : BuildingTemperature
@@ -261,6 +261,8 @@ contains
          t_grnd                  => temperature_inst%t_grnd_col             , & ! Output: [real(r8) (:)   ]  ground surface temperature [K]          
          t_building              => temperature_inst%t_building_lun         , & ! Output: [real(r8) (:)   ]  internal building air temperature (K)       
          t_roof_inner            => temperature_inst%t_roof_inner_lun       , & ! Input:  [real(r8) (:)   ]  roof inside surface temperature (K)
+         t_whiteroof_inner            => temperature_inst%t_whiteroof_inner_lun       , & ! Input:  [real(r8) (:)   ]  white roof inside surface temperature (K)
+         t_greenroof_inner            => temperature_inst%t_greenroof_inner_lun       , & ! Input:  [real(r8) (:)   ]  green roof inside surface temperature (K)         
          t_sunw_inner            => temperature_inst%t_sunw_inner_lun       , & ! Input:  [real(r8) (:)   ]  sunwall inside surface temperature (K)
          t_shdw_inner            => temperature_inst%t_shdw_inner_lun       , & ! Input:  [real(r8) (:)   ]  shadewall inside surface temperature (K)
          xmf                     => temperature_inst%xmf_col                , & ! Output: [real(r8) (:)   ] melting or freezing within a time step [kg/m2]
@@ -290,7 +292,7 @@ contains
          jtop(c) = snl(c)
          ! compute jbot
          if ((col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall &
-              .or. col%itype(c) == icol_roof) ) then
+              .or. col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof) ) then
             jbot(c) = nlevurb
          else
             jbot(c) = nlevgrnd
@@ -433,7 +435,7 @@ contains
             c = filter_nolakec(fc)
             l = col%landunit(c)
             if ((col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall &
-                 .or. col%itype(c) == icol_roof) .and. j <= nlevurb) then
+                 .or. col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof ) .and. j <= nlevurb) then
                if (j >= snl(c)+1) then
                   if (j <= nlevurb-1) then
                      fn1(c,j) = tk(c,j)*(t_soisno(c,j+1)-t_soisno(c,j))/(z(c,j+1)-z(c,j))
@@ -458,12 +460,15 @@ contains
                         else if (ctype(c) == icol_roof) then
                           fn1(c,j) = tk(c,j) * (t_roof_inner(l) - t_soisno(c,j))/(zi(c,j) - z(c,j))
                           fn(c,j)  = tk(c,j) * (t_roof_inner(l) - tssbef(c,j))/(zi(c,j) - z(c,j))
+                        else if (ctype(c) == icol_whiteroof) then
+                          fn1(c,j) = tk(c,j) * (t_whiteroof_inner(l) - t_soisno(c,j))/(zi(c,j) - z(c,j))
+                          fn(c,j)  = tk(c,j) * (t_whiteroof_inner(l) - tssbef(c,j))/(zi(c,j) - z(c,j))                                                         
                         end if
                      end if
                   end if
                end if
             else if (col%itype(c) /= icol_sunwall .and. col%itype(c) /= icol_shadewall &
-                 .and. col%itype(c) /= icol_roof) then
+                 .and. col%itype(c) /= icol_roof .and. col%itype(c) /= icol_whiteroof) then
                if (j >= snl(c)+1) then
                   if (j <= nlevgrnd-1) then
                      fn1(c,j) = tk(c,j)*(t_soisno(c,j+1)-t_soisno(c,j))/(z(c,j+1)-z(c,j))
@@ -479,7 +484,7 @@ contains
          c = filter_nolakec(fc)
          l = col%landunit(c)
          if (lun%urbpoi(l)) then
-            if (col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall .or. col%itype(c) == icol_roof) then
+            if (col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall .or. col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof) then
                eflx_building_heat_errsoi(c) = cnfac*fn(c,nlevurb) + (1._r8-cnfac)*fn1(c,nlevurb)
             else
                eflx_building_heat_errsoi(c) = 0._r8
@@ -597,7 +602,7 @@ contains
     use clm_varpar      , only : nlevsno, nlevgrnd, nlevurb, nlevsoi
     use clm_varcon      , only : denh2o, denice, tfrz, tkwat, tkice, tkair, cpice,  cpliq, thk_bedrock, csol_bedrock
     use landunit_varcon , only : istice_mec, istwet
-    use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
+    use column_varcon   , only : icol_roof, icol_whiteroof, icol_greenroof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
     use clm_varctl      , only : iulog
     !
     ! !ARGUMENTS:
@@ -675,13 +680,15 @@ contains
                l = col%landunit(c)
                if ((col%itype(c) == icol_sunwall .OR. col%itype(c) == icol_shadewall) .and. j <= nlevurb) then
                   thk(c,j) = tk_wall(l,j)
-               else if (col%itype(c) == icol_roof .and. j <= nlevurb) then
+               else if ((col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof ).and. j <= nlevurb) then
                   thk(c,j) = tk_roof(l,j)
                else if (col%itype(c) == icol_road_imperv .and. j >= 1 .and. j <= nlev_improad(l)) then
                   thk(c,j) = tk_improad(l,j)
+               else if (col%itype(c) == icol_greenroof .and. j > nlevsoi .and. j <= nlevgrnd) then
+               	  thk(c,j) = tk_roof(l,j-nlevsoi)                  
                else if (lun%itype(l) /= istwet .AND. lun%itype(l) /= istice_mec &
                     .AND. col%itype(c) /= icol_sunwall .AND. col%itype(c) /= icol_shadewall .AND. &
-                    col%itype(c) /= icol_roof) then
+                    col%itype(c) /= icol_roof .AND. col%itype(c) /= icol_whiteroof ) then
 
                   satw = (h2osoi_liq(c,j)/denh2o + h2osoi_ice(c,j)/denice)/(dz(c,j)*watsat(c,j))
                   satw = min(1._r8, satw)
@@ -728,7 +735,7 @@ contains
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
             if ((col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall &
-                 .or. col%itype(c) == icol_roof) .and. j <= nlevurb) then
+                 .or. col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof ) .and. j <= nlevurb) then
                if (j >= snl(c)+1 .AND. j <= nlevurb-1) then
                   tk(c,j) = thk(c,j)*thk(c,j+1)*(z(c,j+1)-z(c,j)) &
                        /(thk(c,j)*(z(c,j+1)-zi(c,j))+thk(c,j+1)*(zi(c,j)-z(c,j)))
@@ -740,7 +747,7 @@ contains
                   tk(c,j) = thk(c,j)
                end if
             else if (col%itype(c) /= icol_sunwall .and. col%itype(c) /= icol_shadewall &
-                 .and. col%itype(c) /= icol_roof) then
+                 .and. col%itype(c) /= icol_roof .and. col%itype(c) /= icol_whiteroof ) then
                if (j >= snl(c)+1 .AND. j <= nlevgrnd-1) then
                   tk(c,j) = thk(c,j)*thk(c,j+1)*(z(c,j+1)-z(c,j)) &
                        /(thk(c,j)*(z(c,j+1)-zi(c,j))+thk(c,j+1)*(zi(c,j)-z(c,j)))
@@ -772,11 +779,15 @@ contains
                cv(c,j) = cv_wall(l,j) * dz(c,j)
             else if (col%itype(c) == icol_roof .and. j <= nlevurb) then
                cv(c,j) = cv_roof(l,j) * dz(c,j)
+            else if (col%itype(c) == icol_whiteroof .and. j <= nlevurb) then
+               cv(c,j) = cv_roof(l,j) * dz(c,j)
+            else if (col%itype(c) == icol_greenroof .and. j > nlevsoi .and. j <= nlevgrnd) then
+               cv(c,j) = cv_roof(l,j-nlevsoi) * dz(c,j)                                           
             else if (col%itype(c) == icol_road_imperv .and. j >= 1 .and. j <= nlev_improad(l)) then
                cv(c,j) = cv_improad(l,j) * dz(c,j)
             else if (lun%itype(l) /= istwet .AND. lun%itype(l) /= istice_mec &
                  .AND. col%itype(c) /= icol_sunwall .AND. col%itype(c) /= icol_shadewall .AND. &
-                 col%itype(c) /= icol_roof) then
+                 col%itype(c) /= icol_roof .AND. col%itype(c) /= icol_whiteroof ) then
                cv(c,j) = csol(c,j)*(1-watsat(c,j))*dz(c,j) + (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
                if (j > nbedrock(c)) cv(c,j) = csol_bedrock*dz(c,j)
             else if (lun%itype(l) == istwet) then 
@@ -790,6 +801,8 @@ contains
                   cv(c,j) = cv(c,j) + cpice*h2osno(c)
                end if
             end if
+            
+           
          enddo
       end do
 
@@ -1050,7 +1063,7 @@ contains
     use clm_varpar       , only : nlevsno, nlevgrnd,nlevurb
     use clm_varctl       , only : iulog
     use clm_varcon       , only : tfrz, hfus, grav
-    use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv
+    use column_varcon    , only : icol_roof, icol_whiteroof, icol_greenroof, icol_sunwall, icol_shadewall, icol_road_perv
     use landunit_varcon  , only : istsoil, istcrop, istice_mec
     !
     ! !ARGUMENTS:
@@ -1191,7 +1204,7 @@ contains
             supercool(c,j) = 0.0_r8
             ! add in urban condition if-block
             if ((col%itype(c) /= icol_sunwall .and. col%itype(c) /= icol_shadewall &
-                 .and. col%itype(c) /= icol_roof) .or. ( j <= nlevurb)) then
+                 .and. col%itype(c) /= icol_roof .and. col%itype(c) /= icol_whiteroof ) .or. ( j <= nlevurb)) then
 
 
 
@@ -1204,7 +1217,7 @@ contains
 
                ! from Zhao (1997) and Koren (1999)
                supercool(c,j) = 0.0_r8
-               if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop .or. col%itype(c) == icol_road_perv) then
+               if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop .or. col%itype(c) == icol_road_perv .or. col%itype(c) == icol_greenroof) then
                   if(t_soisno(c,j) < tfrz) then
                      smp = hfus*(tfrz-t_soisno(c,j))/(grav*t_soisno(c,j)) * 1000._r8  !(mm)
                      supercool(c,j) = watsat(c,j)*(smp/sucsat(c,j))**(-1._r8/bsw(c,j))
@@ -1240,7 +1253,7 @@ contains
             c = filter_nolakec(fc)
 
             if ((col%itype(c) /= icol_sunwall .and. col%itype(c) /= icol_shadewall &
-                 .and. col%itype(c) /= icol_roof) .or. ( j <= nlevurb)) then
+                 .and. col%itype(c) /= icol_roof .and. col%itype(c) /= icol_whiteroof ) .or. ( j <= nlevurb)) then
 
                if (j >= snl(c)+1) then
 
@@ -1673,7 +1686,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : capr, cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_greenroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     use UrbanParamsType, only : IsSimpleBuildTemp
     !
@@ -1709,6 +1722,8 @@ contains
          ctype      => col%itype                       , & ! Input: [integer (:)    ]  column type
          t_building => temperature_inst%t_building_lun , & ! Input: [real(r8) (:)   ] internal building temperature (K)       
          t_roof_inner => temperature_inst%t_roof_inner_lun , & ! Input: [real(r8) (:)   ] roof inside surface temperature (K)
+         t_whiteroof_inner => temperature_inst%t_whiteroof_inner_lun , & ! Input: [real(r8) (:)   ] white roof inside surface temperature (K)
+         t_greenroof_inner => temperature_inst%t_greenroof_inner_lun , & ! Input: [real(r8) (:)   ] green roof inside surface temperature (K)         
          t_sunw_inner => temperature_inst%t_sunw_inner_lun , & ! Input: [real(r8) (:)   ] sunwall inside surface temperature (K)
          t_shdw_inner => temperature_inst%t_shdw_inner_lun , & ! Input: [real(r8) (:)   ] shadewall inside surface temperature (K)
          t_soisno   => temperature_inst%t_soisno_col   , & ! Input: [real(r8) (:,:) ] soil temperature (Kelvin)             
@@ -1724,7 +1739,7 @@ contains
             c = filter_nolakec(fc)
             l = col%landunit(c)
             if ((col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall &
-                 .or. col%itype(c) == icol_roof) .and. j <= nlevurb) then
+                 .or. col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof ) .and. j <= nlevurb) then
                if (j >= col%snl(c)+1) then
                   if (j == col%snl(c)+1) then
                      fact(c,j) = dtime/cv(c,j)
@@ -1748,12 +1763,14 @@ contains
                            fn(c,j) = tk(c,j) * (t_shdw_inner(l) - cnfac*t_soisno(c,j))/(zi(c,j) - z(c,j))
                         else if (ctype(c) == icol_roof) then
                            fn(c,j) = tk(c,j) * (t_roof_inner(l) - cnfac*t_soisno(c,j))/(zi(c,j) - z(c,j))
+                        else if (ctype(c) == icol_whiteroof) then
+                           fn(c,j) = tk(c,j) * (t_whiteroof_inner(l) - cnfac*t_soisno(c,j))/(zi(c,j) - z(c,j))
                         end if
                      end if
                   end if
                end if
             else if (col%itype(c) /= icol_sunwall .and. col%itype(c) /= icol_shadewall &
-                 .and. col%itype(c) /= icol_roof) then
+                 .and. col%itype(c) /= icol_roof .and. col%itype(c) /= icol_whiteroof ) then
                if (j >= col%snl(c)+1) then
                   if (j == col%snl(c)+1) then
                      fact(c,j) = dtime/cv(c,j) * dz(c,j) / (0.5_r8*(z(c,j)-zi(c,j-1)+capr*(z(c,j+1)-zi(c,j-1))))
@@ -1764,7 +1781,7 @@ contains
                      dzm     = (z(c,j)-z(c,j-1))
                   else if (j == nlevgrnd) then
                      fact(c,j) = dtime/cv(c,j)
-                     fn(c,j) = eflx_bot(c)
+                     fn(c,j) = eflx_bot(c)                     
                   end if
                end if
             end if
@@ -1796,7 +1813,7 @@ contains
     !
     ! !USES:
     use clm_varcon      , only : cnfac, cpliq
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -1992,7 +2009,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
@@ -2067,7 +2084,7 @@ contains
     !
     ! !USES:
     use clm_varcon      , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
@@ -2116,7 +2133,7 @@ contains
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
                if ((col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall &
-                    .or. col%itype(c) == icol_roof)) then
+                    .or. col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof)) then
                   if (j >= col%snl(c)+1) then
                      if (j == col%snl(c)+1) then
                         dzp     = z(c,j+1)-z(c,j)
@@ -2149,7 +2166,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_road_perv, icol_road_imperv
+    use column_varcon  , only : icol_road_perv, icol_road_imperv, icol_greenroof
     use clm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
@@ -2199,7 +2216,7 @@ contains
             c = filter_nolakec(fc)
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
-               if (col%itype(c) == icol_road_imperv .or. col%itype(c) == icol_road_perv) then
+               if (col%itype(c) == icol_road_imperv .or. col%itype(c) == icol_road_perv .or. col%itype(c) == icol_greenroof) then
                   if (j >= col%snl(c)+1) then
                      if (j == col%snl(c)+1) then
                         dzp     = z(c,j+1)-z(c,j)
@@ -2234,7 +2251,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
@@ -2313,7 +2330,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
@@ -2379,7 +2396,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof,  icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -2479,7 +2496,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof,  icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -2563,7 +2580,7 @@ contains
     !
     ! !USES:
     use clm_varcon      , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof,  icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -2612,7 +2629,7 @@ contains
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
                if ((col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall &
-                    .or. col%itype(c) == icol_roof)) then
+                    .or. col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof )) then
                   if (j >= col%snl(c)+1) then
                      if (j == col%snl(c)+1) then
                         ! changed hs to hs_top
@@ -2654,7 +2671,7 @@ contains
     !
     ! !USES:
     use clm_varcon      , only : cnfac
-    use column_varcon  , only : icol_road_perv, icol_road_imperv
+    use column_varcon  , only : icol_road_perv, icol_road_imperv, icol_greenroof
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -2704,7 +2721,7 @@ contains
             c = filter_nolakec(fc)
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
-               if (col%itype(c) == icol_road_imperv .or. col%itype(c) == icol_road_perv) then
+               if (col%itype(c) == icol_road_imperv .or. col%itype(c) == icol_road_perv .or. col%itype(c) == icol_greenroof) then
                   if (j == col%snl(c)+1) then
                      rt(c,j) = t_soisno(c,j) +  fact(c,j)*( hs_top_snow(c) &
                           - dhsdT(c)*t_soisno(c,j) + cnfac*fn(c,j) )
@@ -2741,7 +2758,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -2826,7 +2843,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -2899,7 +2916,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -3069,7 +3086,7 @@ contains
     !
     ! !USES:
     use clm_varcon      , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -3146,7 +3163,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -3204,7 +3221,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -3257,7 +3274,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -3297,7 +3314,7 @@ contains
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
                if ((col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall &
-                    .or. col%itype(c) == icol_roof)) then
+                    .or. col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof )) then
                   if (j >= col%snl(c)+1) then
                      if (j == col%snl(c)+1) then
                         dzp     = z(c,j+1)-z(c,j)
@@ -3336,7 +3353,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_road_perv, icol_road_imperv
+    use column_varcon  , only : icol_road_perv, icol_road_imperv, icol_greenroof
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -3375,7 +3392,7 @@ contains
             c = filter_nolakec(fc)
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
-               if (col%itype(c) == icol_road_imperv .or. col%itype(c) == icol_road_perv) then
+               if (col%itype(c) == icol_road_imperv .or. col%itype(c) == icol_road_perv .or. col%itype(c) == icol_greenroof) then
                   if (j >= col%snl(c)+1) then
                      if (j == col%snl(c)+1) then
                         dzp     = z(c,j+1)-z(c,j)
@@ -3413,7 +3430,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -3488,7 +3505,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
 
     implicit none
@@ -3537,7 +3554,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -3585,7 +3602,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -3622,7 +3639,7 @@ contains
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
                if ((col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall &
-                    .or. col%itype(c) == icol_roof)) then
+                    .or. col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof )) then
                   if (j >= col%snl(c)+1) then
                      if (j == col%snl(c)+1) then
                         dzp     = z(c,j+1)-z(c,j)
@@ -3652,7 +3669,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_road_perv, icol_road_imperv
+    use column_varcon  , only : icol_road_perv, icol_road_imperv, icol_greenroof
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -3689,7 +3706,7 @@ contains
             c = filter_nolakec(fc)
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
-               if (col%itype(c) == icol_road_imperv .or. col%itype(c) == icol_road_perv) then
+               if (col%itype(c) == icol_road_imperv .or. col%itype(c) == icol_road_perv .or. col%itype(c) == icol_greenroof) then
                   if (j >= col%snl(c)+1) then
                      if (j == col%snl(c)+1) then
                         dzp     = z(c,j+1)-z(c,j)
@@ -3719,7 +3736,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -3783,7 +3800,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -3874,7 +3891,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -3937,7 +3954,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -3982,7 +3999,7 @@ contains
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
                if ((col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall &
-                    .or. col%itype(c) == icol_roof)) then
+                    .or. col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof )) then
                   if (j >= col%snl(c)+1) then
                      if (j == col%snl(c)+1) then
                         dzp     = z(c,j+1)-z(c,j)
@@ -4029,7 +4046,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_road_perv, icol_road_imperv
+    use column_varcon  , only : icol_road_perv, icol_road_imperv, icol_greenroof
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -4074,7 +4091,7 @@ contains
             c = filter_nolakec(fc)
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
-               if (col%itype(c) == icol_road_imperv .or. col%itype(c) == icol_road_perv) then
+               if (col%itype(c) == icol_road_imperv .or. col%itype(c) == icol_road_perv .or. col%itype(c) == icol_greenroof) then
                   if (j >= col%snl(c)+1) then
                      if (j == col%snl(c)+1) then
                         dzp     = z(c,j+1)-z(c,j)
@@ -4126,7 +4143,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -4222,7 +4239,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -4277,7 +4294,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -4328,7 +4345,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -4364,7 +4381,7 @@ contains
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
                if ((col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall &
-                    .or. col%itype(c) == icol_roof)) then
+                    .or. col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof )) then
                   if (j >= col%snl(c)+1) then
                      if (j == col%snl(c)+1) then
                         dzp     = z(c,j+1)-z(c,j)
@@ -4394,7 +4411,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_road_imperv, icol_road_perv
+    use column_varcon  , only : icol_road_imperv, icol_road_perv, icol_greenroof
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -4433,7 +4450,7 @@ contains
             c = filter_nolakec(fc)
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
-               if (col%itype(c) == icol_road_imperv .or. col%itype(c) == icol_road_perv) then
+               if (col%itype(c) == icol_road_imperv .or. col%itype(c) == icol_road_perv .or. col%itype(c) == icol_greenroof) then
                   if (j >= col%snl(c)+1) then
                      if (j == col%snl(c)+1) then
                         dzp     = z(c,j+1)-z(c,j)
@@ -4466,7 +4483,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
@@ -4535,7 +4552,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
@@ -4593,7 +4610,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
@@ -4648,7 +4665,7 @@ contains
     !
     ! !USES:
     use clm_varcon     , only : cnfac
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:

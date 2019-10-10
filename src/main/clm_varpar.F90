@@ -53,7 +53,7 @@ module clm_varpar
 
   integer :: numpft      = mxpft   ! actual # of pfts (without bare)
   integer :: numcft      =  64     ! actual # of crops (includes unused CFTs that are merged into other CFTs)
-  integer :: maxpatch_urb= 5       ! max number of urban patches (columns) in urban landunit
+  integer :: maxpatch_urb= 7       ! max number of urban patches (columns) in urban landunit
 
   integer :: maxpatch_pft        ! max number of plant functional types in naturally vegetated landunit (namelist setting)
 

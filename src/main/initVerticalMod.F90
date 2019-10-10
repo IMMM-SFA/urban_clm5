@@ -20,7 +20,7 @@ module initVerticalMod
   use clm_varctl        , only : use_bedrock, soil_layerstruct
   use clm_varctl        , only : use_fates
   use clm_varcon        , only : zlak, dzlak, zsoi, dzsoi, zisoi, dzsoi_decomp, spval, ispval, grlnd 
-  use column_varcon     , only : icol_roof, icol_sunwall, icol_shadewall, is_hydrologically_active
+  use column_varcon     , only : icol_roof, icol_sunwall, icol_shadewall, is_hydrologically_active, icol_whiteroof, icol_greenroof
   use landunit_varcon   , only : istdlak, istice_mec
   use fileutils         , only : getfil
   use LandunitType      , only : lun                
@@ -28,7 +28,8 @@ module initVerticalMod
   use ColumnType        , only : col                
   use glcBehaviorMod    , only : glc_behavior_type
   use SnowHydrologyMod  , only : InitSnowLayers             
-  use abortUtils        , only : endrun    
+  use abortUtils        , only : endrun
+  use UrbanParamsType   , only : green_roof_soil_depth    
   use ncdio_pio
   !
   ! !PUBLIC TYPES:
@@ -138,6 +139,9 @@ contains
     real(r8), allocatable :: dzurb_roof(:,:)   ! roof (layer thickness)
     real(r8), allocatable :: ziurb_wall(:,:)   ! wall (layer interface)
     real(r8), allocatable :: ziurb_roof(:,:)   ! roof (layer interface)
+  	real(r8), allocatable :: zsoi_greenroof(:) 		!green roof soil z  (layers)
+  	real(r8), allocatable :: dzsoi_greenroof(:)		!green roof soil dz (thickness)
+  	real(r8), allocatable :: zisoi_greenroof(:)		!green roof soil zi (interfaces)   
     real(r8)              :: depthratio        ! ratio of lake depth to standard deep lake depth 
     integer               :: begc, endc
     integer               :: begl, endl
@@ -302,7 +306,7 @@ contains
             dzurb_roof(bounds%begl:bounds%endl,nlevurb),   &
             ziurb_wall(bounds%begl:bounds%endl,0:nlevurb), &
             ziurb_roof(bounds%begl:bounds%endl,0:nlevurb), &
-            stat=ier)
+            stat=ier)            
        if (ier /= 0) then
           call shr_sys_abort(' ERROR allocation error for '//&
                'zurb_wall,zurb_roof,dzurb_wall,dzurb_roof,ziurb_wall,ziurb_roof'//&
@@ -434,6 +438,10 @@ contains
        end if
     end do
 
+    	allocate( zsoi_greenroof(1:nlevgrnd                ))
+    	allocate( dzsoi_greenroof(1:nlevgrnd               ))
+    	allocate( zisoi_greenroof(0:nlevgrnd               ))
+    	
     do c = bounds%begc,bounds%endc
        l = col%landunit(c)
 
@@ -447,7 +455,7 @@ contains
                 col%zi(c,nlevurb+1:nlevgrnd) = spval
                 col%dz(c,nlevurb+1:nlevgrnd) = spval
              end if
-          else if (col%itype(c)==icol_roof) then
+          else if (col%itype(c)==icol_roof .or. col%itype(c)==icol_whiteroof) then
              col%z(c,1:nlevurb)  = zurb_roof(l,1:nlevurb)
              col%zi(c,0:nlevurb) = ziurb_roof(l,0:nlevurb)
              col%dz(c,1:nlevurb) = dzurb_roof(l,1:nlevurb)
@@ -456,6 +464,31 @@ contains
                 col%zi(c,nlevurb+1:nlevgrnd) = spval
                 col%dz(c,nlevurb+1:nlevgrnd) = spval
              end if
+             
+          else if (col%itype(c)==icol_greenroof) then              
+ 
+      			do j = 1,nlevsoi  ! soil layers
+       			   	dzsoi_greenroof(j)= green_roof_soil_depth/nlevsoi  
+       			enddo
+       			do j = nlevsoi+1,nlevgrnd !roof layers
+          			dzsoi_greenroof(j)= dzurb_roof(l,j-nlevsoi) 
+       			enddo
+
+         		! danli 
+         		write(iulog,*)'Green roof layer thicknesses    = ',dzsoi_greenroof
+                			
+       			zisoi_greenroof(0) = 0._r8
+       			do j = 1,nlevgrnd
+         		 zisoi_greenroof(j)= sum(dzsoi_greenroof(1:j))
+       			enddo    
+       			   			
+       			do j = 1, nlevgrnd
+          		zsoi_greenroof(j) = 0.5*(zisoi_greenroof(j-1) + zisoi_greenroof(j))
+       			enddo     
+       			           	                        
+             	col%z(c,1:nlevgrnd)  			= zsoi_greenroof(1:nlevgrnd)
+             	col%zi(c,0:nlevgrnd) 		    = zisoi_greenroof(0:nlevgrnd)
+             	col%dz(c,1:nlevgrnd) 			= dzsoi_greenroof(1:nlevgrnd)                  
           else
              col%z(c,1:nlevgrnd)  = zsoi(1:nlevgrnd)
              col%zi(c,0:nlevgrnd) = zisoi(0:nlevgrnd)
@@ -743,7 +776,7 @@ contains
     !
     ! !USES:
     use landunit_varcon, only : istice_mec, isturb_MIN, isturb_MAX
-    use column_varcon  , only : icol_road_perv
+    use column_varcon  , only : icol_road_perv, icol_greenroof
     !
     ! !ARGUMENTS:
     integer, intent(in) :: col_itype  ! col%itype value
@@ -769,7 +802,7 @@ contains
     if (lun_itype == istice_mec) then
        hasBedrock = .false.
     else if (lun_itype >= isturb_MIN .and. lun_itype <= isturb_MAX) then
-       if (col_itype == icol_road_perv) then
+       if (col_itype == icol_road_perv ) then
           hasBedrock = .true.
        else
           hasBedrock = .false.

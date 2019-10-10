@@ -87,6 +87,9 @@ module WaterstateType
      real(r8), pointer :: wf_col                 (:)   ! col soil water as frac. of whc for top 0.05 m (0-1) 
      real(r8), pointer :: wf2_col                (:)   ! col soil water as frac. of whc for top 0.17 m (0-1) 
      real(r8), pointer :: fwet_patch             (:)   ! patch canopy fraction that is wet (0 to 1)
+     real(r8), pointer :: fwet_roof_lun          (:)   ! fraction of roof surface that is wet (-)
+     real(r8), pointer :: fwet_whiteroof_lun     (:)   ! fraction of white roof surface that is wet (-)
+     real(r8), pointer :: fwet_greenroof_lun     (:)   ! fraction of green roof surface that is wet (-)
      real(r8), pointer :: fcansno_patch          (:)   ! patch canopy fraction that is snow covered (0 to 1)
      real(r8), pointer :: fdry_patch             (:)   ! patch canopy fraction of foliage that is green and dry [-] (new)
 
@@ -97,6 +100,8 @@ module WaterstateType
      real(r8), pointer :: errh2o_patch           (:)   ! water conservation error (mm H2O)
      real(r8), pointer :: errh2o_col             (:)   ! water conservation error (mm H2O)
      real(r8), pointer :: errh2osno_col          (:)   ! snow water conservation error(mm H2O)
+
+     real(r8), pointer :: green_roof_water_added_col          (:)   ! green roof water added for conservation checks (mm H2O)
 
    contains
 
@@ -230,6 +235,9 @@ contains
     allocate(this%wf_col                 (begc:endc))                     ; this%wf_col                 (:)   = nan
     allocate(this%wf2_col                (begc:endc))                     ; 
     allocate(this%fwet_patch             (begp:endp))                     ; this%fwet_patch             (:)   = nan
+    allocate(this%fwet_roof_lun          (begl:endl))                     ; this%fwet_roof_lun          (:)   = nan
+    allocate(this%fwet_whiteroof_lun     (begl:endl))                     ; this%fwet_whiteroof_lun     (:)   = nan
+    allocate(this%fwet_greenroof_lun     (begl:endl))                     ; this%fwet_greenroof_lun     (:)   = nan
     allocate(this%fcansno_patch          (begp:endp))                     ; this%fcansno_patch          (:)   = nan
     allocate(this%fdry_patch             (begp:endp))                     ; this%fdry_patch             (:)   = nan
 
@@ -238,6 +246,7 @@ contains
     allocate(this%errh2o_patch           (begp:endp))                     ; this%errh2o_patch           (:)   = nan
     allocate(this%errh2o_col             (begc:endc))                     ; this%errh2o_col             (:)   = nan
     allocate(this%errh2osno_col          (begc:endc))                     ; this%errh2osno_col          (:)   = nan
+    allocate(this%green_roof_water_added_col          (begc:endc))                     ; this%green_roof_water_added_col          (:)   = nan
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -261,6 +270,7 @@ contains
     integer           :: begp, endp
     integer           :: begc, endc
     integer           :: begg, endg
+    integer           :: begl, endl
     character(10)     :: active
     real(r8), pointer :: data2dptr(:,:), data1dptr(:) ! temp. pointers for slicing larger arrays
     !------------------------------------------------------------------------
@@ -268,6 +278,7 @@ contains
     begp = bounds%begp; endp= bounds%endp
     begc = bounds%begc; endc= bounds%endc
     begg = bounds%begg; endg= bounds%endg
+    begl = bounds%begl; endl= bounds%endl
 
     ! h2osno also includes snow that is part of the soil column (an 
     ! initial snow layer is only created if h2osno > 10mm). 
@@ -435,15 +446,20 @@ contains
          avgflag='A', long_name='fraction of ground covered by snow', &
          ptr_col=this%frac_sno_col, c2l_scale_type='urbanf')
 
-    call hist_addfld1d (fname='FSNO_ICE',  units='unitless',  &
-         avgflag='A', long_name='fraction of ground covered by snow (ice landunits only)', &
-         ptr_col=this%frac_sno_col, c2l_scale_type='urbanf', l2g_scale_type='ice', &
-         default='inactive')
-
     this%frac_sno_eff_col(begc:endc) = spval
     call hist_addfld1d (fname='FSNO_EFF',  units='unitless',  &
          avgflag='A', long_name='effective fraction of ground covered by snow', &
          ptr_col=this%frac_sno_eff_col, c2l_scale_type='urbanf')!, default='inactive')
+
+    this%fwet_roof_lun(begl:endl) = spval
+    call hist_addfld1d (fname='FWET_ROOF', units='unitless',  &
+         avgflag='A', long_name='fraction of roof surface that is wet', &
+         ptr_lunit=this%fwet_roof_lun, c2l_scale_type='urbanf', default='inactive')
+
+        this%fwet_whiteroof_lun(begl:endl) = spval
+    call hist_addfld1d (fname='FWET_WHITEROOF', units='unitless',  &
+         avgflag='A', long_name='fraction of white roof surface that is wet', &
+         ptr_lunit=this%fwet_whiteroof_lun, c2l_scale_type='urbanf', default='inactive')
 
     if (use_cn) then
        this%fwet_patch(begp:endp) = spval
@@ -588,6 +604,11 @@ contains
          avgflag='A', long_name='imbalance in snow depth (liquid water)', &
          ptr_col=this%errh2osno_col, c2l_scale_type='urbanf')
 
+    this%green_roof_water_added_col(begc:endc) = spval
+    call hist_addfld1d(fname='GREEN_WATER', units='mm',  &
+        avgflag='A', long_name='green roof water added', &
+        ptr_col=this%green_roof_water_added_col, c2l_scale_type='urbanf')
+        
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------
@@ -605,8 +626,7 @@ contains
     use shr_const_mod   , only : SHR_CONST_TKFRZ
     use clm_varpar      , only : nlevsoi, nlevgrnd, nlevsno, nlevlak, nlevurb
     use landunit_varcon , only : istwet, istsoil, istdlak, istcrop, istice_mec  
-    use column_varcon   , only : icol_shadewall, icol_road_perv
-    use column_varcon   , only : icol_road_imperv, icol_roof, icol_sunwall
+    use column_varcon   , only : icol_shadewall, icol_road_perv, icol_road_imperv, icol_roof, icol_whiteroof, icol_greenroof, icol_sunwall
     use clm_varcon      , only : denice, denh2o, spval, sb, bdsno 
     use clm_varcon      , only : zlnd, tfrz, spval, pc
     use clm_varctl      , only : fsurdat, iulog
@@ -760,7 +780,7 @@ contains
                   endif
                end do
             else if (lun%urbpoi(l)) then
-               if (col%itype(c) == icol_road_perv) then
+               if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_greenroof) then
                   nlevs = nlevgrnd
                   do j = 1, nlevs
                      if (j <= nlevsoi) then
@@ -874,7 +894,7 @@ contains
     use spmdMod          , only : masterproc
     use clm_varcon       , only : denice, denh2o, pondmx, watmin, spval, nameg
     use landunit_varcon  , only : istcrop, istdlak, istsoil  
-    use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon    , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_time_manager , only : is_first_step
     use clm_varctl       , only : bound_h2osoi
     use ncdio_pio        , only : file_desc_t, ncd_io, ncd_double
@@ -970,7 +990,8 @@ contains
           l = col%landunit(c)
           if ( col%itype(c) == icol_sunwall   .or. &
                col%itype(c) == icol_shadewall .or. &
-               col%itype(c) == icol_roof )then
+               col%itype(c) == icol_roof      .or. &
+               col%itype(c) == icol_whiteroof ) then
              nlevs = nlevurb
           else
              nlevs = nlevgrnd
@@ -990,7 +1011,7 @@ contains
           do c = bounds%begc, bounds%endc
              l = col%landunit(c)
              if ( col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall .or. &
-                  col%itype(c) == icol_roof )then
+                  col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof)then
                 nlevs = nlevurb
              else
                 nlevs = nlevgrnd
