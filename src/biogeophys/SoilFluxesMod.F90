@@ -47,7 +47,7 @@ contains
     use clm_time_manager , only : get_step_size
     use clm_varcon       , only : hvap, cpair, grav, vkc, tfrz, sb 
     use landunit_varcon  , only : istsoil, istcrop
-    use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv
+    use column_varcon    , only : icol_roof, icol_whiteroof, icol_greenroof, icol_sunwall, icol_shadewall, icol_road_perv
     use subgridAveMod    , only : p2c
     !
     ! !ARGUMENTS:
@@ -366,7 +366,7 @@ contains
          errsoi_patch(p) =  errsoi_patch(p)+eflx_h2osfc_to_snow_col(c) 
          ! For urban sunwall, shadewall, and roof columns, the "soil" energy balance check
          ! must include the heat flux from the interior of the building.
-         if (col%itype(c)==icol_sunwall .or. col%itype(c)==icol_shadewall .or. col%itype(c)==icol_roof) then
+         if (col%itype(c)==icol_sunwall .or. col%itype(c)==icol_shadewall .or. col%itype(c)==icol_roof .or. col%itype(c)==icol_whiteroof) then
             errsoi_patch(p) = errsoi_patch(p) + eflx_building_heat_errsoi(c) 
          end if
       end do
@@ -376,7 +376,7 @@ contains
             c = patch%column(p)
 
             if ((col%itype(c) /= icol_sunwall .and. col%itype(c) /= icol_shadewall &
-                 .and. col%itype(c) /= icol_roof) .or. ( j <= nlevurb)) then
+                 .and. col%itype(c) /= icol_roof .and. col%itype(c) /= icol_whiteroof ) .or. ( j <= nlevurb)) then
                ! area weight heat absorbed by snow layers
                if (j >= col%snl(c)+1 .and. j < 1) errsoi_patch(p) = errsoi_patch(p) &
                     - frac_sno_eff(c)*(t_soisno(c,j)-tssbef(c,j))/fact(c,j)

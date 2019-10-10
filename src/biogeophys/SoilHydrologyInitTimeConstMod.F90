@@ -43,7 +43,7 @@ contains
     use clm_varcon      , only : zsoi, dzsoi, zisoi, spval, nlvic, dzvic, pc, grlnd
     use clm_varcon      , only : aquifer_water_baseline
     use landunit_varcon , only : istwet, istsoil, istdlak, istcrop, istice_mec
-    use column_varcon   , only : icol_shadewall, icol_road_perv, icol_road_imperv, icol_roof, icol_sunwall
+    use column_varcon   , only : icol_shadewall, icol_road_perv, icol_road_imperv, icol_roof, icol_whiteroof, icol_greenroof, icol_sunwall
     use fileutils       , only : getfil
     use organicFileMod  , only : organicrd 
     use ncdio_pio       , only : file_desc_t, ncd_io, ncd_pio_openfile, ncd_pio_closefile
@@ -89,7 +89,7 @@ contains
        l = col%landunit(c)
        if (.not. lun%lakpoi(l)) then  !not lake
           if (lun%urbpoi(l)) then
-             if (col%itype(c) == icol_road_perv) then
+             if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_greenroof) then
                 ! Note that the following hard-coded constants (on the next two lines)
                 ! seem implicitly related to aquifer_water_baseline
                 soilhydrology_inst%wa_col(c)  = 4800._r8
@@ -243,7 +243,7 @@ contains
           if (lun%itype(l) /= istdlak) then  ! soil columns of both urban and non-urban types
              if (lun%itype(l)==istwet .or. lun%itype(l)==istice_mec) then
                 ! do nothing
-             else if (lun%urbpoi(l) .and. (col%itype(c) /= icol_road_perv) .and. (col%itype(c) /= icol_road_imperv) )then
+             else if (lun%urbpoi(l) .and. (col%itype(c) /= icol_road_perv) .and. (col%itype(c) /= icol_road_imperv) .and. (col%itype(c) /= icol_greenroof))then
                 ! do nothing
              else
                 do lev = 1,nlevgrnd
@@ -288,7 +288,7 @@ contains
 
           if (lun%itype(l) /= istdlak) then  ! soil columns of both urban and non-urban types
              if (lun%urbpoi(l)) then
-                if (col%itype(c)==icol_sunwall .or. col%itype(c)==icol_shadewall .or. col%itype(c)==icol_roof) then
+                if (col%itype(c)==icol_sunwall .or. col%itype(c)==icol_shadewall .or. col%itype(c)==icol_roof .or. col%itype(c)==icol_whiteroof) then
                    ! do nothing
                 else
                    soilhydrology_inst%depth_col(c, 1:nlayer)         = dzvic

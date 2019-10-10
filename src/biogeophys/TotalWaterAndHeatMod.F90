@@ -20,7 +20,7 @@ module TotalWaterAndHeatMod
   use SoilStateType      , only : soilstate_type
   use TemperatureType    , only : temperature_type
   use column_varcon      , only : icol_roof, icol_sunwall, icol_shadewall
-  use column_varcon      , only : icol_road_perv, icol_road_imperv
+  use column_varcon      , only : icol_road_perv, icol_road_imperv, icol_whiteroof, icol_greenroof
   use landunit_varcon    , only : istdlak, istsoil,istcrop,istwet,istice_mec
   !
   ! !PUBLIC TYPES:
@@ -265,7 +265,7 @@ contains
           liquid_mass(c) = liquid_mass(c) + (wa(c) - aquifer_water_baseline)
        end if
 
-       if (col%itype(c) == icol_roof .or. col%itype(c) == icol_sunwall &
+       if (col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof .or. col%itype(c) == icol_sunwall &
             .or. col%itype(c) == icol_shadewall .or. col%itype(c) == icol_road_imperv) then
           ! Nothing more to add in this case
        else
@@ -279,7 +279,7 @@ contains
           c = filter_nolakec(fc)
           if (col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall) then
              has_h2o = .false.
-          else if (col%itype(c) == icol_roof) then
+          else if (col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof) then
              if (j <= nlevurb) then
                 has_h2o = .true.
              else
@@ -541,7 +541,7 @@ contains
                latent_heat_liquid = latent_heat_liquid(c))
        end if
 
-       if (col%itype(c) == icol_roof .or. col%itype(c) == icol_sunwall &
+       if (col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof .or. col%itype(c) == icol_sunwall &
             .or. col%itype(c) == icol_shadewall .or. col%itype(c) == icol_road_imperv) then
           ! Nothing more to add in this case
        else
@@ -570,7 +570,7 @@ contains
                      TempToHeat(temp = t_soisno(c,j), cv = (cv_wall(l,j) * dz(c,j)))
              end if
 
-          else if (col%itype(c) == icol_roof) then
+          else if (col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof) then
              if (j <= nlevurb) then
                 has_h2o = .true.
                 heat_dry_mass(c) = heat_dry_mass(c) + &

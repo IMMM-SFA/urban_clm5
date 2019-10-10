@@ -65,6 +65,10 @@ module UrbanParamsType
      real(r8), allocatable :: em_wall             (:)   ! lun wall emissivity
      real(r8), allocatable :: alb_roof_dir        (:,:) ! lun direct  roof albedo
      real(r8), allocatable :: alb_roof_dif        (:,:) ! lun diffuse roof albedo
+     real(r8), allocatable :: alb_whiteroof_dir        (:,:) ! lun direct  white roof albedo
+     real(r8), allocatable :: alb_whiteroof_dif        (:,:) ! lun diffuse white roof albedo     
+     real(r8), allocatable :: alb_greenroof_dir        (:,:) ! lun direct  green roof albedo
+     real(r8), allocatable :: alb_greenroof_dif        (:,:) ! lun diffuse green roof albedo
      real(r8), allocatable :: alb_improad_dir     (:,:) ! lun direct  impervious road albedo
      real(r8), allocatable :: alb_improad_dif     (:,:) ! lun diffuse impervious road albedo
      real(r8), allocatable :: alb_perroad_dir     (:,:) ! lun direct  pervious road albedo
@@ -103,6 +107,15 @@ module UrbanParamsType
   character(len= 16), public           :: urban_hac = urban_hac_off
   logical, public                      :: urban_traffic = .false.     ! urban traffic fluxes
 
+  logical, public                      :: white_roof          = .false.       ! white roof option
+  real(r8), public                     :: white_roof_fraction = 0.0_r8        ! white roof fraction
+  real(r8), public                     :: white_roof_albedo   = 0.8_r8        ! white roof albedo
+  logical, public                      :: green_roof          = .false.       ! green roof option
+  real(r8), public                     :: green_roof_fraction     = 0.0_r8        ! green roof fraction
+  logical, public                      :: green_roof_irrigation   = .false.       ! green roof irrigation
+  real(r8), public                     :: green_roof_albedo       = 0.2_r8        ! green roof albedo
+  real(r8), public                     :: green_roof_soil_depth   = 0.2_r8        ! green roof soil depth
+      
   ! !PRIVATE MEMBER DATA:
   logical, private    :: ReadNamelist = .false.     ! If namelist was read yet or not
   integer, parameter, private :: BUILDING_TEMP_METHOD_SIMPLE = 0       ! Simple method introduced in CLM4.5
@@ -127,7 +140,8 @@ contains
     use clm_varctl      , only : use_vancouver, use_mexicocity
     use clm_varcon      , only : vkc
     use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
-    use column_varcon   , only : icol_road_perv, icol_road_imperv, icol_road_perv
+    use column_varcon   , only : icol_road_perv, icol_road_imperv
+  	use column_varcon 	, only : icol_whiteroof, icol_greenroof
     use landunit_varcon , only : isturb_MIN
     !
     ! !ARGUMENTS:
@@ -182,7 +196,13 @@ contains
     allocate(this%em_perroad          (begl:endl))          ; this%em_perroad          (:)   = nan
     allocate(this%em_wall             (begl:endl))          ; this%em_wall             (:)   = nan
     allocate(this%alb_roof_dir        (begl:endl,numrad))   ; this%alb_roof_dir        (:,:) = nan
-    allocate(this%alb_roof_dif        (begl:endl,numrad))   ; this%alb_roof_dif        (:,:) = nan    
+    allocate(this%alb_roof_dif        (begl:endl,numrad))   ; this%alb_roof_dif        (:,:) = nan  
+    
+    allocate(this%alb_whiteroof_dir        (begl:endl,numrad))   ; this%alb_whiteroof_dir        (:,:) = nan
+    allocate(this%alb_whiteroof_dif        (begl:endl,numrad))   ; this%alb_whiteroof_dif        (:,:) = nan  
+    allocate(this%alb_greenroof_dir        (begl:endl,numrad))   ; this%alb_greenroof_dir        (:,:) = nan
+    allocate(this%alb_greenroof_dif        (begl:endl,numrad))   ; this%alb_greenroof_dif        (:,:) = nan  
+              
     allocate(this%alb_improad_dir     (begl:endl,numrad))   ; this%alb_improad_dir     (:,:) = nan       
     allocate(this%alb_perroad_dir     (begl:endl,numrad))   ; this%alb_perroad_dir     (:,:) = nan       
     allocate(this%alb_improad_dif     (begl:endl,numrad))   ; this%alb_improad_dif     (:,:) = nan       
@@ -205,6 +225,13 @@ contains
           do ib = 1,numrad
              this%alb_roof_dir   (l,ib) = urbinp%alb_roof_dir   (g,dindx,ib)
              this%alb_roof_dif   (l,ib) = urbinp%alb_roof_dif   (g,dindx,ib)
+             
+             this%alb_whiteroof_dir   (l,ib) = white_roof_albedo 
+             this%alb_whiteroof_dif   (l,ib) = white_roof_albedo 
+             
+             this%alb_greenroof_dir   (l,ib) = green_roof_albedo 
+             this%alb_greenroof_dif   (l,ib) = green_roof_albedo 
+                          
              this%alb_improad_dir(l,ib) = urbinp%alb_improad_dir(g,dindx,ib)
              this%alb_perroad_dir(l,ib) = urbinp%alb_perroad_dir(g,dindx,ib)
              this%alb_improad_dif(l,ib) = urbinp%alb_improad_dif(g,dindx,ib)
@@ -223,7 +250,6 @@ contains
           lun%wtroad_perv(l)  = urbinp%wtroad_perv(g,dindx)
           lun%ht_roof(l)      = urbinp%ht_roof(g,dindx)
           lun%wtlunit_roof(l) = urbinp%wtlunit_roof(g,dindx)
-
           this%tk_wall(l,:)      = urbinp%tk_wall(g,dindx,:)
           this%tk_roof(l,:)      = urbinp%tk_roof(g,dindx,:)
           this%tk_improad(l,:)   = urbinp%tk_improad(g,dindx,:)
@@ -850,7 +876,7 @@ contains
     integer :: unitn                ! unit for namelist file
     character(len=32) :: subname = 'UrbanReadNML'  ! subroutine name
 
-    namelist / clmu_inparm / urban_hac, urban_traffic, building_temp_method
+    namelist / clmu_inparm / urban_hac, urban_traffic, building_temp_method, white_roof, white_roof_fraction, white_roof_albedo, green_roof, green_roof_fraction, green_roof_irrigation, green_roof_albedo, green_roof_soil_depth
     !EOP
     !-----------------------------------------------------------------------
 
@@ -880,7 +906,14 @@ contains
     call shr_mpi_bcast(urban_hac,             mpicom)
     call shr_mpi_bcast(urban_traffic,         mpicom)
     call shr_mpi_bcast(building_temp_method,  mpicom)
-
+    call shr_mpi_bcast(white_roof,            mpicom)
+    call shr_mpi_bcast(white_roof_fraction,   mpicom)    
+    call shr_mpi_bcast(white_roof_albedo,     mpicom)
+    call shr_mpi_bcast(green_roof,            mpicom)
+    call shr_mpi_bcast(green_roof_fraction,   mpicom)    
+    call shr_mpi_bcast(green_roof_irrigation, mpicom)
+    call shr_mpi_bcast(green_roof_albedo,     mpicom) 
+    call shr_mpi_bcast(green_roof_soil_depth, mpicom) 
     !
     if (urban_traffic) then
        write(iulog,*)'Urban traffic fluxes are not implemented currently'

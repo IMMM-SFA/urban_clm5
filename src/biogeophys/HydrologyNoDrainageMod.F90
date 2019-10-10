@@ -63,7 +63,7 @@ contains
     ! !USES:
     use clm_varcon           , only : denh2o, denice, hfus, grav, tfrz
     use landunit_varcon      , only : istwet, istsoil, istcrop, istdlak 
-    use column_varcon        , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall
+    use column_varcon        , only : icol_roof, icol_whiteroof, icol_greenroof, icol_road_imperv, icol_road_perv, icol_sunwall
     use column_varcon        , only : icol_shadewall
     use clm_varctl           , only : use_cn
     use clm_varpar           , only : nlevgrnd, nlevsno, nlevsoi, nlevurb
@@ -434,7 +434,7 @@ contains
          do fc = 1, num_nolakec
             c = filter_nolakec(fc)
             if ((ctype(c) == icol_sunwall .or. ctype(c) == icol_shadewall &
-                 .or. ctype(c) == icol_roof) .and. j > nlevurb) then
+                 .or. ctype(c) == icol_roof .or. ctype(c) == icol_whiteroof ) .and. j > nlevurb) then
             else
                h2osoi_vol(c,j) = h2osoi_liq(c,j)/(dz(c,j)*denh2o) + h2osoi_ice(c,j)/(dz(c,j)*denice)
             end if

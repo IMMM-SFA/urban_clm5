@@ -61,6 +61,7 @@ contains
     use clm_varcon    , only : sb
     use column_varcon , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon , only : icol_road_perv, icol_road_imperv
+    use column_varcon , only : icol_whiteroof, icol_greenroof
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds  
@@ -95,14 +96,27 @@ contains
     real(r8) :: albsni_improad     (bounds%begl:bounds%endl, numrad) ! snow albedo for impervious road (diffuse)
     real(r8) :: albsnd_perroad     (bounds%begl:bounds%endl, numrad) ! snow albedo for pervious road (direct)
     real(r8) :: albsni_perroad     (bounds%begl:bounds%endl, numrad) ! snow albedo for pervious road (diffuse)
+    
     real(r8) :: alb_roof_dir_s     (bounds%begl:bounds%endl, numrad) ! direct roof albedo with snow effects
     real(r8) :: alb_roof_dif_s     (bounds%begl:bounds%endl, numrad) ! diffuse roof albedo with snow effects
+    real(r8) :: alb_whiteroof_dir_s     (bounds%begl:bounds%endl, numrad) ! direct white roof albedo with snow effects
+    real(r8) :: alb_whiteroof_dif_s     (bounds%begl:bounds%endl, numrad) ! diffuse white roof albedo with snow effects
+    real(r8) :: alb_greenroof_dir_s     (bounds%begl:bounds%endl, numrad) ! direct green roof albedo with snow effects
+    real(r8) :: alb_greenroof_dif_s     (bounds%begl:bounds%endl, numrad) ! diffuse green roof albedo with snow effects
+            
     real(r8) :: alb_improad_dir_s  (bounds%begl:bounds%endl, numrad) ! direct impervious road albedo with snow effects
     real(r8) :: alb_perroad_dir_s  (bounds%begl:bounds%endl, numrad) ! direct pervious road albedo with snow effects
     real(r8) :: alb_improad_dif_s  (bounds%begl:bounds%endl, numrad) ! diffuse impervious road albedo with snow effects
     real(r8) :: alb_perroad_dif_s  (bounds%begl:bounds%endl, numrad) ! diffuse pervious road albedo with snow effects
+    
     real(r8) :: sref_roof_dir      (bounds%begl:bounds%endl, numrad) ! direct  solar reflected by roof per unit ground area per unit incident flux   
     real(r8) :: sref_roof_dif      (bounds%begl:bounds%endl, numrad) ! diffuse solar reflected by roof per unit ground area per unit incident flux   
+    real(r8) :: sref_whiteroof_dir      (bounds%begl:bounds%endl, numrad) ! direct  solar reflected by roof per unit ground area per unit incident flux   
+    real(r8) :: sref_whiteroof_dif      (bounds%begl:bounds%endl, numrad) ! diffuse solar reflected by roof per unit ground area per unit incident flux   
+    real(r8) :: sref_greenroof_dir      (bounds%begl:bounds%endl, numrad) ! direct  solar reflected by roof per unit ground area per unit incident flux   
+    real(r8) :: sref_greenroof_dif      (bounds%begl:bounds%endl, numrad) ! diffuse solar reflected by roof per unit ground area per unit incident flux   
+    
+    
     real(r8) :: sref_sunwall_dir   (bounds%begl:bounds%endl, numrad) ! direct  solar reflected by sunwall per unit wall area per unit incident flux  
     real(r8) :: sref_sunwall_dif   (bounds%begl:bounds%endl, numrad) ! diffuse solar reflected by sunwall per unit wall area per unit incident flux  
     real(r8) :: sref_shadewall_dir (bounds%begl:bounds%endl, numrad) ! direct  solar reflected by shadewall per unit wall area per unit incident flux  
@@ -122,7 +136,13 @@ contains
          frac_sno           => waterstate_inst%frac_sno_col         , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)       
          
          alb_roof_dir       => urbanparams_inst%alb_roof_dir        , & ! Output: [real(r8) (:,:) ]  direct roof albedo                              
-         alb_roof_dif       => urbanparams_inst%alb_roof_dif        , & ! Output: [real(r8) (:,:) ]  diffuse roof albedo                             
+         alb_roof_dif       => urbanparams_inst%alb_roof_dif        , & ! Output: [real(r8) (:,:) ]  diffuse roof albedo 
+         
+         alb_whiteroof_dir       => urbanparams_inst%alb_whiteroof_dir        , & ! Output: [real(r8) (:,:) ]  direct white roof albedo                              
+         alb_whiteroof_dif       => urbanparams_inst%alb_whiteroof_dif        , & ! Output: [real(r8) (:,:) ]  diffuse white roof albedo          
+         alb_greenroof_dir       => urbanparams_inst%alb_greenroof_dir        , & ! Output: [real(r8) (:,:) ]  direct green roof albedo                              
+         alb_greenroof_dif       => urbanparams_inst%alb_greenroof_dif        , & ! Output: [real(r8) (:,:) ]  diffuse green roof albedo 
+                                              
          alb_improad_dir    => urbanparams_inst%alb_improad_dir     , & ! Output: [real(r8) (:,:) ]  direct impervious road albedo                   
          alb_improad_dif    => urbanparams_inst%alb_improad_dif     , & ! Output: [real(r8) (:,:) ]  diffuse imprevious road albedo                  
          alb_perroad_dir    => urbanparams_inst%alb_perroad_dir     , & ! Output: [real(r8) (:,:) ]  direct pervious road albedo                     
@@ -132,6 +152,12 @@ contains
         
          sabs_roof_dir      => solarabs_inst%sabs_roof_dir_lun      , & ! Output: [real(r8) (:,:) ]  direct  solar absorbed  by roof per unit ground area per unit incident flux
          sabs_roof_dif      => solarabs_inst%sabs_roof_dif_lun      , & ! Output: [real(r8) (:,:) ]  diffuse solar absorbed  by roof per unit ground area per unit incident flux
+         
+         sabs_whiteroof_dir      => solarabs_inst%sabs_whiteroof_dir_lun      , & ! Output: [real(r8) (:,:) ]  direct  solar absorbed  by roof per unit ground area per unit incident flux
+         sabs_whiteroof_dif      => solarabs_inst%sabs_whiteroof_dif_lun      , & ! Output: [real(r8) (:,:) ]  diffuse solar absorbed  by roof per unit ground area per unit incident flux         
+         sabs_greenroof_dir      => solarabs_inst%sabs_greenroof_dir_lun      , & ! Output: [real(r8) (:,:) ]  direct  solar absorbed  by roof per unit ground area per unit incident flux
+         sabs_greenroof_dif      => solarabs_inst%sabs_greenroof_dif_lun      , & ! Output: [real(r8) (:,:) ]  diffuse solar absorbed  by roof per unit ground area per unit incident flux         
+         
          sabs_sunwall_dir   => solarabs_inst%sabs_sunwall_dir_lun   , & ! Output: [real(r8) (:,:) ]  direct  solar absorbed  by sunwall per unit wall area per unit incident flux
          sabs_sunwall_dif   => solarabs_inst%sabs_sunwall_dif_lun   , & ! Output: [real(r8) (:,:) ]  diffuse solar absorbed  by sunwall per unit wall area per unit incident flux
          sabs_shadewall_dir => solarabs_inst%sabs_shadewall_dir_lun , & ! Output: [real(r8) (:,:) ]  direct  solar absorbed  by shadewall per unit wall area per unit incident flux
@@ -197,7 +223,7 @@ contains
             else if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then
                albd(p,ib) = vf_sr(l)
                albi(p,ib) = vf_sr(l)
-            else if (col%itype(c) == icol_roof) then
+            else if (col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof .or. col%itype(c) == icol_greenroof) then
                albd(p,ib) = 1._r8
                albi(p,ib) = 1._r8
             endif
@@ -236,6 +262,10 @@ contains
             l = filter_urbanl(fl)
             sabs_roof_dir(l,ib)      = 0._r8
             sabs_roof_dif(l,ib)      = 0._r8
+            sabs_whiteroof_dir(l,ib)      = 0._r8
+            sabs_whiteroof_dif(l,ib)      = 0._r8            
+            sabs_greenroof_dir(l,ib)      = 0._r8
+            sabs_greenroof_dif(l,ib)      = 0._r8            
             sabs_sunwall_dir(l,ib)   = 0._r8
             sabs_sunwall_dif(l,ib)   = 0._r8
             sabs_shadewall_dir(l,ib) = 0._r8
@@ -244,8 +274,14 @@ contains
             sabs_improad_dif(l,ib)   = 0._r8
             sabs_perroad_dir(l,ib)   = 0._r8
             sabs_perroad_dif(l,ib)   = 0._r8
+            
             sref_roof_dir(l,ib)      = 1._r8
             sref_roof_dif(l,ib)      = 1._r8
+            sref_whiteroof_dir(l,ib)      = 1._r8
+            sref_whiteroof_dif(l,ib)      = 1._r8            
+            sref_greenroof_dir(l,ib)      = 1._r8
+            sref_greenroof_dif(l,ib)      = 1._r8
+                        
             ! Setting sref to wall and road view factors ensures that urban
             ! albedo will scale up to 1.0
             sref_sunwall_dir(l,ib)   = vf_sw(l)
@@ -347,6 +383,16 @@ contains
                        + albsnd_perroad(l,ib)*frac_sno(c)
                   alb_perroad_dif_s(l,ib) = alb_perroad_dif(l,ib)*(1._r8-frac_sno(c))  &
                        + albsni_perroad(l,ib)*frac_sno(c)
+               else if (ctype(c) == icol_whiteroof) then    
+                  alb_whiteroof_dir_s(l,ib) = alb_whiteroof_dir(l,ib)*(1._r8-frac_sno(c))  &
+                       + albsnd_roof(l,ib)*frac_sno(c)
+                  alb_whiteroof_dif_s(l,ib) = alb_whiteroof_dif(l,ib)*(1._r8-frac_sno(c))  &
+                       + albsni_roof(l,ib)*frac_sno(c)
+               else if (ctype(c) == icol_greenroof) then    
+                  alb_greenroof_dir_s(l,ib) = alb_greenroof_dir(l,ib)*(1._r8-frac_sno(c))  &
+                       + albsnd_roof(l,ib)*frac_sno(c)
+                  alb_greenroof_dif_s(l,ib) = alb_greenroof_dif(l,ib)*(1._r8-frac_sno(c))  &
+                       + albsni_roof(l,ib)*frac_sno(c)               
                end if
             end do
          end do
@@ -367,10 +413,14 @@ contains
                  alb_perroad_dir_s  (begl:endl, :), &
                  alb_wall_dir       (begl:endl, :), &
                  alb_roof_dir_s     (begl:endl, :), &
+                 alb_whiteroof_dir_s(begl:endl, :), &                 
+                 alb_greenroof_dir_s(begl:endl, :), &
                  alb_improad_dif_s  (begl:endl, :), &
                  alb_perroad_dif_s  (begl:endl, :), &
                  alb_wall_dif       (begl:endl, :), &
                  alb_roof_dif_s     (begl:endl, :), &
+                 alb_whiteroof_dif_s(begl:endl, :), &                 
+                 alb_greenroof_dif_s(begl:endl, :), &                 
                  sdir_road          (begl:endl, :), &
                  sdir_sunwall       (begl:endl, :), &
                  sdir_shadewall     (begl:endl, :),  &
@@ -382,11 +432,15 @@ contains
                  sref_sunwall_dir   (begl:endl, :), &
                  sref_shadewall_dir (begl:endl, :), &
                  sref_roof_dir      (begl:endl, :), &
+                 sref_whiteroof_dir (begl:endl, :), &                 
+                 sref_greenroof_dir (begl:endl, :), &
                  sref_improad_dif   (begl:endl, :), &
                  sref_perroad_dif   (begl:endl, :), &
                  sref_sunwall_dif   (begl:endl, :), &
                  sref_shadewall_dif (begl:endl, :), &
                  sref_roof_dif      (begl:endl, :), &
+                 sref_whiteroof_dif (begl:endl, :), &                 
+                 sref_greenroof_dif (begl:endl, :), &
                  urbanparams_inst, solarabs_inst)
          end if
 
@@ -415,6 +469,12 @@ contains
                else if (ctype(c) == icol_road_imperv) then
                   albgrd(c,ib) = sref_improad_dir(l,ib)
                   albgri(c,ib) = sref_improad_dif(l,ib)
+               else if (ctype(c) == icol_whiteroof) then
+                  albgrd(c,ib) = sref_whiteroof_dir(l,ib) 
+                  albgri(c,ib) = sref_whiteroof_dif(l,ib)                  
+               else if (ctype(c) == icol_greenroof) then
+                  albgrd(c,ib) = sref_greenroof_dir(l,ib) 
+                  albgri(c,ib) = sref_greenroof_dif(l,ib)                        
                endif
             end do
             do fp = 1,num_urbanp
@@ -440,7 +500,7 @@ contains
     ! Determine urban snow albedos
     !
     ! !USES:
-    use column_varcon, only : icol_roof, icol_road_perv, icol_road_imperv
+    use column_varcon, only : icol_roof, icol_road_perv, icol_road_imperv, icol_whiteroof, icol_greenroof
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds                     
@@ -480,7 +540,7 @@ contains
          c = filter_urbanc(fc)
          l = col%landunit(c)
          if (coszen(l) > 0._r8 .and. h2osno(c) > 0._r8) then
-            if (col%itype(c) == icol_roof) then
+            if (col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof .or. col%itype(c) == icol_greenroof) then
                albsn_roof(l,1) = snal0
                albsn_roof(l,2) = snal1
             else if (col%itype(c) == icol_road_imperv) then
@@ -491,7 +551,7 @@ contains
                albsn_perroad(l,2) = snal1
             end if
          else
-            if (col%itype(c) == icol_roof) then
+            if (col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof .or. col%itype(c) == icol_greenroof) then
                albsn_roof(l,1) = 0._r8
                albsn_roof(l,2) = 0._r8
             else if (col%itype(c) == icol_road_imperv) then
@@ -749,12 +809,12 @@ contains
   !-----------------------------------------------------------------------
   subroutine net_solar (bounds                                                                 , &
        num_urbanl, filter_urbanl, coszen, canyon_hwr, wtroad_perv, sdir, sdif                  , &
-       alb_improad_dir, alb_perroad_dir, alb_wall_dir, alb_roof_dir                            , &
-       alb_improad_dif, alb_perroad_dif, alb_wall_dif, alb_roof_dif                            , &
+       alb_improad_dir, alb_perroad_dir, alb_wall_dir, alb_roof_dir, alb_whiteroof_dir, alb_greenroof_dir   , &
+       alb_improad_dif, alb_perroad_dif, alb_wall_dif, alb_roof_dif, alb_whiteroof_dif, alb_greenroof_dif   , &
        sdir_road, sdir_sunwall, sdir_shadewall,                                                  &
        sdif_road, sdif_sunwall, sdif_shadewall,                                                  &
-       sref_improad_dir, sref_perroad_dir, sref_sunwall_dir, sref_shadewall_dir, sref_roof_dir , &
-       sref_improad_dif, sref_perroad_dif, sref_sunwall_dif, sref_shadewall_dif, sref_roof_dif , &
+       sref_improad_dir, sref_perroad_dir, sref_sunwall_dir, sref_shadewall_dir, sref_roof_dir ,sref_whiteroof_dir ,sref_greenroof_dir , &
+       sref_improad_dif, sref_perroad_dif, sref_sunwall_dif, sref_shadewall_dif, sref_roof_dif ,sref_whiteroof_dif ,sref_greenroof_dif , &
        urbanparams_inst, solarabs_inst)
     !
     ! !DESCRIPTION: 
@@ -774,10 +834,14 @@ contains
     real(r8), intent(in)    :: alb_perroad_dir    ( bounds%begl: , 1: ) ! direct pervious road albedo [landunit, numrad]
     real(r8), intent(in)    :: alb_wall_dir       ( bounds%begl: , 1: ) ! direct  wall albedo [landunit, numrad]
     real(r8), intent(in)    :: alb_roof_dir       ( bounds%begl: , 1: ) ! direct  roof albedo [landunit, numrad]
+    real(r8), intent(in)    :: alb_whiteroof_dir       ( bounds%begl: , 1: ) ! direct  white roof albedo [landunit, numrad]    
+    real(r8), intent(in)    :: alb_greenroof_dir       ( bounds%begl: , 1: ) ! direct  green roof albedo [landunit, numrad]    
     real(r8), intent(in)    :: alb_improad_dif    ( bounds%begl: , 1: ) ! diffuse impervious road albedo [landunit, numrad]
     real(r8), intent(in)    :: alb_perroad_dif    ( bounds%begl: , 1: ) ! diffuse pervious road albedo [landunit, numrad]
     real(r8), intent(in)    :: alb_wall_dif       ( bounds%begl: , 1: ) ! diffuse wall albedo [landunit, numrad]
     real(r8), intent(in)    :: alb_roof_dif       ( bounds%begl: , 1: ) ! diffuse roof albedo [landunit, numrad]
+    real(r8), intent(in)    :: alb_whiteroof_dif       ( bounds%begl: , 1: ) ! diffuse  white roof albedo [landunit, numrad]    
+    real(r8), intent(in)    :: alb_greenroof_dif       ( bounds%begl: , 1: ) ! diffuse  green roof albedo [landunit, numrad]  
     real(r8), intent(in)    :: sdir_road          ( bounds%begl: , 1: ) ! direct beam solar radiation incident on road per unit incident flux [landunit, numrad]
     real(r8), intent(in)    :: sdir_sunwall       ( bounds%begl: , 1: ) ! direct beam solar radiation (per unit wall area) incident on sunlit wall per unit incident flux [landunit, numrad]
     real(r8), intent(in)    :: sdir_shadewall     ( bounds%begl: , 1: ) ! direct beam solar radiation (per unit wall area) incident on shaded wall per unit incident flux [landunit, numrad]
@@ -794,6 +858,11 @@ contains
     real(r8), intent(inout) :: sref_shadewall_dif ( bounds%begl: , 1: ) ! diffuse solar rad reflected by shadewall (per unit wall area) per unit incident flux [landunit, numrad]
     real(r8), intent(inout) :: sref_roof_dir      ( bounds%begl: , 1: ) ! direct  solar rad reflected by roof (per unit ground area) per unit incident flux [landunit, numrad]
     real(r8), intent(inout) :: sref_roof_dif      ( bounds%begl: , 1: ) ! diffuse solar rad reflected by roof (per unit ground area)  per unit incident flux [landunit, numrad]
+    real(r8), intent(inout) :: sref_whiteroof_dir      ( bounds%begl: , 1: ) ! direct  solar rad reflected by roof (per unit ground area) per unit incident flux [landunit, numrad]
+    real(r8), intent(inout) :: sref_whiteroof_dif      ( bounds%begl: , 1: ) ! diffuse solar rad reflected by roof (per unit ground area)  per unit incident flux [landunit, numrad]
+    real(r8), intent(inout) :: sref_greenroof_dir      ( bounds%begl: , 1: ) ! direct  solar rad reflected by roof (per unit ground area) per unit incident flux [landunit, numrad]
+    real(r8), intent(inout) :: sref_greenroof_dif      ( bounds%begl: , 1: ) ! diffuse solar rad reflected by roof (per unit ground area)  per unit incident flux [landunit, numrad]
+
     type(urbanparams_type), intent(in)    :: urbanparams_inst
     type(solarabs_type)   , intent(inout) :: solarabs_inst
     !
@@ -887,10 +956,14 @@ contains
     SHR_ASSERT_ALL((ubound(alb_perroad_dir)    == (/bounds%endl, numrad/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(alb_wall_dir)       == (/bounds%endl, numrad/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(alb_roof_dir)       == (/bounds%endl, numrad/)), errMsg(sourcefile, __LINE__))
+    SHR_ASSERT_ALL((ubound(alb_whiteroof_dir)       == (/bounds%endl, numrad/)), errMsg(sourcefile, __LINE__))
+    SHR_ASSERT_ALL((ubound(alb_greenroof_dir)       == (/bounds%endl, numrad/)), errMsg(sourcefile, __LINE__))    
     SHR_ASSERT_ALL((ubound(alb_improad_dif)    == (/bounds%endl, numrad/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(alb_perroad_dif)    == (/bounds%endl, numrad/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(alb_wall_dif)       == (/bounds%endl, numrad/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(alb_roof_dif)       == (/bounds%endl, numrad/)), errMsg(sourcefile, __LINE__))
+    SHR_ASSERT_ALL((ubound(alb_whiteroof_dif)       == (/bounds%endl, numrad/)), errMsg(sourcefile, __LINE__))
+    SHR_ASSERT_ALL((ubound(alb_greenroof_dif)       == (/bounds%endl, numrad/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(sdir_road)          == (/bounds%endl, numrad/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(sdir_sunwall)       == (/bounds%endl, numrad/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(sdir_shadewall)     == (/bounds%endl, numrad/)), errMsg(sourcefile, __LINE__))
@@ -907,7 +980,11 @@ contains
     SHR_ASSERT_ALL((ubound(sref_shadewall_dif) == (/bounds%endl, numrad/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(sref_roof_dir)      == (/bounds%endl, numrad/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(sref_roof_dif)      == (/bounds%endl, numrad/)), errMsg(sourcefile, __LINE__))
-
+    SHR_ASSERT_ALL((ubound(sref_whiteroof_dir)      == (/bounds%endl, numrad/)), errMsg(sourcefile, __LINE__))
+    SHR_ASSERT_ALL((ubound(sref_whiteroof_dif)      == (/bounds%endl, numrad/)), errMsg(sourcefile, __LINE__))
+    SHR_ASSERT_ALL((ubound(sref_greenroof_dir)      == (/bounds%endl, numrad/)), errMsg(sourcefile, __LINE__))
+    SHR_ASSERT_ALL((ubound(sref_greenroof_dif)      == (/bounds%endl, numrad/)), errMsg(sourcefile, __LINE__))
+        
     associate(                                                           & 
          vf_sr              =>    urbanparams_inst%vf_sr               , & ! Input:  [real(r8) (:)   ]  view factor of sky for road                       
          vf_wr              =>    urbanparams_inst%vf_wr               , & ! Input:  [real(r8) (:)   ]  view factor of one wall for road                  
@@ -917,6 +994,12 @@ contains
 
          sabs_roof_dir      =>    solarabs_inst%sabs_roof_dir_lun      , & ! Output: [real(r8) (:,:) ]  direct  solar absorbed  by roof per unit ground area per unit incident flux
          sabs_roof_dif      =>    solarabs_inst%sabs_roof_dif_lun      , & ! Output: [real(r8) (:,:) ]  diffuse solar absorbed  by roof per unit ground area per unit incident flux
+         sabs_whiteroof_dir      =>    solarabs_inst%sabs_whiteroof_dir_lun      , & ! Output: [real(r8) (:,:) ]  direct  solar absorbed  by roof per unit ground area per unit incident flux
+         sabs_whiteroof_dif      =>    solarabs_inst%sabs_whiteroof_dif_lun      , & ! Output: [real(r8) (:,:) ]  diffuse solar absorbed  by roof per unit ground area per unit incident flux
+         sabs_greenroof_dir      =>    solarabs_inst%sabs_greenroof_dir_lun      , & ! Output: [real(r8) (:,:) ]  direct  solar absorbed  by roof per unit ground area per unit incident flux
+         sabs_greenroof_dif      =>    solarabs_inst%sabs_greenroof_dif_lun      , & ! Output: [real(r8) (:,:) ]  diffuse solar absorbed  by roof per unit ground area per unit incident flux
+         
+   
          sabs_sunwall_dir   =>    solarabs_inst%sabs_sunwall_dir_lun   , & ! Output: [real(r8) (:,:) ]  direct  solar absorbed  by sunwall per unit wall area per unit incident flux
          sabs_sunwall_dif   =>    solarabs_inst%sabs_sunwall_dif_lun   , & ! Output: [real(r8) (:,:) ]  diffuse solar absorbed  by sunwall per unit wall area per unit incident flux
          sabs_shadewall_dir =>    solarabs_inst%sabs_shadewall_dir_lun , & ! Output: [real(r8) (:,:) ]  direct  solar absorbed  by shadewall per unit wall area per unit incident flux
@@ -1269,10 +1352,21 @@ contains
          do fl = 1,num_urbanl
             l = filter_urbanl(fl)
             if (coszen(l) > 0._r8) then
+            
                sref_roof_dir(l,ib) = alb_roof_dir(l,ib) * sdir(l,ib)
                sref_roof_dif(l,ib) = alb_roof_dif(l,ib) * sdif(l,ib)
                sabs_roof_dir(l,ib) = sdir(l,ib) - sref_roof_dir(l,ib)
                sabs_roof_dif(l,ib) = sdif(l,ib) - sref_roof_dif(l,ib)
+
+               sref_whiteroof_dir(l,ib) = alb_whiteroof_dir(l,ib) * sdir(l,ib)
+               sref_whiteroof_dif(l,ib) = alb_whiteroof_dif(l,ib) * sdif(l,ib)
+               sabs_whiteroof_dir(l,ib) = sdir(l,ib) - sref_whiteroof_dir(l,ib)
+               sabs_whiteroof_dif(l,ib) = sdif(l,ib) - sref_whiteroof_dif(l,ib)
+               
+               sref_greenroof_dir(l,ib) = alb_greenroof_dir(l,ib) * sdir(l,ib)
+               sref_greenroof_dif(l,ib) = alb_greenroof_dif(l,ib) * sdif(l,ib)
+               sabs_greenroof_dir(l,ib) = sdir(l,ib) - sref_greenroof_dir(l,ib)
+               sabs_greenroof_dif(l,ib) = sdif(l,ib) - sref_greenroof_dif(l,ib)                              
             end if
          end do
 

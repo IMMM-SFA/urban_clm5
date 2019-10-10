@@ -43,7 +43,14 @@ module TemperatureType
      real(r8), pointer :: t_grnd_r_col             (:)   ! col rural ground temperature (Kelvin)
      real(r8), pointer :: t_grnd_u_col             (:)   ! col urban ground temperature (Kelvin) (needed by Hydrology2Mod)
      real(r8), pointer :: t_building_lun           (:)   ! lun internal building air temperature (K)
+     real(r8), pointer :: t_roof_surface_lun       (:)   ! lun roof surface temperature (K)
+     real(r8), pointer :: t_whiteroof_surface_lun  (:)   ! lun white roof surface temperature (K)
+     real(r8), pointer :: t_whiteroof_scaling1_lun  (:)   ! lun white roof surface temperature (K)
+     real(r8), pointer :: t_whiteroof_scaling2_lun  (:)   ! lun white roof surface temperature (K)          
+     real(r8), pointer :: t_greenroof_surface_lun  (:)   ! lun green roof surface temperature (K)     
      real(r8), pointer :: t_roof_inner_lun         (:)   ! lun roof inside surface temperature (K)
+     real(r8), pointer :: t_whiteroof_inner_lun    (:)   ! lun white roof inside surface temperature (K)
+     real(r8), pointer :: t_greenroof_inner_lun    (:)   ! lun green roof inside surface temperature (K)     
      real(r8), pointer :: t_sunw_inner_lun         (:)   ! lun sunwall inside surface temperature (K)
      real(r8), pointer :: t_shdw_inner_lun         (:)   ! lun shadewall inside surface temperature (K)
      real(r8), pointer :: t_floor_lun              (:)   ! lun floor temperature (K)
@@ -207,7 +214,14 @@ contains
     allocate(this%t_grnd_r_col             (begc:endc))                      ; this%t_grnd_r_col             (:)   = nan
     allocate(this%t_grnd_u_col             (begc:endc))                      ; this%t_grnd_u_col             (:)   = nan
     allocate(this%t_building_lun           (begl:endl))                      ; this%t_building_lun           (:)   = nan
+    allocate(this%t_roof_surface_lun       (begl:endl))                      ; this%t_roof_surface_lun       (:)   = nan
+    allocate(this%t_whiteroof_surface_lun  (begl:endl))                      ; this%t_whiteroof_surface_lun  (:)   = nan
+    allocate(this%t_whiteroof_scaling1_lun  (begl:endl))                     ; this%t_whiteroof_scaling1_lun  (:)   = nan    
+    allocate(this%t_whiteroof_scaling2_lun  (begl:endl))                     ; this%t_whiteroof_scaling2_lun  (:)   = nan 
+    allocate(this%t_greenroof_surface_lun  (begl:endl))                      ; this%t_greenroof_surface_lun  (:)   = nan
     allocate(this%t_roof_inner_lun         (begl:endl))                      ; this%t_roof_inner_lun         (:)   = nan
+    allocate(this%t_whiteroof_inner_lun    (begl:endl))                      ; this%t_whiteroof_inner_lun    (:)   = nan
+    allocate(this%t_greenroof_inner_lun    (begl:endl))                      ; this%t_greenroof_inner_lun    (:)   = nan
     allocate(this%t_sunw_inner_lun         (begl:endl))                      ; this%t_sunw_inner_lun         (:)   = nan
     allocate(this%t_shdw_inner_lun         (begl:endl))                      ; this%t_shdw_inner_lun         (:)   = nan
     allocate(this%t_floor_lun              (begl:endl))                      ; this%t_floor_lun              (:)   = nan
@@ -312,7 +326,7 @@ contains
     call hist_addfld1d (fname='TH2OSFC',  units='K',  &
          avgflag='A', long_name='surface water temperature', &
          ptr_col=this%t_h2osfc_col)
-
+         
     this%t_grnd_u_col(begc:endc) = spval
     call hist_addfld1d (fname='TG_U', units='K',  &
          avgflag='A', long_name='Urban ground temperature', &
@@ -472,6 +486,36 @@ contains
          avgflag='A', long_name=lname, &
          ptr_lunit=this%t_building_lun, set_nourb=spval, l2g_scale_type='unity')
 
+    this%t_roof_surface_lun(begl:endl) = spval
+    call hist_addfld1d(fname='TROOF_SURFACE', units='K',  &
+        avgflag='A', long_name='roof surface temperature', &
+        ptr_lunit=this%t_roof_surface_lun, set_nourb=spval, l2g_scale_type='unity', &
+        default='inactive')
+
+    this%t_whiteroof_surface_lun(begl:endl) = spval
+    call hist_addfld1d(fname='TWHITEROOF_SURFACE', units='K',  &
+        avgflag='A', long_name='white roof surface temperature', &
+        ptr_lunit=this%t_whiteroof_surface_lun, set_nourb=spval, l2g_scale_type='unity', &
+        default='inactive')
+        
+    this%t_whiteroof_scaling1_lun(begl:endl) = spval
+    call hist_addfld1d(fname='TWHITEROOF_SCALING1', units='K',  &
+        avgflag='A', long_name='white roof scaling1 temperature', &
+        ptr_lunit=this%t_whiteroof_scaling1_lun, set_nourb=spval, l2g_scale_type='unity', &
+        default='inactive')        
+
+    this%t_whiteroof_scaling2_lun(begl:endl) = spval
+    call hist_addfld1d(fname='TWHITEROOF_SCALING2', units='K',  &
+        avgflag='A', long_name='white roof scaling2 temperature', &
+        ptr_lunit=this%t_whiteroof_scaling2_lun, set_nourb=spval, l2g_scale_type='unity', &
+        default='inactive')   
+                    
+    this%t_greenroof_surface_lun(begl:endl) = spval
+    call hist_addfld1d(fname='TGREENROOF_SURFACE', units='K',  &
+        avgflag='A', long_name='green roof surface temperature', &
+        ptr_lunit=this%t_greenroof_surface_lun, set_nourb=spval, l2g_scale_type='unity', &
+        default='inactive')
+                     
     if ( is_prog_buildtemp )then
        this%t_roof_inner_lun(begl:endl) = spval
        call hist_addfld1d(fname='TROOF_INNER', units='K',  &
@@ -479,6 +523,18 @@ contains
             ptr_lunit=this%t_roof_inner_lun, set_nourb=spval, l2g_scale_type='unity', &
             default='inactive')
 
+       this%t_whiteroof_inner_lun(begl:endl) = spval
+       call hist_addfld1d(fname='TWHITEROOF_INNER', units='K',  &
+            avgflag='A', long_name='white roof inside surface temperature', &
+            ptr_lunit=this%t_whiteroof_inner_lun, set_nourb=spval, l2g_scale_type='unity', &
+            default='inactive')
+            
+       this%t_greenroof_inner_lun(begl:endl) = spval
+       call hist_addfld1d(fname='TGREENROOF_INNER', units='K',  &
+            avgflag='A', long_name='green roof inside surface temperature', &
+            ptr_lunit=this%t_greenroof_inner_lun, set_nourb=spval, l2g_scale_type='unity', &
+            default='inactive')
+                        
        this%t_sunw_inner_lun(begl:endl) = spval
        call hist_addfld1d(fname='TSUNW_INNER', units='K',  &
             avgflag='A', long_name='sunwall inside surface temperature', &
@@ -631,6 +687,7 @@ contains
     use landunit_varcon, only : istwet, istsoil, istdlak, istice_mec
     use column_varcon  , only : icol_road_imperv, icol_roof, icol_sunwall
     use column_varcon  , only : icol_shadewall, icol_road_perv
+    use column_varcon  , only : icol_whiteroof, icol_greenroof     
     use clm_varctl     , only : iulog, use_vancouver, use_mexicocity
     !
     ! !ARGUMENTS:
@@ -685,36 +742,36 @@ contains
 
             else if (lun%urbpoi(l)) then
                if (use_vancouver) then
-                  if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then
+                  if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv .or. col%itype(c) == icol_greenroof) then
                      ! Set road top layer to initial air temperature and interpolate other
                      ! layers down to 20C in bottom layer
                      do j = 1, nlevgrnd
                         this%t_soisno_col(c,j) = 297.56 - (j-1) * ((297.56-293.16)/(nlevgrnd-1))
                      end do
                      ! Set wall and roof layers to initial air temperature
-                  else if (col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall .or. col%itype(c) == icol_roof) then
+                  else if (col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall .or. col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof ) then
                      this%t_soisno_col(c,1:nlevurb) = 297.56
                   else
                      this%t_soisno_col(c,1:nlevgrnd) = 283._r8
                   end if
                else if (use_mexicocity) then
-                  if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then
+                  if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv .or. col%itype(c) == icol_greenroof) then
                      ! Set road top layer to initial air temperature and interpolate other
                      ! layers down to 22C in bottom layer
                      do j = 1, nlevgrnd
                         this%t_soisno_col(c,j) = 289.46 - (j-1) * ((289.46-295.16)/(nlevgrnd-1))
                      end do
-                  else if (col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall .or. col%itype(c) == icol_roof) then
+                  else if (col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall .or. col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof ) then
                      ! Set wall and roof layers to initial air temperature
                      this%t_soisno_col(c,1:nlevurb) = 289.46
                   else
                      this%t_soisno_col(c,1:nlevgrnd) = 283._r8
                   end if
                else
-                  if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then
+                  if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv .or. col%itype(c) == icol_greenroof) then
                      this%t_soisno_col(c,1:nlevgrnd) = 274._r8
                   else if (col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall &
-                       .or. col%itype(c) == icol_roof) then
+                       .or. col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof ) then
                      ! Set sunwall, shadewall, roof to fairly high temperature to avoid initialization
                      ! shock from large heating/air conditioning flux
                      this%t_soisno_col(c,1:nlevurb) = 292._r8
@@ -736,6 +793,10 @@ contains
                this%t_roof_inner_lun(l) = this%t_soisno_col(c,nlevurb)
                this%t_building_lun(l)   = this%t_soisno_col(c,nlevurb)        ! arbitrarily set to roof temperature
                this%t_floor_lun(l)      = this%t_soisno_col(c,nlevurb)        ! arbitrarily set to roof temperature
+             else if (col%itype(c) == icol_whiteroof)  then
+               this%t_whiteroof_inner_lun(l) = this%t_soisno_col(c,nlevurb)
+             else if (col%itype(c) == icol_greenroof)  then
+               this%t_greenroof_inner_lun(l) = this%t_soisno_col(c,nlevurb)
              else if (col%itype(c) == icol_sunwall) then
                this%t_sunw_inner_lun(l) = this%t_soisno_col(c,nlevurb)
              else if (col%itype(c) == icol_shadewall) then
@@ -833,7 +894,7 @@ contains
     do c = bounds%begc,bounds%endc
        l = col%landunit(c)
 
-       if (col%itype(c) == icol_roof       ) this%emg_col(c) = em_roof_lun(l)
+       if (col%itype(c) == icol_roof  .or. col%itype(c) == icol_whiteroof .or. col%itype(c) == icol_greenroof) this%emg_col(c) = em_roof_lun(l)
        if (col%itype(c) == icol_sunwall    ) this%emg_col(c) = em_wall_lun(l)
        if (col%itype(c) == icol_shadewall  ) this%emg_col(c) = em_wall_lun(l)
        if (col%itype(c) == icol_road_imperv) this%emg_col(c) = em_improad_lun(l)
@@ -1032,6 +1093,39 @@ contains
           this%t_building_lun(bounds%begl:bounds%endl) = this%taf_lun(bounds%begl:bounds%endl)
        end if
 
+       ! landunit type physical state variable - t_roof_surface
+       call restartvar(ncid=ncid, flag=flag, varname='t_roof_surface', xtype=ncd_double,  &
+            dim1name='landunit', &
+            long_name='roof surface temperature', units='K', &
+            interpinic_flag='interp', readvar=readvar, data=this%t_roof_surface_lun)
+       if (flag=='read' .and. .not. readvar) then
+          if (masterproc) write(iulog,*) "can't find t_roof_surface in initial file..."
+          if (masterproc) write(iulog,*) "Initialize t_roof_surface to taf"
+          this%t_roof_surface_lun(bounds%begl:bounds%endl) = this%taf_lun(bounds%begl:bounds%endl)
+       end if
+
+       ! landunit type physical state variable - t_whiteroof_inner
+       call restartvar(ncid=ncid, flag=flag, varname='t_whiteroof_surface', xtype=ncd_double,  &
+            dim1name='landunit', &
+            long_name='white roof surface temperature', units='K', &
+            interpinic_flag='interp', readvar=readvar, data=this%t_whiteroof_surface_lun)
+       if (flag=='read' .and. .not. readvar) then
+          if (masterproc) write(iulog,*) "can't find t_whiteroof_surface in initial file..."
+          if (masterproc) write(iulog,*) "Initialize t_whiteroof_surface to taf"
+          this%t_whiteroof_surface_lun(bounds%begl:bounds%endl) = this%taf_lun(bounds%begl:bounds%endl)
+       end if
+       
+       ! landunit type physical state variable - t_greenroof_inner
+       call restartvar(ncid=ncid, flag=flag, varname='t_greenroof_surface', xtype=ncd_double,  &
+            dim1name='landunit', &
+            long_name='green roof surface temperature', units='K', &
+            interpinic_flag='interp', readvar=readvar, data=this%t_greenroof_surface_lun)
+       if (flag=='read' .and. .not. readvar) then
+          if (masterproc) write(iulog,*) "can't find t_greenroof_surface in initial file..."
+          if (masterproc) write(iulog,*) "Initialize t_greenroof_surface to taf"
+          this%t_greenroof_surface_lun(bounds%begl:bounds%endl) = this%taf_lun(bounds%begl:bounds%endl)
+       end if
+       
        ! landunit type physical state variable - t_roof_inner
        call restartvar(ncid=ncid, flag=flag, varname='t_roof_inner', xtype=ncd_double,  &
             dim1name='landunit', &
@@ -1043,6 +1137,28 @@ contains
           this%t_roof_inner_lun(bounds%begl:bounds%endl) = this%taf_lun(bounds%begl:bounds%endl)
        end if
 
+       ! landunit type physical state variable - t_whiteroof_inner
+       call restartvar(ncid=ncid, flag=flag, varname='t_whiteroof_inner', xtype=ncd_double,  &
+            dim1name='landunit', &
+            long_name='white roof inside surface temperature', units='K', &
+            interpinic_flag='interp', readvar=readvar, data=this%t_whiteroof_inner_lun)
+       if (flag=='read' .and. .not. readvar) then
+          if (masterproc) write(iulog,*) "can't find t_whiteroof_inner in initial file..."
+          if (masterproc) write(iulog,*) "Initialize t_whiteroof_inner to taf"
+          this%t_whiteroof_inner_lun(bounds%begl:bounds%endl) = this%taf_lun(bounds%begl:bounds%endl)
+       end if
+       
+       ! landunit type physical state variable - t_greenroof_inner
+       call restartvar(ncid=ncid, flag=flag, varname='t_greenroof_inner', xtype=ncd_double,  &
+            dim1name='landunit', &
+            long_name='green roof inside surface temperature', units='K', &
+            interpinic_flag='interp', readvar=readvar, data=this%t_greenroof_inner_lun)
+       if (flag=='read' .and. .not. readvar) then
+          if (masterproc) write(iulog,*) "can't find t_greenroof_inner in initial file..."
+          if (masterproc) write(iulog,*) "Initialize t_greenroof_inner to taf"
+          this%t_greenroof_inner_lun(bounds%begl:bounds%endl) = this%taf_lun(bounds%begl:bounds%endl)
+       end if
+              
        ! landunit type physical state variable - t_sunw_inner
        call restartvar(ncid=ncid, flag=flag, varname='t_sunw_inner', xtype=ncd_double,  &
             dim1name='landunit', &
