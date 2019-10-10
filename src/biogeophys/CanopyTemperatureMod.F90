@@ -75,6 +75,7 @@ contains
     use clm_varcon         , only : denh2o, denice, roverg, hvap, hsub, zlnd, zsno, tfrz, spval 
     use column_varcon      , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon      , only : icol_road_imperv, icol_road_perv
+    use column_varcon      , only : icol_whiteroof, icol_greenroof    
     use landunit_varcon    , only : istice_mec, istwet, istsoil, istdlak, istcrop, istdlak
     use clm_varpar         , only : nlevgrnd, nlevurb, nlevsno, nlevsoi
     use clm_varctl         , only : use_fates
@@ -112,6 +113,7 @@ contains
     real(r8) :: psit         ! negative potential of soil
     real(r8) :: hr           ! relative humidity
     real(r8) :: hr_road_perv ! relative humidity for urban pervious road
+    real(r8) :: hr_greenroof ! relative humidity for urban green roof
     real(r8) :: wx           ! partial volume of ice and water of surface layer
     real(r8) :: fac_fc       ! soil wetness of surface layer relative to field capacity
     real(r8) :: eff_porosity ! effective porosity in layer
@@ -195,6 +197,8 @@ contains
          bsw              =>    soilstate_inst%bsw_col                , & ! Input:  [real(r8) (:,:) ] Clapp and Hornberger "b"               
          rootfr_road_perv =>    soilstate_inst%rootfr_road_perv_col   , & ! Input:  [real(r8) (:,:) ] fraction of roots in each soil layer for urban pervious road
          rootr_road_perv  =>    soilstate_inst%rootr_road_perv_col    , & ! Input:  [real(r8) (:,:) ] effective fraction of roots in each soil layer for urban pervious road
+         rootfr_greenroof =>    soilstate_inst%rootfr_greenroof_col   , & ! Input:  [real(r8) (:,:) ] fraction of roots in each soil layer for urban green roof
+         rootr_greenroof  =>    soilstate_inst%rootr_greenroof_col    , & ! Input:  [real(r8) (:,:) ] effective fraction of roots in each soil layer for urban green roof 
          soilalpha        =>    soilstate_inst%soilalpha_col          , & ! Output: [real(r8) (:)   ] factor that reduces ground saturated specific humidity (-)
          soilalpha_u      =>    soilstate_inst%soilalpha_u_col        , & ! Output: [real(r8) (:)   ] Urban factor that reduces ground saturated specific humidity (-)
 
@@ -214,7 +218,7 @@ contains
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
             if ((col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall &
-                 .or. col%itype(c) == icol_roof) .and. j > nlevurb) then
+                 .or. col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof) .and. j > nlevurb) then
                tssbef(c,j) = spval 
             else
                tssbef(c,j) = t_soisno(c,j)
@@ -235,6 +239,10 @@ contains
             hr_road_perv = 0._r8
          end if
 
+         if (col%itype(c) == icol_greenroof) then
+            hr_greenroof = 0._r8
+         end if
+         
          ! begin calculations that relate only to the column level
          ! Ground and soil temperatures from previous time step
 
@@ -289,11 +297,36 @@ contains
                end if
                soilalpha_u(c) = qred
 
+            else if (col%itype(c) == icol_greenroof) then
+               ! Pervious road depends on water in total soil column
+               do j = 1, nlevsoi
+                  if (t_soisno(c,j) >= tfrz) then
+                     vol_ice = min(watsat(c,j), h2osoi_ice(c,j)/(dz(c,j)*denice))
+                     eff_porosity = watsat(c,j)-vol_ice
+                     vol_liq = min(eff_porosity, h2osoi_liq(c,j)/(dz(c,j)*denh2o))
+                     fac = min( max(vol_liq-watdry(c,j),0._r8) / (watopt(c,j)-watdry(c,j)), 1._r8 )
+                  else
+                     fac = 0._r8
+                  end if
+                  rootr_greenroof(c,j) = rootfr_greenroof(c,j)*fac
+                  hr_greenroof = hr_greenroof + rootr_greenroof(c,j)
+               end do
+               ! Allows for sublimation of snow or dew on snow
+               qred = (1.-frac_sno(c))*hr_greenroof + frac_sno(c)
+
+               ! Normalize root resistances to get layer contribution to total ET
+               if (hr_greenroof > 0._r8) then
+                  do j = 1, nlevsoi
+                     rootr_greenroof(c,j) = rootr_greenroof(c,j)/hr_greenroof
+                  end do
+               end if
+               soilalpha_u(c) = qred
+               
             else if (col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall) then
                qred = 0._r8
                soilalpha_u(c) = spval
 
-            else if (col%itype(c) == icol_roof .or. col%itype(c) == icol_road_imperv) then
+            else if (col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof .or. col%itype(c) == icol_road_imperv) then
                qred = 1._r8
                soilalpha_u(c) = spval
             end if

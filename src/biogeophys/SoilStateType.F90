@@ -39,6 +39,8 @@ module SoilStateType
      real(r8), pointer :: smpmin_col           (:)   ! col restriction for min of soil potential (mm) 
      real(r8), pointer :: bsw_col              (:,:) ! col Clapp and Hornberger "b" (nlevgrnd)  
      real(r8), pointer :: watsat_col           (:,:) ! col volumetric soil water at saturation (porosity) 
+     real(r8), pointer :: watsat_greenroof_col (:,:) ! col volumetric soil water at saturation (porosity) 
+     real(r8), pointer :: watsat_roadperv_col  (:,:) ! col volumetric soil water at saturation (porosity) 
      real(r8), pointer :: watdry_col           (:,:) ! col btran parameter for btran = 0
      real(r8), pointer :: watopt_col           (:,:) ! col btran parameter for btran = 1
      real(r8), pointer :: watfc_col            (:,:) ! col volumetric soil water at field capacity (nlevsoi)
@@ -74,6 +76,8 @@ module SoilStateType
      real(r8), pointer :: root_depth_patch     (:)   ! root depth
      real(r8), pointer :: rootr_road_perv_col  (:,:) ! col effective fraction of roots in each soil layer of urban pervious road
      real(r8), pointer :: rootfr_road_perv_col (:,:) ! col effective fraction of roots in each soil layer of urban pervious road
+     real(r8), pointer :: rootr_greenroof_col  (:,:) ! col effective fraction of roots in each soil layer of urban green roof
+     real(r8), pointer :: rootfr_greenroof_col (:,:) ! col effective fraction of roots in each soil layer of urban green roof     
      real(r8), pointer :: k_soil_root_patch    (:,:) ! patch soil-root interface conductance [mm/s]
      real(r8), pointer :: root_conductance_patch(:,:) ! patch root conductance [mm/s]
      real(r8), pointer :: soil_conductance_patch(:,:) ! patch soil conductance [mm/s]
@@ -139,6 +143,8 @@ contains
 
     allocate(this%bsw_col              (begc:endc,nlevgrnd))            ; this%bsw_col              (:,:) = nan
     allocate(this%watsat_col           (begc:endc,nlevgrnd))            ; this%watsat_col           (:,:) = nan
+    allocate(this%watsat_greenroof_col (begc:endc,nlevgrnd))            ; this%watsat_greenroof_col (:,:) = nan
+    allocate(this%watsat_roadperv_col  (begc:endc,nlevgrnd))            ; this%watsat_roadperv_col  (:,:) = nan
     allocate(this%watdry_col           (begc:endc,nlevgrnd))            ; this%watdry_col           (:,:) = spval
     allocate(this%watopt_col           (begc:endc,nlevgrnd))            ; this%watopt_col           (:,:) = spval
     allocate(this%watfc_col            (begc:endc,nlevgrnd))            ; this%watfc_col            (:,:) = nan
@@ -164,10 +170,15 @@ contains
     allocate(this%root_depth_patch     (begp:endp))                     ; this%root_depth_patch     (:)   = nan
     allocate(this%rootr_col            (begc:endc,nlevgrnd))            ; this%rootr_col            (:,:) = nan
     allocate(this%rootr_road_perv_col  (begc:endc,1:nlevgrnd))          ; this%rootr_road_perv_col  (:,:) = nan
+    
     allocate(this%rootfr_patch         (begp:endp,1:nlevgrnd))          ; this%rootfr_patch         (:,:) = nan
     allocate(this%crootfr_patch        (begp:endp,1:nlevgrnd))          ; this%crootfr_patch        (:,:) = nan
     allocate(this%rootfr_col           (begc:endc,1:nlevgrnd))          ; this%rootfr_col           (:,:) = nan 
     allocate(this%rootfr_road_perv_col (begc:endc,1:nlevgrnd))          ; this%rootfr_road_perv_col (:,:) = nan
+
+    allocate(this%rootr_greenroof_col  (begc:endc,1:nlevgrnd))          ; this%rootr_greenroof_col  (:,:) = nan
+    allocate(this%rootfr_greenroof_col (begc:endc,1:nlevgrnd))          ; this%rootfr_greenroof_col (:,:) = nan
+    
     allocate(this%k_soil_root_patch    (begp:endp,1:nlevsoi))           ; this%k_soil_root_patch (:,:) = nan
     allocate(this%root_conductance_patch(begp:endp,1:nlevsoi))          ; this%root_conductance_patch (:,:) = nan
     allocate(this%soil_conductance_patch(begp:endp,1:nlevsoi))          ; this%soil_conductance_patch (:,:) = nan
@@ -293,12 +304,22 @@ contains
          avgflag='A', long_name='urban factor limiting ground evap', &
          ptr_col=this%soilalpha_u_col, set_nourb=spval, default='inactive')
 
-    if (use_cn) then
+!    if (use_cn) then
        this%watsat_col(begc:endc,:) = spval 
        call hist_addfld2d (fname='watsat', units='m^3/m^3', type2d='levgrnd', &
             avgflag='A', long_name='water saturated', &
             ptr_col=this%watsat_col, default='inactive')
-    end if
+!    end if
+
+    this%watsat_greenroof_col(begc:endc,:) = spval 
+    call hist_addfld2d (fname='watsat_greenroof', units='m^3/m^3', type2d='levgrnd', &
+          avgflag='A', long_name='urban green roof water saturated', &
+          ptr_col=this%watsat_greenroof_col, default='inactive')
+
+    this%watsat_roadperv_col(begc:endc,:) = spval 
+    call hist_addfld2d (fname='watsat_roadperv', units='m^3/m^3', type2d='levgrnd', &
+          avgflag='A', long_name='urban road pervious water saturated', &
+          ptr_col=this%watsat_roadperv_col, default='inactive')
 
     if (use_cn) then
        this%eff_porosity_col(begc:endc,:) = spval

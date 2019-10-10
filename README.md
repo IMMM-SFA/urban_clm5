@@ -59,3 +59,20 @@ Aug 19, 2019
 1, modify temperature scaling for studying white roof 
 
 2, add output to compute relative efficiency of urban surface energy flux
+
+
+===============================
+Version 2.1.5
+
+Aug 23, 2019
+
+1, add stomatal resistance for green roof evapotranspiration
+
+2, add new options like green_roof_rsmin and green_roof_watwilt
+
+Sep 26, 2019
+
+1, fixed a bug in SoilHydrologyMod.F90 about green roof irrigation initialization. Now one can get green roof water added per unit area on green roofs.
+
+2, add output for studying green roof
+

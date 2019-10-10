@@ -129,6 +129,7 @@ contains
     allocate(this%z0mg_col         (begc:endc)) ; this%z0mg_col         (:)   = nan
     allocate(this%z0qg_col         (begc:endc)) ; this%z0qg_col         (:)   = nan
     allocate(this%z0hg_col         (begc:endc)) ; this%z0hg_col         (:)   = nan
+    
 
   end subroutine InitAllocate
 
@@ -193,7 +194,7 @@ contains
             avgflag='A', long_name='aerodynamical resistance ', &
             ptr_patch=this%ram1_patch, default='inactive')
     end if
-
+    
     if (use_cn) then
        this%fv_patch(begp:endp) = spval
        call hist_addfld1d (fname='FV', units='m/s', &

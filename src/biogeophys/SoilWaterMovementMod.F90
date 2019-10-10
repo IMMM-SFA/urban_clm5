@@ -461,7 +461,7 @@ contains
     use clm_varcon                 , only : e_ice,denh2o, denice
     use clm_varpar                 , only : nlevsoi, max_patch_per_col, nlevgrnd
     use clm_time_manager           , only : get_step_size, get_nstep
-    use column_varcon              , only : icol_roof, icol_road_imperv
+    use column_varcon              , only : icol_roof, icol_whiteroof, icol_greenroof, icol_road_imperv, icol_road_perv
     use clm_varctl                 , only : use_flexibleCN, use_hydrstress
     use TridiagonalMod             , only : Tridiagonal
     use abortutils                 , only : endrun     
@@ -2156,7 +2156,7 @@ contains
     use shr_kind_mod   , only : r8 => shr_kind_r8
     use shr_log_mod    , only : errMsg => shr_log_errMsg
     use clm_varpar     , only : nlevurb
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_greenroof, icol_sunwall, icol_shadewall, icol_road_perv
     use clm_varctl     , only : iulog
     use decompMod      , only : bounds_type
     use ColumnType     , only : col                
@@ -2190,7 +2190,7 @@ contains
 
     do j = lbj, ubj
        if ((col%itype(ci) == icol_sunwall .or. col%itype(ci) == icol_shadewall &
-            .or. col%itype(ci) == icol_roof) .and. j <= nlevurb) then
+            .or. col%itype(ci) == icol_roof .or. col%itype(ci) == icol_whiteroof ) .and. j <= nlevurb) then
           if (j >= jtop) then
              if (j == jtop) then
                 u(j) = r(j) / bet
@@ -2201,7 +2201,7 @@ contains
              end if
           end if
        else if (col%itype(ci) /= icol_sunwall .and. col%itype(ci) /= icol_shadewall &
-            .and. col%itype(ci) /= icol_roof) then
+            .and. col%itype(ci) /= icol_roof .and. col%itype(ci) /= icol_whiteroof ) then
           if (j >= jtop) then
              if (j == jtop) then
                 u(j) = r(j) / bet
@@ -2216,12 +2216,12 @@ contains
 
     do j = ubj-1,lbj,-1
        if ((col%itype(ci) == icol_sunwall .or. col%itype(ci) == icol_shadewall &
-            .or. col%itype(ci) == icol_roof) .and. j <= nlevurb-1) then
+            .or. col%itype(ci) == icol_roof .or. col%itype(ci) == icol_whiteroof ) .and. j <= nlevurb-1) then
           if (j >= jtop) then
              u(j) = u(j) - gam(j+1) * u(j+1)
           end if
        else if (col%itype(ci) /= icol_sunwall .and. col%itype(ci) /= icol_shadewall &
-            .and. col%itype(ci) /= icol_roof) then
+            .and. col%itype(ci) /= icol_roof .and. col%itype(ci) /= icol_whiteroof ) then
           if (j >= jtop) then
              u(j) = u(j) - gam(j+1) * u(j+1)
           end if

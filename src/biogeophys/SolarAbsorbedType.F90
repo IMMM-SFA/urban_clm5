@@ -41,6 +41,11 @@ module SolarAbsorbedType
 
      real(r8), pointer :: sabs_roof_dir_lun      (:,:) ! lun direct solar absorbed by roof per unit ground area per unit incident flux
      real(r8), pointer :: sabs_roof_dif_lun      (:,:) ! lun diffuse solar absorbed by roof per unit ground area per unit incident flux
+     real(r8), pointer :: sabs_whiteroof_dir_lun      (:,:) ! lun direct solar absorbed by roof per unit ground area per unit incident flux
+     real(r8), pointer :: sabs_whiteroof_dif_lun      (:,:) ! lun diffuse solar absorbed by roof per unit ground area per unit incident flux     
+     real(r8), pointer :: sabs_greenroof_dir_lun      (:,:) ! lun direct solar absorbed by roof per unit ground area per unit incident flux
+     real(r8), pointer :: sabs_greenroof_dif_lun      (:,:) ! lun diffuse solar absorbed by roof per unit ground area per unit incident flux     
+          
      real(r8), pointer :: sabs_sunwall_dir_lun   (:,:) ! lun direct  solar absorbed by sunwall per unit wall area per unit incident flux
      real(r8), pointer :: sabs_sunwall_dif_lun   (:,:) ! lun diffuse solar absorbed by sunwall per unit wall area per unit incident flux
      real(r8), pointer :: sabs_shadewall_dir_lun (:,:) ! lun direct  solar absorbed by shadewall per unit wall area per unit incident flux
@@ -127,6 +132,11 @@ contains
     allocate(this%sabg_chk_patch         (begp:endp))              ; this%sabg_chk_patch         (:)   = nan
     allocate(this%sabs_roof_dir_lun      (begl:endl,1:numrad))     ; this%sabs_roof_dir_lun      (:,:) = nan
     allocate(this%sabs_roof_dif_lun      (begl:endl,1:numrad))     ; this%sabs_roof_dif_lun      (:,:) = nan
+    allocate(this%sabs_whiteroof_dir_lun      (begl:endl,1:numrad))     ; this%sabs_whiteroof_dir_lun      (:,:) = nan
+    allocate(this%sabs_whiteroof_dif_lun      (begl:endl,1:numrad))     ; this%sabs_whiteroof_dif_lun      (:,:) = nan
+    allocate(this%sabs_greenroof_dir_lun      (begl:endl,1:numrad))     ; this%sabs_greenroof_dir_lun      (:,:) = nan
+    allocate(this%sabs_greenroof_dif_lun      (begl:endl,1:numrad))     ; this%sabs_greenroof_dif_lun      (:,:) = nan    
+        
     allocate(this%sabs_sunwall_dir_lun   (begl:endl,1:numrad))     ; this%sabs_sunwall_dir_lun   (:,:) = nan
     allocate(this%sabs_sunwall_dif_lun   (begl:endl,1:numrad))     ; this%sabs_sunwall_dif_lun   (:,:) = nan
     allocate(this%sabs_shadewall_dir_lun (begl:endl,1:numrad))     ; this%sabs_shadewall_dir_lun (:,:) = nan
@@ -301,7 +311,11 @@ contains
     begl = bounds%begl; endl = bounds%endl
 
     this%sabs_roof_dir_lun      (begl:endl, :) = 0._r8    
-    this%sabs_roof_dif_lun      (begl:endl, :) = 0._r8    
+    this%sabs_roof_dif_lun      (begl:endl, :) = 0._r8
+    this%sabs_whiteroof_dir_lun      (begl:endl, :) = 0._r8    
+    this%sabs_whiteroof_dif_lun      (begl:endl, :) = 0._r8
+    this%sabs_greenroof_dir_lun      (begl:endl, :) = 0._r8    
+    this%sabs_greenroof_dif_lun      (begl:endl, :) = 0._r8            
     this%sabs_sunwall_dir_lun   (begl:endl, :) = 0._r8
     this%sabs_sunwall_dif_lun   (begl:endl, :) = 0._r8
     this%sabs_shadewall_dir_lun (begl:endl, :) = 0._r8
@@ -347,6 +361,27 @@ contains
          dim2name='numrad', switchdim=.true.,                                                                         &
          long_name='diffuse solar absorbed by roof per unit ground area per unit incident flux', units='',            &
          interpinic_flag='interp', readvar=readvar, data=this%sabs_roof_dif_lun)
+
+    call restartvar(ncid=ncid, flag=flag, varname='sabs_whiteroof_dir', xtype=ncd_double,  dim1name='landunit',            & 
+         dim2name='numrad', switchdim=.true.,                                                                         &
+         long_name='direct solar absorbed by white roof per unit ground area per unit incident flux', units='',             &
+         interpinic_flag='interp', readvar=readvar, data=this%sabs_roof_dir_lun)
+
+    call restartvar(ncid=ncid, flag=flag, varname='sabs_whiteroof_dif', xtype=ncd_double,  dim1name='landunit',            & 
+         dim2name='numrad', switchdim=.true.,                                                                         &
+         long_name='diffuse solar absorbed by white roof per unit ground area per unit incident flux', units='',            &
+         interpinic_flag='interp', readvar=readvar, data=this%sabs_roof_dif_lun)
+         
+    call restartvar(ncid=ncid, flag=flag, varname='sabs_greenroof_dir', xtype=ncd_double,  dim1name='landunit',            & 
+         dim2name='numrad', switchdim=.true.,                                                                         &
+         long_name='direct solar absorbed by green roof per unit ground area per unit incident flux', units='',             &
+         interpinic_flag='interp', readvar=readvar, data=this%sabs_roof_dir_lun)
+
+    call restartvar(ncid=ncid, flag=flag, varname='sabs_greenroof_dif', xtype=ncd_double,  dim1name='landunit',            & 
+         dim2name='numrad', switchdim=.true.,                                                                         &
+         long_name='diffuse solar absorbed by green roof per unit ground area per unit incident flux', units='',            &
+         interpinic_flag='interp', readvar=readvar, data=this%sabs_roof_dif_lun)         
+         
 
     call restartvar(ncid=ncid, flag=flag, varname='sabs_sunwall_dir', xtype=ncd_double,  dim1name='landunit',         & 
          dim2name='numrad', switchdim=.true.,                                                                         &

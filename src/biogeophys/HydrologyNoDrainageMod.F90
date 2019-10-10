@@ -63,7 +63,7 @@ contains
     ! !USES:
     use clm_varcon           , only : denh2o, denice, hfus, grav, tfrz
     use landunit_varcon      , only : istwet, istsoil, istcrop, istdlak 
-    use column_varcon        , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall
+    use column_varcon        , only : icol_roof, icol_whiteroof, icol_greenroof, icol_road_imperv, icol_road_perv, icol_sunwall
     use column_varcon        , only : icol_shadewall
     use clm_varctl           , only : use_cn
     use clm_varpar           , only : nlevgrnd, nlevsno, nlevsoi, nlevurb
@@ -153,6 +153,13 @@ contains
          h2osoi_ice_tot     => waterstate_inst%h2osoi_ice_tot_col     , & ! Output: [real(r8) (:)   ]  vertically summed ice lens (kg/m2)
          h2osoi_liq_tot     => waterstate_inst%h2osoi_liq_tot_col     , & ! Output: [real(r8) (:)   ]  vertically summed liquid water (kg/m2)   
          h2osoi_vol         => waterstate_inst%h2osoi_vol_col         , & ! Output: [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+         h2osoi_vol_greenroof => waterstate_inst%h2osoi_vol_greenroof_col , & ! Output: [real(r8) (:,:) ]  urban green roof volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]   
+         h2osoi_vol_roadperv  => waterstate_inst%h2osoi_vol_roadperv_col  , & ! Output: [real(r8) (:,:) ]  urban pervious road volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3] 
+         watsat_greenroof     => soilstate_inst%watsat_greenroof_col      , & ! Output: [real(r8) (:,:) ]  urban green roof volumetric soil water at saturation (porosity) 
+         watsat_roadperv      => soilstate_inst%watsat_roadperv_col       , & ! Output: [real(r8) (:,:) ]  urban pervious road volumetric soil water at saturation (porosity) 
+         qflx_surf            => waterflux_inst%qflx_surf_col             , & ! Input: [real(r8)  (:)   ]  surface runoff (mm H2O /s)  
+         qflx_surf_greenroof  => waterflux_inst%qflx_surf_greenroof_col   , & ! Output: [real(r8) (:)   ]  urban green roof surface runoff (mm H2O /s) 
+         qflx_surf_roadperv   => waterflux_inst%qflx_surf_roadperv_col    , & ! Output: [real(r8) (:)   ]  urban pervious road surface runoff (mm H2O /s)                                 
          h2osno_top         => waterstate_inst%h2osno_top_col         , & ! Output: [real(r8) (:)   ]  mass of snow in top layer (col) [kg]    
          wf                 => waterstate_inst%wf_col                 , & ! Output: [real(r8) (:)   ]  soil water as frac. of whc for top 0.05 m 
          wf2                => waterstate_inst%wf2_col                , & ! Output: [real(r8) (:)   ]  soil water as frac. of whc for top 0.17 m 
@@ -434,7 +441,7 @@ contains
          do fc = 1, num_nolakec
             c = filter_nolakec(fc)
             if ((ctype(c) == icol_sunwall .or. ctype(c) == icol_shadewall &
-                 .or. ctype(c) == icol_roof) .and. j > nlevurb) then
+                 .or. ctype(c) == icol_roof .or. ctype(c) == icol_whiteroof ) .and. j > nlevurb) then
             else
                h2osoi_vol(c,j) = h2osoi_liq(c,j)/(dz(c,j)*denh2o) + h2osoi_ice(c,j)/(dz(c,j)*denice)
             end if
@@ -565,6 +572,19 @@ contains
          dTdz_top(c)        = spval
          snw_rds_top(c)     = spval
          sno_liq_top(c)     = spval
+      end do
+
+      do fc = 1, num_urbanc
+        c = filter_urbanc(fc)
+        if (col%itype(c) == icol_greenroof) then
+          watsat_greenroof(c,1:nlevsoi) = watsat(c,1:nlevsoi)
+          h2osoi_vol_greenroof(c,1:nlevsoi) = h2osoi_vol(c,1:nlevsoi)
+          qflx_surf_greenroof(c) = qflx_surf(c)
+        else if (col%itype(c) == icol_road_perv) then
+          watsat_roadperv(c,1:nlevsoi) = watsat(c,1:nlevsoi)
+          h2osoi_vol_roadperv(c,1:nlevsoi) = h2osoi_vol(c,1:nlevsoi)
+          qflx_surf_roadperv(c) = qflx_surf(c)
+        end if
       end do
 
     end associate

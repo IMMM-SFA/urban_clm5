@@ -74,6 +74,8 @@ module WaterfluxType
      real(r8), pointer :: qflx_rootsoi_col         (:,:) ! col root and soil water exchange [mm H2O/s] [+ into root]
      real(r8), pointer :: qflx_infl_col            (:)   ! col infiltration (mm H2O /s)
      real(r8), pointer :: qflx_surf_col            (:)   ! col surface runoff (mm H2O /s)
+     real(r8), pointer :: qflx_surf_greenroof_col  (:)   ! col surface runoff (mm H2O /s)
+     real(r8), pointer :: qflx_surf_roadperv_col   (:)   ! col surface runoff (mm H2O /s)
      real(r8), pointer :: qflx_drain_col           (:)   ! col sub-surface runoff (mm H2O /s)
      real(r8), pointer :: qflx_top_soil_col        (:)   ! col net water input into soil from top (mm/s)
      real(r8), pointer :: qflx_h2osfc_to_ice_col   (:)   ! col conversion of h2osfc to ice
@@ -215,6 +217,8 @@ contains
     allocate(this%qflx_rootsoi_col         (begc:endc,1:nlevsoi))    ; this%qflx_rootsoi_col         (:,:) = nan
     allocate(this%qflx_infl_col            (begc:endc))              ; this%qflx_infl_col            (:)   = nan
     allocate(this%qflx_surf_col            (begc:endc))              ; this%qflx_surf_col            (:)   = nan
+    allocate(this%qflx_surf_greenroof_col            (begc:endc))              ; this%qflx_surf_greenroof_col            (:)   = nan
+    allocate(this%qflx_surf_roadperv_col            (begc:endc))              ; this%qflx_surf_roadperv_col            (:)   = nan
     allocate(this%qflx_drain_col           (begc:endc))              ; this%qflx_drain_col           (:)   = nan
     allocate(this%qflx_top_soil_col        (begc:endc))              ; this%qflx_top_soil_col        (:)   = nan
     allocate(this%qflx_h2osfc_to_ice_col   (begc:endc))              ; this%qflx_h2osfc_to_ice_col   (:)   = nan
@@ -292,6 +296,16 @@ contains
     call hist_addfld1d (fname='QOVER',  units='mm/s',  &
          avgflag='A', long_name='surface runoff', &
          ptr_col=this%qflx_surf_col, c2l_scale_type='urbanf')
+
+    this%qflx_surf_greenroof_col(begc:endc) = spval
+    call hist_addfld1d (fname='QOVER_GREENROOF',  units='mm/s',  &
+         avgflag='A', long_name='surface runoff', &
+         ptr_col=this%qflx_surf_greenroof_col, c2l_scale_type='urbanf')
+
+    this%qflx_surf_roadperv_col(begc:endc) = spval
+    call hist_addfld1d (fname='QOVER_ROADPERV',  units='mm/s',  &
+         avgflag='A', long_name='surface runoff', &
+         ptr_col=this%qflx_surf_roadperv_col, c2l_scale_type='urbanf')
 
     this%qflx_qrgwl_col(begc:endc) = spval
     call hist_addfld1d (fname='QRGWL',  units='mm/s',  &

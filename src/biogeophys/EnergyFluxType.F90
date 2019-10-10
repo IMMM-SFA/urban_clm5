@@ -69,6 +69,30 @@ module EnergyFluxType
      real(r8), pointer :: eflx_urban_ac_lun       (:)   ! lun urban air conditioning flux (W/m**2)
      real(r8), pointer :: eflx_urban_heat_lun     (:)   ! lun urban heating flux (W/m**2)
 
+     real(r8), pointer :: eflx_sh_roof_lun             (:)   ! lun urban roof sensible heat flux (W/m**2)
+     real(r8), pointer :: eflx_sh_whiteroof_lun        (:)   ! lun urban white roof sensible heat flux (W/m**2)
+     real(r8), pointer :: eflx_sh_greenroof_lun        (:)   ! lun urban green roof sensible heat flux (W/m**2)
+     real(r8), pointer :: eflx_lh_roof_lun             (:)   ! lun urban roof latent heat flux (W/m**2)
+     real(r8), pointer :: eflx_lh_whiteroof_lun        (:)   ! lun urban white roof latent heat flux (W/m**2)
+     real(r8), pointer :: eflx_lh_greenroof_lun        (:)   ! lun urban green roof latent heat flux (W/m**2)
+     real(r8), pointer :: eflx_gnet_roof_lun           (:)   ! lun urban roof net ground heat flux (W/m**2)
+     real(r8), pointer :: eflx_gnet_whiteroof_lun      (:)   ! lun urban white roof net ground heat flux (W/m**2)
+     real(r8), pointer :: eflx_gnet_greenroof_lun      (:)   ! lun urban green roof net ground heat flux (W/m**2)
+     real(r8), pointer :: sabs_roof_surface_lun        (:)   ! lun urban roof solar radiation absorbed (W/m**2)
+     real(r8), pointer :: sabs_whiteroof_surface_lun   (:)   ! lun urban white roof solar radiation absorbed (W/m**2)
+     real(r8), pointer :: sabs_greenroof_surface_lun   (:)   ! lun urban green roof solar radiation absorbed (W/m**2)
+     real(r8), pointer :: lwdown_roof_surface_lun      (:)   ! lun urban roof downward longwave radiation (W/m**2)
+     real(r8), pointer :: lwdown_whiteroof_surface_lun (:)   ! lun urban white roof downward longwave radiation (W/m**2)
+     real(r8), pointer :: lwdown_greenroof_surface_lun (:)   ! lun urban green roof downward longwave radiation (W/m**2)
+     real(r8), pointer :: lwup_roof_surface_lun        (:)   ! lun urban roof upward longwave radiation (W/m**2)
+     real(r8), pointer :: lwup_whiteroof_surface_lun   (:)   ! lun urban white roof upward longwave radiation (W/m**2)
+     real(r8), pointer :: lwup_greenroof_surface_lun   (:)   ! lun urban green roof upward longwave radiation (W/m**2)
+     real(r8), pointer :: lwnet_roof_surface_lun       (:)   ! lun urban roof net (outgoing-incoming) longwave radiation (W/m**2)
+     real(r8), pointer :: lwnet_whiteroof_surface_lun  (:)   ! lun urban white roof net (outgoing-incoming) longwave radiation (W/m**2)
+     real(r8), pointer :: lwnet_greenroof_surface_lun  (:)   ! lun urban green roof net (outgoing-incoming) longwave radiation (W/m**2)
+     real(r8), pointer :: rs_greenroof_lun             (:)   ! lun urban green roof vegetation stomatal resistance (s/m)
+     real(r8), pointer :: canyon_resistance_lun        (:)   ! lun resistance to heat and moisture transfer from canyon road/walls to canyon air (s/m)
+
      ! Derivatives of energy fluxes
      real(r8), pointer :: dgnetdT_patch           (:)   ! patch derivative of net ground heat flux wrt soil temp  (W/m**2 K)
      real(r8), pointer :: netrad_patch            (:)   ! col net radiation (W/m**2) [+ = to sfc]
@@ -230,6 +254,30 @@ contains
     allocate( this%eflx_traffic_lun        (begl:endl))             ; this%eflx_traffic_lun        (:)   = nan
     allocate( this%eflx_wasteheat_lun      (begl:endl))             ; this%eflx_wasteheat_lun      (:)   = nan
     allocate( this%eflx_anthro_patch       (begp:endp))             ; this%eflx_anthro_patch       (:)   = nan
+
+    allocate( this%eflx_sh_roof_lun              (begl:endl))       ; this%eflx_sh_roof_lun                (:)   = nan
+    allocate( this%eflx_sh_whiteroof_lun         (begl:endl))       ; this%eflx_sh_whiteroof_lun           (:)   = nan
+    allocate( this%eflx_sh_greenroof_lun         (begl:endl))       ; this%eflx_sh_greenroof_lun           (:)   = nan
+    allocate( this%eflx_lh_roof_lun              (begl:endl))       ; this%eflx_lh_roof_lun                (:)   = nan
+    allocate( this%eflx_lh_whiteroof_lun         (begl:endl))       ; this%eflx_lh_whiteroof_lun           (:)   = nan
+    allocate( this%eflx_lh_greenroof_lun         (begl:endl))       ; this%eflx_lh_greenroof_lun           (:)   = nan
+    allocate( this%eflx_gnet_roof_lun            (begl:endl))       ; this%eflx_gnet_roof_lun              (:)   = nan
+    allocate( this%eflx_gnet_whiteroof_lun       (begl:endl))       ; this%eflx_gnet_whiteroof_lun         (:)   = nan
+    allocate( this%eflx_gnet_greenroof_lun       (begl:endl))       ; this%eflx_gnet_greenroof_lun         (:)   = nan
+    allocate( this%sabs_roof_surface_lun         (begl:endl))       ; this%sabs_roof_surface_lun           (:)   = nan
+    allocate( this%sabs_whiteroof_surface_lun    (begl:endl))       ; this%sabs_whiteroof_surface_lun      (:)   = nan
+    allocate( this%sabs_greenroof_surface_lun    (begl:endl))       ; this%sabs_greenroof_surface_lun      (:)   = nan
+    allocate( this%lwdown_roof_surface_lun       (begl:endl))       ; this%lwdown_roof_surface_lun         (:)   = nan
+    allocate( this%lwdown_whiteroof_surface_lun  (begl:endl))       ; this%lwdown_whiteroof_surface_lun    (:)   = nan
+    allocate( this%lwdown_greenroof_surface_lun  (begl:endl))       ; this%lwdown_greenroof_surface_lun    (:)   = nan
+    allocate( this%lwup_roof_surface_lun         (begl:endl))       ; this%lwup_roof_surface_lun           (:)   = nan
+    allocate( this%lwup_whiteroof_surface_lun    (begl:endl))       ; this%lwup_whiteroof_surface_lun      (:)   = nan
+    allocate( this%lwup_greenroof_surface_lun    (begl:endl))       ; this%lwup_greenroof_surface_lun      (:)   = nan
+    allocate( this%lwnet_roof_surface_lun        (begl:endl))       ; this%lwnet_roof_surface_lun          (:)   = nan
+    allocate( this%lwnet_whiteroof_surface_lun   (begl:endl))       ; this%lwnet_whiteroof_surface_lun     (:)   = nan
+    allocate( this%lwnet_greenroof_surface_lun   (begl:endl))       ; this%lwnet_greenroof_surface_lun     (:)   = nan
+    allocate( this%rs_greenroof_lun              (begl:endl))       ; this%rs_greenroof_lun                (:)   = nan
+    allocate( this%canyon_resistance_lun         (begl:endl))       ; this%canyon_resistance_lun           (:)   = nan
 
     allocate( this%dgnetdT_patch           (begp:endp))             ; this%dgnetdT_patch           (:)   = nan
     allocate( this%cgrnd_patch             (begp:endp))             ; this%cgrnd_patch             (:)   = nan
@@ -489,6 +537,122 @@ contains
          avgflag='A', long_name='Urban heat flux into soil/snow including snow melt', &
          ptr_patch=this%eflx_soil_grnd_u_patch, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
 
+    this%eflx_sh_roof_lun(begl:endl) = spval
+    call hist_addfld1d (fname='EFLX_SH_ROOF', units='W/m^2',  &
+         avgflag='A', long_name='Urban roof sensible heat flux', &
+         ptr_lunit=this%eflx_sh_roof_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
+
+    this%eflx_sh_whiteroof_lun(begl:endl) = spval
+    call hist_addfld1d (fname='EFLX_SH_WHITEROOF', units='W/m^2',  &
+         avgflag='A', long_name='Urban white roof sensible heat flux', &
+         ptr_lunit=this%eflx_sh_whiteroof_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
+
+    this%eflx_sh_greenroof_lun(begl:endl) = spval
+    call hist_addfld1d (fname='EFLX_SH_GREENROOF', units='W/m^2',  &
+         avgflag='A', long_name='Urban green roof sensible heat flux', &
+         ptr_lunit=this%eflx_sh_greenroof_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
+
+    this%eflx_lh_roof_lun(begl:endl) = spval
+    call hist_addfld1d (fname='EFLX_LH_ROOF', units='W/m^2',  &
+         avgflag='A', long_name='Urban roof latent heat flux', &
+         ptr_lunit=this%eflx_lh_roof_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
+
+    this%eflx_lh_whiteroof_lun(begl:endl) = spval
+    call hist_addfld1d (fname='EFLX_LH_WHITEROOF', units='W/m^2',  &
+         avgflag='A', long_name='Urban white roof latent heat flux', &
+         ptr_lunit=this%eflx_lh_whiteroof_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
+
+    this%eflx_lh_greenroof_lun(begl:endl) = spval
+    call hist_addfld1d (fname='EFLX_LH_GREENROOF', units='W/m^2',  &
+         avgflag='A', long_name='Urban green roof latent heat flux', &
+         ptr_lunit=this%eflx_lh_greenroof_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
+
+    this%eflx_gnet_roof_lun(begl:endl) = spval
+    call hist_addfld1d (fname='EFLX_GNET_ROOF', units='W/m^2',  &
+         avgflag='A', long_name='Urban roof net ground heat flux', &
+         ptr_lunit=this%eflx_gnet_roof_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
+
+    this%eflx_gnet_whiteroof_lun(begl:endl) = spval
+    call hist_addfld1d (fname='EFLX_GNET_WHITEROOF', units='W/m^2',  &
+         avgflag='A', long_name='Urban white roof net ground heat flux', &
+         ptr_lunit=this%eflx_gnet_whiteroof_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
+
+    this%eflx_gnet_greenroof_lun(begl:endl) = spval
+    call hist_addfld1d (fname='EFLX_GNET_GREENROOF', units='W/m^2',  &
+         avgflag='A', long_name='Urban green roof net ground heat flux', &
+         ptr_lunit=this%eflx_gnet_greenroof_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
+
+    this%sabs_roof_surface_lun(begl:endl) = spval
+    call hist_addfld1d (fname='SABS_ROOF', units='W/m^2',  &
+         avgflag='A', long_name='Urban roof absorbed solar radiation', &
+         ptr_lunit=this%sabs_roof_surface_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
+
+    this%sabs_whiteroof_surface_lun(begl:endl) = spval
+    call hist_addfld1d (fname='SABS_WHITEROOF', units='W/m^2',  &
+         avgflag='A', long_name='Urban white roof absorbed solar radiation', &
+         ptr_lunit=this%sabs_whiteroof_surface_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
+
+    this%sabs_greenroof_surface_lun(begl:endl) = spval
+    call hist_addfld1d (fname='SABS_GREENROOF', units='W/m^2',  &
+         avgflag='A', long_name='Urban green roof absorbed solar radiation', &
+         ptr_lunit=this%sabs_greenroof_surface_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
+
+    this%lwdown_roof_surface_lun(begl:endl) = spval
+    call hist_addfld1d (fname='LWDOWN_ROOF', units='W/m^2',  &
+         avgflag='A', long_name='Urban roof downward longwave radiation', &
+         ptr_lunit=this%lwdown_roof_surface_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
+
+    this%lwdown_whiteroof_surface_lun(begl:endl) = spval
+    call hist_addfld1d (fname='LWDOWN_WHITEROOF', units='W/m^2',  &
+         avgflag='A', long_name='Urban white roof downward longwave radiation', &
+         ptr_lunit=this%lwdown_whiteroof_surface_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
+
+    this%lwdown_greenroof_surface_lun(begl:endl) = spval
+    call hist_addfld1d (fname='LWDOWN_GREENROOF', units='W/m^2',  &
+         avgflag='A', long_name='Urban green roof downward longwave radiation', &
+         ptr_lunit=this%lwdown_greenroof_surface_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
+
+    this%lwup_roof_surface_lun(begl:endl) = spval
+    call hist_addfld1d (fname='LWUP_ROOF', units='W/m^2',  &
+         avgflag='A', long_name='Urban roof upward longwave radiation', &
+         ptr_lunit=this%lwup_roof_surface_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
+
+    this%lwup_whiteroof_surface_lun(begl:endl) = spval
+    call hist_addfld1d (fname='LWUP_WHITEROOF', units='W/m^2',  &
+         avgflag='A', long_name='Urban white roof upward longwave radiation', &
+         ptr_lunit=this%lwup_whiteroof_surface_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
+
+    this%lwup_greenroof_surface_lun(begl:endl) = spval
+    call hist_addfld1d (fname='LWUP_GREENROOF', units='W/m^2',  &
+         avgflag='A', long_name='Urban green roof upward longwave radiation', &
+         ptr_lunit=this%lwup_greenroof_surface_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
+
+    this%lwnet_roof_surface_lun(begl:endl) = spval
+    call hist_addfld1d (fname='LWNET_ROOF', units='W/m^2',  &
+         avgflag='A', long_name='Urban roof net longwave radiation', &
+         ptr_lunit=this%lwnet_roof_surface_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
+
+    this%lwnet_whiteroof_surface_lun(begl:endl) = spval
+    call hist_addfld1d (fname='LWNET_WHITEROOF', units='W/m^2',  &
+         avgflag='A', long_name='Urban white roof net longwave radiation', &
+         ptr_lunit=this%lwnet_whiteroof_surface_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
+
+    this%lwnet_greenroof_surface_lun(begl:endl) = spval
+    call hist_addfld1d (fname='LWNET_GREENROOF', units='W/m^2',  &
+         avgflag='A', long_name='Urban green roof net longwave radiation', &
+         ptr_lunit=this%lwnet_greenroof_surface_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
+
+    this%rs_greenroof_lun(begl:endl) = spval
+    call hist_addfld1d (fname='RS_GREENROOF', units='s/m',  &
+         avgflag='A', long_name='Urban green roof vegetation stomatal resistance', &
+         ptr_lunit=this%rs_greenroof_lun, default='inactive')
+
+    this%canyon_resistance_lun(begl:endl) = spval
+    call hist_addfld1d (fname='RA_CANYON', units='s/m',  &
+         avgflag='A', long_name='Resistance to heat and moisture transfer from canyon road/walls to canyon air', &
+         ptr_lunit=this%canyon_resistance_lun, default='inactive')
+
+
     this%netrad_patch(begp:endp) = spval
     call hist_addfld1d (fname='Rnet', units='W/m^2',  &
          avgflag='A', long_name='net radiation', &
@@ -683,6 +847,7 @@ contains
     use landunit_varcon , only : istwet, istsoil, istdlak
     use column_varcon   , only : icol_road_imperv, icol_roof, icol_sunwall
     use column_varcon   , only : icol_shadewall, icol_road_perv
+    use column_varcon   , only : icol_whiteroof, icol_greenroof   
     use clm_varctl      , only : iulog, use_vancouver, use_mexicocity
     implicit none
     !

@@ -30,7 +30,9 @@ module BalanceCheckMod
   use landunit_varcon    , only : istdlak, istsoil,istcrop,istwet,istice_mec
   use column_varcon      , only : icol_roof, icol_sunwall, icol_shadewall
   use column_varcon      , only : icol_road_perv, icol_road_imperv
+  use column_varcon      , only : icol_whiteroof, icol_greenroof    
   use clm_varcon         , only : aquifer_water_baseline
+  use UrbanParamsType    , only : green_roof_irrigation
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -115,6 +117,7 @@ contains
      !
      ! !USES:
      use clm_varcon        , only : spval
+     use column_varcon     , only : icol_greenroof
      use clm_time_manager  , only : get_step_size, get_nstep
      use clm_time_manager  , only : get_nstep_since_startup_or_lastDA_restart_or_pause
      use clm_instMod       , only : surfalb_inst
@@ -150,7 +153,8 @@ contains
           forc_rain               =>    atm2lnd_inst%forc_rain_downscaled_col   , & ! Input:  [real(r8) (:)   ]  rain rate [mm/s]
           forc_snow               =>    atm2lnd_inst%forc_snow_downscaled_col   , & ! Input:  [real(r8) (:)   ]  snow rate [mm/s]
           forc_lwrad              =>    atm2lnd_inst%forc_lwrad_downscaled_col  , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)
-
+		
+		  green_roof_water_added  =>	waterstate_inst%green_roof_water_added_col              , & ! Input:  [real(r8) (:)   ] green_roof_water_added
           h2osno                  =>    waterstate_inst%h2osno_col              , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                     
           h2osno_old              =>    waterstate_inst%h2osno_old_col          , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O) at previous time step
           frac_sno_eff            =>    waterstate_inst%frac_sno_eff_col        , & ! Input:  [real(r8) (:)   ]  effective snow fraction                 
@@ -263,7 +267,29 @@ contains
 
           ! add qflx_drain_perched and qflx_flood
           if (col%active(c)) then
+			
+			if (col%itype(c) == icol_greenroof .and. green_roof_irrigation ) then
 
+             errh2o(c) = endwb(c) - begwb(c) &
+                  - (forc_rain_col(c)        &
+                  + forc_snow_col(c)         &
+                  + qflx_floodc(c)           &
+                  + qflx_irrig(c)            &
+                  + qflx_glcice_dyn_water_flux(c) &
+                  + green_roof_water_added(c)/dtime &
+                  - qflx_evap_tot(c)         &
+                  - qflx_surf(c)             &
+                  - qflx_h2osfc_surf(c)      &
+                  - qflx_qrgwl(c)            &
+                  - qflx_drain(c)            &
+                  - qflx_drain_perched(c)    &
+                  - qflx_ice_runoff_snwcp(c) &
+                  - qflx_ice_runoff_xs(c)    &
+                  - qflx_snwcp_discarded_liq(c) &
+                  - qflx_snwcp_discarded_ice(c)) * dtime
+			
+			else 
+			
              errh2o(c) = endwb(c) - begwb(c) &
                   - (forc_rain_col(c)        &
                   + forc_snow_col(c)         &
@@ -280,7 +306,8 @@ contains
                   - qflx_ice_runoff_xs(c)    &
                   - qflx_snwcp_discarded_liq(c) &
                   - qflx_snwcp_discarded_ice(c)) * dtime
-
+			end if
+			
           else
 
              errh2o(c) = 0.0_r8
@@ -305,7 +332,7 @@ contains
                ! ' global indexc= ',GetGlobalIndex(decomp_index=indexc, clmlevel=namec), &
                ' errh2o= ',errh2o(indexc)
 
-          if ((col%itype(indexc) == icol_roof .or. &
+          if ((col%itype(indexc) == icol_roof .or. col%itype(indexc) == icol_whiteroof .or. col%itype(indexc) == icol_greenroof .or. &
                col%itype(indexc) == icol_road_imperv .or. &
                col%itype(indexc) == icol_road_perv) .and. &
                abs(errh2o(indexc)) > 1.e-5_r8 .and. (DAnstep > 2) ) then
@@ -396,7 +423,7 @@ contains
                         + qflx_snow_drain(c)  + qflx_sl_top_soil(c)
                 endif
 
-                 if (col%itype(c) == icol_road_perv .or. lun%itype(l) == istsoil .or. &
+                 if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_greenroof .or. lun%itype(l) == istsoil .or. &
                       lun%itype(l) == istcrop .or. lun%itype(l) == istwet .or. &
                       lun%itype(l) == istice_mec) then
                    snow_sources(c) = (qflx_snow_grnd_col(c) - qflx_snow_h2osfc(c) ) &
