@@ -1,0 +1,257 @@
+biogeochem/CNDriverMod.F90:         elai                      => canopystate_inst%elai_patch               , & ! Output: [real(r8) (:) ] one-sided leaf area index with burying by snow    
+biogeochem/CNVegStructUpdateMod.F90:         elai               =>  canopystate_inst%elai_patch             , & ! Output: [real(r8) (:) ] one-sided leaf area index with burying by snow    
+biogeochem/CNVegStructUpdateMod.F90:         elai(p) = max(tlai(p)*fb, 0.0_r8)
+biogeochem/CNVegStructUpdateMod.F90:         if ((elai(p) + esai(p)) > 0._r8) then
+biogeochem/DryDepVelocity.F90:         elai       =>    canopystate_inst%elai_patch           , & ! Input:  [real(r8) (:)   ] one-sided leaf area index with burying by snow     
+biogeochem/DryDepVelocity.F90:            !if elai is between max lai from input data and half that max the index_season=1 
+biogeochem/DryDepVelocity.F90:            !elai (done elsewhere).  If the difference between mlai1j and mlai2j is greater 
+biogeochem/DryDepVelocity.F90:            else if(elai(pi) > 0.5_r8*maxlai) then  
+biogeochem/DryDepVelocity.F90:               if (elai(pi) < (minlai+0.05*(maxlai-minlai))) then  
+biogeochem/DryDepVelocity.F90:               ! no deposition on water or no vegetation or snow (elai<=0)
+biogeochem/DryDepVelocity.F90:               no_dep: if( wesveg == 7 .or. elai(pi).le.0_r8 ) then !mvm 11/26/2013
+biogeochem/DryDepVelocity.F90:                     rs=1._r8/(fsun(pi)*elai(pi)/rssun(pi) + (1.-fsun(pi))*elai(pi)/rssha(pi))
+biogeochem/DryDepVelocity.F90:                  rlu_lai=cts+rlu(index_season,wesveg)/elai(pi)
+biogeochem/DryDepVelocity.F90:               !MVM: effect only on vegetated areas (elai> 0)
+biogeochem/DryDepVelocity.F90:               with_LAI: if (elai(pi).gt.0._r8) then
+biogeochem/DryDepVelocity.F90:                        rlu_lai=cts+rlu(index_season,wesveg)/elai(pi)
+biogeochem/DryDepVelocity.F90:                        rlu_lai=cts+rlu(index_season,wesveg)/elai(pi)
+biogeochem/DryDepVelocity.F90:                              rlu_lai=cts+rlu(index_season,wesveg)/elai(pi)
+biogeochem/DryDepVelocity.F90:                              rlu_lai=cts+rlu(index_season,wesveg)/elai(pi)
+biogeochem/EDBGCDynMod.F90:         elai                      => canopystate_inst%elai_patch               , & ! Output: [real(r8) (:) ] one-sided leaf area index with burying by snow    
+biogeochem/SatellitePhenologyMod.F90:    ! Calculates leaf areas (tlai, elai),  stem areas (tsai, esai) and height (htop).
+biogeochem/SatellitePhenologyMod.F90:         elai               => canopystate_inst%elai_patch    ,          & ! Output: [real(r8) (:) ] one-sided leaf area index with burying by snow
+biogeochem/SatellitePhenologyMod.F90:         ! need to update elai and esai only every albedo time step so do not
+biogeochem/SatellitePhenologyMod.F90:         elai(p) = max(tlai(p)*(1.0_r8 - frac_sno(c)) + tlai(p)*fb*frac_sno(c), 0.0_r8)
+biogeochem/SatellitePhenologyMod.F90:         if (elai(p) < 0.05_r8) elai(p) = 0._r8
+biogeochem/SatellitePhenologyMod.F90:         if ((elai(p) + esai(p)) >= 0.05_r8) then
+biogeochem/VOCEmissionMod.F90:         elai          => canopystate_inst%elai_patch           , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow
+biogeochem/VOCEmissionMod.F90:         elai240       => canopystate_inst%elai240_patch        , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow last 240 hrs
+biogeochem/VOCEmissionMod.F90:          gamma_l = get_gamma_L(fsun240(p), elai(p))
+biogeochem/VOCEmissionMod.F90:             gamma_a = get_gamma_A(patch%itype(p), elai240(p),elai(p),class_num)
+biogeochem/VOCEmissionMod.F90:  function get_gamma_L(fsun240_in,elai_in)
+biogeochem/VOCEmissionMod.F90:    real(r8),intent(in) :: elai_in
+biogeochem/VOCEmissionMod.F90:       get_gamma_L = cce * elai_in
+biogeochem/VOCEmissionMod.F90:       get_gamma_L = cce1 * elai_in
+biogeochem/VOCEmissionMod.F90:  function get_gamma_A(ivt_in, elai240_in, elai_in, nclass_in)
+biogeochem/VOCEmissionMod.F90:    ! If not CNDV elai is constant therefore gamma_a=1.0
+biogeochem/VOCEmissionMod.F90:    real(r8),intent(in) :: elai240_in
+biogeochem/VOCEmissionMod.F90:    real(r8),intent(in) :: elai_in
+biogeochem/VOCEmissionMod.F90:    real(r8) :: elai_prev               ! lai for previous timestep
+biogeochem/VOCEmissionMod.F90:       if ( (elai240_in > 0.0_r8) .and. (elai240_in < 1.e30_r8) )then 
+biogeochem/VOCEmissionMod.F90:          elai_prev = 2._r8*elai240_in-elai_in  ! have accumulated average lai over last 10 days
+biogeochem/VOCEmissionMod.F90:          if (elai_prev == elai_in) then
+biogeochem/VOCEmissionMod.F90:          else if (elai_prev > elai_in) then
+biogeochem/VOCEmissionMod.F90:             fmat = 1.0_r8 - (elai_prev - elai_in)/elai_prev
+biogeochem/VOCEmissionMod.F90:             fold = (elai_prev - elai_in)/elai_prev
+biogeochem/VOCEmissionMod.F90:          else if (elai_prev < elai_in) then
+biogeochem/VOCEmissionMod.F90:             fnew = 1 - (elai_prev / elai_in)
+biogeochem/VOCEmissionMod.F90:             fmat = (elai_prev / elai_in)
+biogeochem/ch4Mod.F90:         elai          =>    canopystate_inst%elai_patch                  , & ! Input:  [real(r8) (:)    ]  one-sided leaf area index with burying by snow    
+biogeochem/ch4Mod.F90:                  m_tiller = anpp * nppratio * 4._r8  !replace the elai(p) by constant 4 (by Xiyan Xu, 05/2016)
+biogeophys/BalanceCheckMod.F90:          elai                    =>    canopystate_inst%elai_patch             , & ! Input:  [real(r8) (:,:)]  
+biogeophys/BalanceCheckMod.F90:             write(iulog,*)'elai esai = '      ,elai(indexp),   esai(indexp)      
+biogeophys/CanopyFluxesMod.F90:    real(r8) :: lt                                   ! elai+esai
+biogeophys/CanopyFluxesMod.F90:    real(r8) :: elai_dl                              ! exposed (dry) plant litter area index
+biogeophys/CanopyFluxesMod.F90:         elai                   => canopystate_inst%elai_patch                  , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow                        
+biogeophys/CanopyFluxesMod.F90:      !    if(elai(p)+esai(p)>0) frac_veg_nosno_alb(p) = 1
+biogeophys/CanopyFluxesMod.F90:      !    if(elai(p)+esai(p)>0) frac_veg_nosno_alb(p) = 1
+biogeophys/CanopyFluxesMod.F90:         lt = min(elai(p)+esai(p), tlsai_crit)
+biogeophys/CanopyFluxesMod.F90:            w = exp(-(elai(p)+esai(p)))
+biogeophys/CanopyFluxesMod.F90:            wtl    = (elai(p)+esai(p))/rb(p)    ! leaf
+biogeophys/CanopyFluxesMod.F90:               rppdry  = fdry(p)*rb(p)*(laisun(p)/(rb(p)+rssun(p)) + laisha(p)/(rb(p)+rssha(p)))/elai(p)
+biogeophys/CanopyFluxesMod.F90:               canopy_cond(p) = (laisun(p)/(rb(p)+rssun(p)) + laisha(p)/(rb(p)+rssha(p)))/max(elai(p), 0.01_r8)
+biogeophys/CanopyFluxesMod.F90:            wtlq    = frac_veg_nosno(p)*(elai(p)+esai(p))/rb(p) * rpp   ! leaf
+biogeophys/CanopyFluxesMod.F90:            elai_dl = lai_dl*(1._r8 - min(fsno_dl,1._r8)) ! exposed (dry)litter area index
+biogeophys/CanopyFluxesMod.F90:            rdl = ( 1._r8 - exp(-elai_dl) ) / ( 0.004_r8*uaf(p)) ! dry litter layer resistance
+biogeophys/CanopyHydrologyMod.F90:          elai                 => canopystate_inst%elai_patch             , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow
+biogeophys/CanopyHydrologyMod.F90:                   h2ocanmx = dewmx(p) * (elai(p) + esai(p))
+biogeophys/CanopyHydrologyMod.F90:                      fpi = interception_fraction * tanh(elai(p) + esai(p))
+biogeophys/CanopyHydrologyMod.F90:                      fpi = 0.25_r8*(1._r8 - exp(-0.5_r8*(elai(p) + esai(p))))
+biogeophys/CanopyHydrologyMod.F90:                      snocanmx = 60._r8*dewmx(p) * (elai(p) + esai(p))  ! 6*(LAI+SAI)
+biogeophys/CanopyHydrologyMod.F90:                      fpisnow = (1._r8 - exp(-0.5_r8*(elai(p) + esai(p))))  ! max interception of 1 
+biogeophys/CanopyHydrologyMod.F90:     ! fraction of elai which is dry. The variable ``fwet'' is the
+biogeophys/CanopyHydrologyMod.F90:     ! is the fraction of elai which is dry because only leaves
+biogeophys/CanopyHydrologyMod.F90:          elai           => canopystate_inst%elai_patch           , & ! Input:  [real(r8) (:) ]  one-sided leaf area index with burying by snow
+biogeophys/CanopyHydrologyMod.F90:                vegt    = frac_veg_nosno(p)*(elai(p) + esai(p))
+biogeophys/CanopyHydrologyMod.F90:             fdry(p) = (1._r8-fwet(p))*elai(p)/(elai(p)+esai(p))
+biogeophys/CanopyStateType.F90:     real(r8) , pointer :: elai_patch               (:)   ! patch canopy one-sided leaf area index with burying by snow
+biogeophys/CanopyStateType.F90:     real(r8) , pointer :: elai240_patch            (:)   ! patch canopy one-sided leaf area index with burying by snow average over 10days 
+biogeophys/CanopyStateType.F90:    allocate(this%elai_patch               (begp:endp))           ; this%elai_patch               (:)   = nan
+biogeophys/CanopyStateType.F90:    allocate(this%elai240_patch            (begp:endp))           ; this%elai240_patch            (:)   = nan
+biogeophys/CanopyStateType.F90:    this%elai_patch(begp:endp) = spval
+biogeophys/CanopyStateType.F90:         ptr_patch=this%elai_patch)
+biogeophys/CanopyStateType.F90:    this%elai240_patch(begp:endp) = spval
+biogeophys/CanopyStateType.F90:         ptr_patch=this%elai240_patch, default='inactive')
+biogeophys/CanopyStateType.F90:    this%elai240_patch(bounds%begp:bounds%endp) = spval
+biogeophys/CanopyStateType.F90:    this%elai240_patch(begp:endp) = rbufslp(begp:endp)
+biogeophys/CanopyStateType.F90:    ! Accumulate and extract elai240
+biogeophys/CanopyStateType.F90:       rbufslp(p) = this%elai_patch(p)
+biogeophys/CanopyStateType.F90:    call extract_accum_field ('LAI240', this%elai240_patch    , nstep)
+biogeophys/CanopyStateType.F90:       this%elai_patch(p)       = 0._r8
+biogeophys/CanopyStateType.F90:    call restartvar(ncid=ncid, flag=flag, varname='elai', xtype=ncd_double,  &
+biogeophys/CanopyStateType.F90:         interpinic_flag='interp', readvar=readvar, data=this%elai_patch)
+biogeophys/CanopyTemperatureMod.F90:         elai             =>    canopystate_inst%elai_patch           , & ! Input:  [real(r8) (:)   ] one-sided leaf area index with burying by snow
+biogeophys/CanopyTemperatureMod.F90:         emv(p) = 1._r8-exp(-(elai(p)+esai(p))/avmuir)
+biogeophys/IrrigationMod.F90:       time_prev, elai, t_soisno, eff_porosity, h2osoi_liq, volr, rof_prognostic)
+biogeophys/IrrigationMod.F90:    real(r8), intent(in) :: elai( bounds%begp: )
+biogeophys/IrrigationMod.F90:    SHR_ASSERT_ALL((ubound(elai) == (/bounds%endp/)), errMsg(sourcefile, __LINE__))
+biogeophys/IrrigationMod.F90:            pft_type=patch%itype(p), elai=elai(p), &
+biogeophys/IrrigationMod.F90:  function PointNeedsCheckForIrrig(this, pft_type, elai, time_prev, londeg) &
+biogeophys/IrrigationMod.F90:    real(r8), intent(in) :: elai      ! one-sided leaf area index with burying by snow
+biogeophys/IrrigationMod.F90:         elai > this%params%irrig_min_lai) then
+biogeophys/LunaMod.F90:    elai          => canopystate_inst%elai_patch                      , & ! Input:  [real(r8) (:)   ] one-sided leaf area index with burying by snow                        
+biogeophys/PhotosynthesisMod.F90:         elai          => canopystate_inst%elai_patch           , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow
+biogeophys/PhotosynthesisMod.F90:         elai          => canopystate_inst%elai_patch           , & ! Input: [real(r8) (:)   ]  one-sided leaf area index with burying by snow
+biogeophys/PhotosynthesisMod.F90:    wtl      = (elai(p)+esai(p))*gb_mol
+biogeophys/PhotosynthesisMod.F90:       if ( (efpot > 0._r8) .and. (elai(p) > 0._r8) ) then
+biogeophys/PhotosynthesisMod.F90:             rppdry_sun = fdry(p)/gb_mol*(laisun(p)/(1._r8/gb_mol+1._r8/gs_mol_sun))/elai(p)
+biogeophys/PhotosynthesisMod.F90:             rppdry_sha = fdry(p)/gb_mol*(laisha(p)/(1._r8/gb_mol+1._r8/gs_mol_sha))/elai(p)
+biogeophys/PhotosynthesisMod.F90:          gs_mol_sun=gb_mol*qflx_sun*cf*elai(p)/(efpot*fdry(p)*laisun(p)-qflx_sun*cf*elai(p))
+biogeophys/PhotosynthesisMod.F90:          gs_mol_sha=gb_mol*qflx_sha*cf*elai(p)/(efpot*fdry(p)*laisha(p)-qflx_sha*cf*elai(p))
+biogeophys/SurfaceAlbedoMod.F90:    real(r8) :: blai(bounds%begp:bounds%endp)                                             ! lai buried by snow: tlai - elai
+biogeophys/SurfaceAlbedoMod.F90:          elai          =>    canopystate_inst%elai_patch         , & ! Input:  [real(r8)  (:)   ]  one-sided leaf area index with burying by snow
+biogeophys/SurfaceAlbedoMod.F90:                 .and. (elai(p) + esai(p)) > 0._r8) then
+biogeophys/SurfaceAlbedoMod.F90:       wl(p) = elai(p) / max( elai(p)+esai(p), mpe )
+biogeophys/SurfaceAlbedoMod.F90:       ws(p) = esai(p) / max( elai(p)+esai(p), mpe )
+biogeophys/SurfaceAlbedoMod.F90:    ! Do this first for elai and esai (not buried by snow) and then for the part of the
+biogeophys/SurfaceAlbedoMod.F90:    ! tlai_z summed from 1 to nrad = elai
+biogeophys/SurfaceAlbedoMod.F90:          tlai_z(p,1) = elai(p)
+biogeophys/SurfaceAlbedoMod.F90:          if (elai(p)+esai(p) == 0._r8) then
+biogeophys/SurfaceAlbedoMod.F90:                if (((elai(p)+esai(p))-dincmax_sum) > 1.e-06_r8) then
+biogeophys/SurfaceAlbedoMod.F90:                   tlai_z(p,iv) = dinc * elai(p) / max(elai(p)+esai(p), mpe)
+biogeophys/SurfaceAlbedoMod.F90:                   tsai_z(p,iv) = dinc * esai(p) / max(elai(p)+esai(p), mpe)
+biogeophys/SurfaceAlbedoMod.F90:                   dinc = dincmax - (dincmax_sum - (elai(p)+esai(p)))
+biogeophys/SurfaceAlbedoMod.F90:                   tlai_z(p,iv) = dinc * elai(p) / max(elai(p)+esai(p), mpe)
+biogeophys/SurfaceAlbedoMod.F90:                   tsai_z(p,iv) = dinc * esai(p) / max(elai(p)+esai(p), mpe)
+biogeophys/SurfaceAlbedoMod.F90:                   tlai_z(p,iv) = elai(p) / nrad(p)
+biogeophys/SurfaceAlbedoMod.F90:       if (abs(laisum-elai(p)) > 1.e-06_r8 .or. abs(saisum-esai(p)) > 1.e-06_r8) then
+biogeophys/SurfaceAlbedoMod.F90:               nrad(p),elai(p),laisum,esai(p),saisum
+biogeophys/SurfaceAlbedoMod.F90:          blai(p) = tlai(p) - elai(p)
+biogeophys/SurfaceAlbedoMod.F90:             write (iulog,*) tlai(p),elai(p),blai(p),laisum,tsai(p),esai(p),bsai(p),saisum
+biogeophys/SurfaceAlbedoMod.F90:    ! Integrate exp(-kn*x) over x=0 to x=elai and assign to shaded canopy,
+biogeophys/SurfaceAlbedoMod.F90:          vcmaxcintsha(p) = (1._r8 - exp(-extkn*elai(p))) / extkn
+biogeophys/SurfaceAlbedoMod.F90:          if (elai(p) > 0._r8) then
+biogeophys/SurfaceAlbedoMod.F90:             vcmaxcintsha(p) = vcmaxcintsha(p) / elai(p)
+biogeophys/SurfaceAlbedoMod.F90:          elai         =>    canopystate_inst%elai_patch         , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow
+biogeophys/SurfaceAlbedoMod.F90:          t1 = min(h*(elai(p)+esai(p)), 40._r8)
+biogeophys/SurfaceAlbedoMod.F90:          t1 = min(twostext(p)*(elai(p)+esai(p)), 40._r8)
+biogeophys/SurfaceAlbedoMod.F90:                laisum = elai(p)+esai(p)
+biogeophys/SurfaceAlbedoMod.F90:                vcmaxcintsun(p) = (1._r8 - exp(-(extkn+extkb)*elai(p))) / (extkn + extkb)
+biogeophys/SurfaceAlbedoMod.F90:                vcmaxcintsha(p) = (1._r8 - exp(-extkn*elai(p))) / extkn - vcmaxcintsun(p)
+biogeophys/SurfaceAlbedoMod.F90:                if (elai(p)  >  0._r8) then
+biogeophys/SurfaceAlbedoMod.F90:                  vcmaxcintsun(p) = vcmaxcintsun(p) / (fsun_z(p,1)*elai(p))
+biogeophys/SurfaceAlbedoMod.F90:                  vcmaxcintsha(p) = vcmaxcintsha(p) / ((1._r8 - fsun_z(p,1))*elai(p))
+biogeophys/SurfaceRadiationMod.F90:          elai        => canopystate_inst%elai_patch, &   ! one-sided leaf area index 
+biogeophys/SurfaceRadiationMod.F90:        if (elai(p) > 0._r8) then
+biogeophys/SurfaceRadiationMod.F90:           fsun(p) = laisun(p) / elai(p)
+biogeophys/SurfaceRadiationMod.F90:          elai            =>    canopystate_inst%elai_patch       , & ! Input:  [real(r8) (:)   ] one-sided leaf area index with burying by snow
+biogeophys/SurfaceRadiationMod.F90:        if(elai(p)==0.0_r8.and.fabd(p,1)>0._r8)then
+biogeophys/SurfaceRadiationMod.F90:           if ( DEBUG ) write(iulog,*) 'absorption without LAI',elai(p),tlai(p),fabd(p,1),p
+biogeophys/log:BalanceCheckMod.F90:          elai                    =>    canopystate_inst%elai_patch             , & ! Input:  [real(r8) (:,:)]  
+biogeophys/log:BalanceCheckMod.F90:             write(iulog,*)'elai esai = '      ,elai(indexp),   esai(indexp)      
+biogeophys/log:CanopyFluxesMod.F90:    real(r8) :: lt                                   ! elai+esai
+biogeophys/log:CanopyFluxesMod.F90:    real(r8) :: elai_dl                              ! exposed (dry) plant litter area index
+biogeophys/log:CanopyFluxesMod.F90:         elai                   => canopystate_inst%elai_patch                  , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow                        
+biogeophys/log:CanopyFluxesMod.F90:      !    if(elai(p)+esai(p)>0) frac_veg_nosno_alb(p) = 1
+biogeophys/log:CanopyFluxesMod.F90:      !    if(elai(p)+esai(p)>0) frac_veg_nosno_alb(p) = 1
+biogeophys/log:CanopyFluxesMod.F90:         lt = min(elai(p)+esai(p), tlsai_crit)
+biogeophys/log:CanopyFluxesMod.F90:            w = exp(-(elai(p)+esai(p)))
+biogeophys/log:CanopyFluxesMod.F90:            wtl    = (elai(p)+esai(p))/rb(p)    ! leaf
+biogeophys/log:CanopyFluxesMod.F90:               rppdry  = fdry(p)*rb(p)*(laisun(p)/(rb(p)+rssun(p)) + laisha(p)/(rb(p)+rssha(p)))/elai(p)
+biogeophys/log:CanopyFluxesMod.F90:               canopy_cond(p) = (laisun(p)/(rb(p)+rssun(p)) + laisha(p)/(rb(p)+rssha(p)))/max(elai(p), 0.01_r8)
+biogeophys/log:CanopyFluxesMod.F90:            wtlq    = frac_veg_nosno(p)*(elai(p)+esai(p))/rb(p) * rpp   ! leaf
+biogeophys/log:CanopyFluxesMod.F90:            elai_dl = lai_dl*(1._r8 - min(fsno_dl,1._r8)) ! exposed (dry)litter area index
+biogeophys/log:CanopyFluxesMod.F90:            rdl = ( 1._r8 - exp(-elai_dl) ) / ( 0.004_r8*uaf(p)) ! dry litter layer resistance
+biogeophys/log:CanopyHydrologyMod.F90:          elai                 => canopystate_inst%elai_patch             , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow
+biogeophys/log:CanopyHydrologyMod.F90:                   h2ocanmx = dewmx(p) * (elai(p) + esai(p))
+biogeophys/log:CanopyHydrologyMod.F90:                      fpi = interception_fraction * tanh(elai(p) + esai(p))
+biogeophys/log:CanopyHydrologyMod.F90:                      fpi = 0.25_r8*(1._r8 - exp(-0.5_r8*(elai(p) + esai(p))))
+biogeophys/log:CanopyHydrologyMod.F90:                      snocanmx = 60._r8*dewmx(p) * (elai(p) + esai(p))  ! 6*(LAI+SAI)
+biogeophys/log:CanopyHydrologyMod.F90:                      fpisnow = (1._r8 - exp(-0.5_r8*(elai(p) + esai(p))))  ! max interception of 1 
+biogeophys/log:CanopyHydrologyMod.F90:     ! fraction of elai which is dry. The variable ``fwet'' is the
+biogeophys/log:CanopyHydrologyMod.F90:     ! is the fraction of elai which is dry because only leaves
+biogeophys/log:CanopyHydrologyMod.F90:          elai           => canopystate_inst%elai_patch           , & ! Input:  [real(r8) (:) ]  one-sided leaf area index with burying by snow
+biogeophys/log:CanopyHydrologyMod.F90:                vegt    = frac_veg_nosno(p)*(elai(p) + esai(p))
+biogeophys/log:CanopyHydrologyMod.F90:             fdry(p) = (1._r8-fwet(p))*elai(p)/(elai(p)+esai(p))
+biogeophys/log:CanopyStateType.F90:     real(r8) , pointer :: elai_patch               (:)   ! patch canopy one-sided leaf area index with burying by snow
+biogeophys/log:CanopyStateType.F90:     real(r8) , pointer :: elai240_patch            (:)   ! patch canopy one-sided leaf area index with burying by snow average over 10days 
+biogeophys/log:CanopyStateType.F90:    allocate(this%elai_patch               (begp:endp))           ; this%elai_patch               (:)   = nan
+biogeophys/log:CanopyStateType.F90:    allocate(this%elai240_patch            (begp:endp))           ; this%elai240_patch            (:)   = nan
+biogeophys/log:CanopyStateType.F90:    this%elai_patch(begp:endp) = spval
+biogeophys/log:CanopyStateType.F90:         ptr_patch=this%elai_patch)
+biogeophys/log:CanopyStateType.F90:    this%elai240_patch(begp:endp) = spval
+biogeophys/log:CanopyStateType.F90:         ptr_patch=this%elai240_patch, default='inactive')
+biogeophys/log:CanopyStateType.F90:    this%elai240_patch(bounds%begp:bounds%endp) = spval
+biogeophys/log:CanopyStateType.F90:    this%elai240_patch(begp:endp) = rbufslp(begp:endp)
+biogeophys/log:CanopyStateType.F90:    ! Accumulate and extract elai240
+biogeophys/log:CanopyStateType.F90:       rbufslp(p) = this%elai_patch(p)
+biogeophys/log:CanopyStateType.F90:    call extract_accum_field ('LAI240', this%elai240_patch    , nstep)
+biogeophys/log:CanopyStateType.F90:       this%elai_patch(p)       = 0._r8
+biogeophys/log:CanopyStateType.F90:    call restartvar(ncid=ncid, flag=flag, varname='elai', xtype=ncd_double,  &
+biogeophys/log:CanopyStateType.F90:         interpinic_flag='interp', readvar=readvar, data=this%elai_patch)
+biogeophys/log:CanopyTemperatureMod.F90:         elai             =>    canopystate_inst%elai_patch           , & ! Input:  [real(r8) (:)   ] one-sided leaf area index with burying by snow
+biogeophys/log:CanopyTemperatureMod.F90:         emv(p) = 1._r8-exp(-(elai(p)+esai(p))/avmuir)
+biogeophys/log:IrrigationMod.F90:       time_prev, elai, t_soisno, eff_porosity, h2osoi_liq, volr, rof_prognostic)
+biogeophys/log:IrrigationMod.F90:    real(r8), intent(in) :: elai( bounds%begp: )
+biogeophys/log:IrrigationMod.F90:    SHR_ASSERT_ALL((ubound(elai) == (/bounds%endp/)), errMsg(sourcefile, __LINE__))
+biogeophys/log:IrrigationMod.F90:            pft_type=patch%itype(p), elai=elai(p), &
+biogeophys/log:IrrigationMod.F90:  function PointNeedsCheckForIrrig(this, pft_type, elai, time_prev, londeg) &
+biogeophys/log:IrrigationMod.F90:    real(r8), intent(in) :: elai      ! one-sided leaf area index with burying by snow
+biogeophys/log:IrrigationMod.F90:         elai > this%params%irrig_min_lai) then
+biogeophys/log:LunaMod.F90:    elai          => canopystate_inst%elai_patch                      , & ! Input:  [real(r8) (:)   ] one-sided leaf area index with burying by snow                        
+biogeophys/log:PhotosynthesisMod.F90:         elai          => canopystate_inst%elai_patch           , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow
+biogeophys/log:PhotosynthesisMod.F90:         elai          => canopystate_inst%elai_patch           , & ! Input: [real(r8) (:)   ]  one-sided leaf area index with burying by snow
+biogeophys/log:PhotosynthesisMod.F90:    wtl      = (elai(p)+esai(p))*gb_mol
+biogeophys/log:PhotosynthesisMod.F90:       if ( (efpot > 0._r8) .and. (elai(p) > 0._r8) ) then
+biogeophys/log:PhotosynthesisMod.F90:             rppdry_sun = fdry(p)/gb_mol*(laisun(p)/(1._r8/gb_mol+1._r8/gs_mol_sun))/elai(p)
+biogeophys/log:PhotosynthesisMod.F90:             rppdry_sha = fdry(p)/gb_mol*(laisha(p)/(1._r8/gb_mol+1._r8/gs_mol_sha))/elai(p)
+biogeophys/log:PhotosynthesisMod.F90:          gs_mol_sun=gb_mol*qflx_sun*cf*elai(p)/(efpot*fdry(p)*laisun(p)-qflx_sun*cf*elai(p))
+biogeophys/log:PhotosynthesisMod.F90:          gs_mol_sha=gb_mol*qflx_sha*cf*elai(p)/(efpot*fdry(p)*laisha(p)-qflx_sha*cf*elai(p))
+biogeophys/log:SurfaceAlbedoMod.F90:    real(r8) :: blai(bounds%begp:bounds%endp)                                             ! lai buried by snow: tlai - elai
+biogeophys/log:SurfaceAlbedoMod.F90:          elai          =>    canopystate_inst%elai_patch         , & ! Input:  [real(r8)  (:)   ]  one-sided leaf area index with burying by snow
+biogeophys/log:SurfaceAlbedoMod.F90:                 .and. (elai(p) + esai(p)) > 0._r8) then
+biogeophys/log:SurfaceAlbedoMod.F90:       wl(p) = elai(p) / max( elai(p)+esai(p), mpe )
+biogeophys/log:SurfaceAlbedoMod.F90:       ws(p) = esai(p) / max( elai(p)+esai(p), mpe )
+biogeophys/log:SurfaceAlbedoMod.F90:    ! Do this first for elai and esai (not buried by snow) and then for the part of the
+biogeophys/log:SurfaceAlbedoMod.F90:    ! tlai_z summed from 1 to nrad = elai
+biogeophys/log:SurfaceAlbedoMod.F90:          tlai_z(p,1) = elai(p)
+biogeophys/log:SurfaceAlbedoMod.F90:          if (elai(p)+esai(p) == 0._r8) then
+biogeophys/log:SurfaceAlbedoMod.F90:                if (((elai(p)+esai(p))-dincmax_sum) > 1.e-06_r8) then
+biogeophys/log:SurfaceAlbedoMod.F90:                   tlai_z(p,iv) = dinc * elai(p) / max(elai(p)+esai(p), mpe)
+biogeophys/log:SurfaceAlbedoMod.F90:                   tsai_z(p,iv) = dinc * esai(p) / max(elai(p)+esai(p), mpe)
+biogeophys/log:SurfaceAlbedoMod.F90:                   dinc = dincmax - (dincmax_sum - (elai(p)+esai(p)))
+biogeophys/log:SurfaceAlbedoMod.F90:                   tlai_z(p,iv) = dinc * elai(p) / max(elai(p)+esai(p), mpe)
+biogeophys/log:SurfaceAlbedoMod.F90:                   tsai_z(p,iv) = dinc * esai(p) / max(elai(p)+esai(p), mpe)
+biogeophys/log:SurfaceAlbedoMod.F90:                   tlai_z(p,iv) = elai(p) / nrad(p)
+biogeophys/log:SurfaceAlbedoMod.F90:       if (abs(laisum-elai(p)) > 1.e-06_r8 .or. abs(saisum-esai(p)) > 1.e-06_r8) then
+biogeophys/log:SurfaceAlbedoMod.F90:               nrad(p),elai(p),laisum,esai(p),saisum
+biogeophys/log:SurfaceAlbedoMod.F90:          blai(p) = tlai(p) - elai(p)
+biogeophys/log:SurfaceAlbedoMod.F90:             write (iulog,*) tlai(p),elai(p),blai(p),laisum,tsai(p),esai(p),bsai(p),saisum
+biogeophys/log:SurfaceAlbedoMod.F90:    ! Integrate exp(-kn*x) over x=0 to x=elai and assign to shaded canopy,
+biogeophys/log:SurfaceAlbedoMod.F90:          vcmaxcintsha(p) = (1._r8 - exp(-extkn*elai(p))) / extkn
+biogeophys/log:SurfaceAlbedoMod.F90:          if (elai(p) > 0._r8) then
+biogeophys/log:SurfaceAlbedoMod.F90:             vcmaxcintsha(p) = vcmaxcintsha(p) / elai(p)
+biogeophys/log:SurfaceAlbedoMod.F90:          elai         =>    canopystate_inst%elai_patch         , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow
+biogeophys/log:SurfaceAlbedoMod.F90:          t1 = min(h*(elai(p)+esai(p)), 40._r8)
+biogeophys/log:SurfaceAlbedoMod.F90:          t1 = min(twostext(p)*(elai(p)+esai(p)), 40._r8)
+biogeophys/log:SurfaceAlbedoMod.F90:                laisum = elai(p)+esai(p)
+biogeophys/log:SurfaceAlbedoMod.F90:                vcmaxcintsun(p) = (1._r8 - exp(-(extkn+extkb)*elai(p))) / (extkn + extkb)
+biogeophys/log:SurfaceAlbedoMod.F90:                vcmaxcintsha(p) = (1._r8 - exp(-extkn*elai(p))) / extkn - vcmaxcintsun(p)
+biogeophys/log:SurfaceAlbedoMod.F90:                if (elai(p)  >  0._r8) then
+biogeophys/log:SurfaceAlbedoMod.F90:                  vcmaxcintsun(p) = vcmaxcintsun(p) / (fsun_z(p,1)*elai(p))
+biogeophys/log:SurfaceAlbedoMod.F90:                  vcmaxcintsha(p) = vcmaxcintsha(p) / ((1._r8 - fsun_z(p,1))*elai(p))
+biogeophys/log:SurfaceRadiationMod.F90:          elai        => canopystate_inst%elai_patch, &   ! one-sided leaf area index 
+biogeophys/log:SurfaceRadiationMod.F90:        if (elai(p) > 0._r8) then
+biogeophys/log:SurfaceRadiationMod.F90:           fsun(p) = laisun(p) / elai(p)
+biogeophys/log:SurfaceRadiationMod.F90:          elai            =>    canopystate_inst%elai_patch       , & ! Input:  [real(r8) (:)   ] one-sided leaf area index with burying by snow
+biogeophys/log:SurfaceRadiationMod.F90:        if(elai(p)==0.0_r8.and.fabd(p,1)>0._r8)then
+biogeophys/log:SurfaceRadiationMod.F90:           if ( DEBUG ) write(iulog,*) 'absorption without LAI',elai(p),tlai(p),fabd(p,1),p
+main/clm_driver.F90:            elai               = canopystate_inst%elai_patch(bounds_clump%begp:bounds_clump%endp), &
+main/clm_driver.F90:         elai               => canopystate_inst%elai_patch               , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow    
+main/clm_varcon.F90:  real(r8) :: tlsai_crit = 2.0_r8                           ! critical value of elai+esai for which aerodynamic parameters are maximum
+main/log:clm_driver.F90:            elai               = canopystate_inst%elai_patch(bounds_clump%begp:bounds_clump%endp), &
+main/log:clm_driver.F90:         elai               => canopystate_inst%elai_patch               , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow    
+main/log:clm_varcon.F90:  real(r8) :: tlsai_crit = 2.0_r8                           ! critical value of elai+esai for which aerodynamic parameters are maximum
+utils/clmfates_interfaceMod.F90:         elai => canopystate_inst%elai_patch , &
+utils/clmfates_interfaceMod.F90:          elai(col%patchi(c):col%patchf(c)) = 0.0_r8
+utils/clmfates_interfaceMod.F90:             elai(p) = this%fates(nc)%bc_out(s)%elai_pa(ifp)
