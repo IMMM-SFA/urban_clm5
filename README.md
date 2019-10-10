@@ -50,12 +50,3 @@ July 23, 2019
 
 1, add urban surface flux output for studying white roof
 
-
-===============================
-Version 2.1.4
-
-Aug 19, 2019
-
-1, modify temperature scaling for studying white roof 
-
-2, add output to compute relative efficiency of urban surface energy flux

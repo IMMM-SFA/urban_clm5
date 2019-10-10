@@ -98,6 +98,8 @@ module WaterstateType
      real(r8), pointer :: errh2o_col             (:)   ! water conservation error (mm H2O)
      real(r8), pointer :: errh2osno_col          (:)   ! snow water conservation error(mm H2O)
 
+	 real(r8), pointer :: green_roof_water_added_col          (:)   ! green roof water added for conservation checks (mm H2O)
+	 
    contains
 
      procedure          :: Init         
@@ -238,6 +240,7 @@ contains
     allocate(this%errh2o_patch           (begp:endp))                     ; this%errh2o_patch           (:)   = nan
     allocate(this%errh2o_col             (begc:endc))                     ; this%errh2o_col             (:)   = nan
     allocate(this%errh2osno_col          (begc:endc))                     ; this%errh2osno_col          (:)   = nan
+    allocate(this%green_roof_water_added_col          (begc:endc))                     ; this%green_roof_water_added_col          (:)   = nan
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -588,6 +591,11 @@ contains
          avgflag='A', long_name='imbalance in snow depth (liquid water)', &
          ptr_col=this%errh2osno_col, c2l_scale_type='urbanf')
 
+    this%green_roof_water_added_col(begc:endc) = spval
+    call hist_addfld1d(fname='GREEN_WATER', units='mm',  &
+        avgflag='A', long_name='green roof water added', &
+        ptr_col=this%green_roof_water_added_col, c2l_scale_type='urbanf')
+        
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------
@@ -605,8 +613,7 @@ contains
     use shr_const_mod   , only : SHR_CONST_TKFRZ
     use clm_varpar      , only : nlevsoi, nlevgrnd, nlevsno, nlevlak, nlevurb
     use landunit_varcon , only : istwet, istsoil, istdlak, istcrop, istice_mec  
-    use column_varcon   , only : icol_shadewall, icol_road_perv
-    use column_varcon   , only : icol_road_imperv, icol_roof, icol_sunwall
+    use column_varcon   , only : icol_shadewall, icol_road_perv, icol_road_imperv, icol_roof, icol_whiteroof, icol_greenroof, icol_sunwall
     use clm_varcon      , only : denice, denh2o, spval, sb, bdsno 
     use clm_varcon      , only : zlnd, tfrz, spval, pc
     use clm_varctl      , only : fsurdat, iulog
@@ -760,7 +767,7 @@ contains
                   endif
                end do
             else if (lun%urbpoi(l)) then
-               if (col%itype(c) == icol_road_perv) then
+               if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_greenroof) then
                   nlevs = nlevgrnd
                   do j = 1, nlevs
                      if (j <= nlevsoi) then
@@ -874,7 +881,7 @@ contains
     use spmdMod          , only : masterproc
     use clm_varcon       , only : denice, denh2o, pondmx, watmin, spval, nameg
     use landunit_varcon  , only : istcrop, istdlak, istsoil  
-    use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon    , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_time_manager , only : is_first_step
     use clm_varctl       , only : bound_h2osoi
     use ncdio_pio        , only : file_desc_t, ncd_io, ncd_double
@@ -970,7 +977,8 @@ contains
           l = col%landunit(c)
           if ( col%itype(c) == icol_sunwall   .or. &
                col%itype(c) == icol_shadewall .or. &
-               col%itype(c) == icol_roof )then
+               col%itype(c) == icol_roof      .or. &
+               col%itype(c) == icol_whiteroof ) then
              nlevs = nlevurb
           else
              nlevs = nlevgrnd
@@ -990,7 +998,7 @@ contains
           do c = bounds%begc, bounds%endc
              l = col%landunit(c)
              if ( col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall .or. &
-                  col%itype(c) == icol_roof )then
+                  col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof)then
                 nlevs = nlevurb
              else
                 nlevs = nlevgrnd

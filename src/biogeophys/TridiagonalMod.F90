@@ -29,7 +29,7 @@ contains
     use shr_kind_mod   , only : r8 => shr_kind_r8
     use shr_log_mod    , only : errMsg => shr_log_errMsg
     use clm_varpar     , only : nlevurb
-    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon  , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
     use clm_varctl     , only : iulog
     use decompMod      , only : bounds_type
     use ColumnType     , only : col                
@@ -71,7 +71,7 @@ contains
        do fc = 1,numf
           ci = filter(fc)
           if ((col%itype(ci) == icol_sunwall .or. col%itype(ci) == icol_shadewall &
-              .or. col%itype(ci) == icol_roof) .and. j <= nlevurb) then
+              .or. col%itype(ci) == icol_roof .or. col%itype(ci) == icol_whiteroof ) .and. j <= nlevurb) then
              if (j >= jtop(ci)) then
                 if (j == jtop(ci)) then
                    u(ci,j) = r(ci,j) / bet(ci)
@@ -82,7 +82,7 @@ contains
                 end if
              end if
           else if (col%itype(ci) /= icol_sunwall .and. col%itype(ci) /= icol_shadewall &
-                   .and. col%itype(ci) /= icol_roof) then
+                   .and. col%itype(ci) /= icol_roof .and. col%itype(ci) /= icol_whiteroof) then
              if (j >= jtop(ci)) then
                 if (j == jtop(ci)) then
                    u(ci,j) = r(ci,j) / bet(ci)
@@ -100,12 +100,12 @@ contains
        do fc = 1,numf
           ci = filter(fc)
           if ((col%itype(ci) == icol_sunwall .or. col%itype(ci) == icol_shadewall &
-              .or. col%itype(ci) == icol_roof) .and. j <= nlevurb-1) then
+              .or. col%itype(ci) == icol_roof .or. col%itype(ci) == icol_whiteroof ) .and. j <= nlevurb-1) then
              if (j >= jtop(ci)) then
                 u(ci,j) = u(ci,j) - gam(ci,j+1) * u(ci,j+1)
              end if
           else if (col%itype(ci) /= icol_sunwall .and. col%itype(ci) /= icol_shadewall &
-                   .and. col%itype(ci) /= icol_roof) then
+                   .and. col%itype(ci) /= icol_roof .and. col%itype(ci) /= icol_whiteroof ) then
              if (j >= jtop(ci)) then
                 u(ci,j) = u(ci,j) - gam(ci,j+1) * u(ci,j+1)
              end if

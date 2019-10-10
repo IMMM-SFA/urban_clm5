@@ -13,7 +13,7 @@ module SoilHydrologyMod
   use SoilHydrologyType , only : soilhydrology_type  
   use SoilStateType     , only : soilstate_type
   use WaterfluxType     , only : waterflux_type
-  use WaterstateType    , only : waterstate_type
+  use WaterstateType    , only : waterstate_type  
   use TemperatureType   , only : temperature_type
   use LandunitType      , only : lun                
   use ColumnType        , only : col                
@@ -113,11 +113,12 @@ contains
     ! !USES:
     use clm_varcon      , only : denice, denh2o, wimp, pondmx_urban
     use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
-    use column_varcon   , only : icol_road_imperv, icol_road_perv
+    use column_varcon   , only : icol_whiteroof, icol_greenroof, icol_road_imperv, icol_road_perv
     use clm_varpar      , only : nlevsoi, maxpatch_pft
     use clm_time_manager, only : get_step_size
     use clm_varpar      , only : nlayer, nlayert
     use abortutils      , only : endrun
+    use UrbanParamsType , only : green_roof_irrigation
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds               
@@ -145,6 +146,7 @@ contains
     real(r8) :: top_moist(bounds%begc:bounds%endc)         !temporary, soil moisture in top VIC layers
     real(r8) :: top_max_moist(bounds%begc:bounds%endc)     !temporary, maximum soil moisture in top VIC layers
     real(r8) :: top_ice(bounds%begc:bounds%endc)           !temporary, ice len in top VIC layers
+    real(r8) :: xsj(bounds%begc:bounds%endc,1:nlevsoi)     !excess soil water above urban ponding limit
     character(len=32) :: subname = 'SurfaceRunoff'         !subroutine name
     !-----------------------------------------------------------------------
 
@@ -156,11 +158,13 @@ contains
          watsat           =>    soilstate_inst%watsat_col           , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)  
          wtfact           =>    soilstate_inst%wtfact_col           , & ! Input:  [real(r8) (:)   ]  maximum saturated fraction for a gridcell         
          hksat            =>    soilstate_inst%hksat_col            , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity at saturation (mm H2O /s)
-         bsw              =>    soilstate_inst%bsw_col              , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"                        
+         bsw              =>    soilstate_inst%bsw_col              , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b" 
+                                
 
          h2osoi_ice       =>    waterstate_inst%h2osoi_ice_col      , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                                
          h2osoi_liq       =>    waterstate_inst%h2osoi_liq_col      , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)                            
-
+		 green_roof_water_added       =>    waterstate_inst%green_roof_water_added_col      , & ! Output: [real(r8) (:) ]  
+		 
          qflx_snow_h2osfc =>    waterflux_inst%qflx_snow_h2osfc_col , & ! Input:  [real(r8) (:)   ]  snow falling on surface water (mm/s)              
          qflx_floodc      =>    waterflux_inst%qflx_floodc_col      , & ! Input:  [real(r8) (:)   ]  column flux of flood water from RTM               
          qflx_evap_grnd   =>    waterflux_inst%qflx_evap_grnd_col   , & ! Input:  [real(r8) (:)   ]  ground surface evaporation rate (mm H2O/s) [+]    
@@ -271,7 +275,7 @@ contains
 
       do fc = 1, num_urbanc
          c = filter_urbanc(fc)
-         if (col%itype(c) == icol_roof .or. col%itype(c) == icol_road_imperv) then
+         if (col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof .or. col%itype(c) == icol_road_imperv) then
 
             ! If there are snow layers then all qflx_top_soil goes to surface runoff
             if (snl(c) < 0) then
@@ -289,19 +293,52 @@ contains
                qflx_surf(c) = xs(c)
             end if
          else if (col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall) then
-            qflx_surf(c) = 0._r8
+            qflx_surf(c) = 0._r8    	 
          end if
          ! send flood water flux to runoff for all urban columns
          qflx_surf(c) = qflx_surf(c)  + qflx_floodc(c)
 
       end do
-
+      
       ! remove stormflow and snow on h2osfc from qflx_top_soil
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
          ! add flood water flux to qflx_top_soil
          qflx_top_soil(c) = qflx_top_soil(c) + qflx_snow_h2osfc(c) + qflx_floodc(c)
       end do
+           
+    
+           
+    if (green_roof_irrigation) then
+ 
+      
+         do fc = 1, num_urbanc
+            c = filter_urbanc(fc)
+			
+			green_roof_water_added(c) = 0._r8
+			
+			if (col%itype(c) == icol_greenroof) then 
+			
+    	 		do j = 1,nlevsoi
+    	 		
+    	 		    vol_ice(c,j) = min(watsat(c,j), h2osoi_ice(c,j)/(dz(c,j)*denice))
+    	 		    
+    	 		    xsj(c,j) = (watsat(c,j)-vol_ice(c,j))*(dz(c,j)*denh2o)/dtime - h2osoi_liq(c,j)/dtime 
+    	 		    
+            		h2osoi_liq(c,j) = (watsat(c,j)-vol_ice(c,j))*(dz(c,j)*denh2o)
+            		
+            	end do
+				
+				green_roof_water_added(c) = sum(xsj(c,:))*dtime
+				
+            	write(iulog,*) 'water added', sum(xsj(c,:))*dtime
+            	
+    		end if 
+    		
+         end do
+         
+      
+    end if    
 
     end associate
 
@@ -320,7 +357,7 @@ contains
      use clm_varpar       , only : nlayer, nlayert
      use clm_varpar       , only : nlevsoi
      use clm_varcon       , only : denh2o, denice, roverg, wimp, pc, mu, tfrz
-     use column_varcon    , only : icol_roof, icol_road_imperv, icol_sunwall, icol_shadewall, icol_road_perv
+     use column_varcon    , only : icol_roof, icol_whiteroof, icol_greenroof, icol_road_imperv, icol_sunwall, icol_shadewall, icol_road_perv
      use landunit_varcon  , only : istsoil, istcrop
      use clm_time_manager , only : get_step_size
      !
@@ -557,7 +594,7 @@ contains
 
        do fc = 1, num_urbanc
           c = filter_urbanc(fc)
-          if (col%itype(c) /= icol_road_perv) then
+          if (col%itype(c) /= icol_road_perv .and. col%itype(c) /= icol_greenroof) then
              qflx_infl(c) = 0._r8
           end if
        end do
@@ -577,7 +614,7 @@ contains
      use clm_time_manager , only : get_step_size
      use clm_varcon       , only : pondmx, tfrz, watmin,denice,denh2o
      use clm_varpar       , only : nlevsoi
-     use column_varcon    , only : icol_roof, icol_road_imperv
+     use column_varcon    , only : icol_roof, icol_whiteroof, icol_greenroof, icol_road_imperv, icol_road_perv
      !
      ! !ARGUMENTS:
      type(bounds_type)        , intent(in)    :: bounds  
@@ -857,7 +894,7 @@ contains
           c = filter_urbanc(fc)
           ! Renew the ice and liquid mass due to condensation for urban roof and impervious road
 
-          if (col%itype(c) == icol_roof .or. col%itype(c) == icol_road_imperv) then
+          if (col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof .or. col%itype(c) == icol_road_imperv) then
              if (snl(c)+1 >= 1) then
                 h2osoi_liq(c,1) = h2osoi_liq(c,1) + qflx_dew_grnd(c) * dtime
                 h2osoi_ice(c,1) = h2osoi_ice(c,1) + (qflx_dew_snow(c) * dtime)
@@ -887,7 +924,7 @@ contains
      use clm_time_manager , only : get_step_size
      use clm_varpar       , only : nlevsoi, nlevgrnd, nlayer, nlayert
      use clm_varcon       , only : pondmx, tfrz, watmin,rpi, secspday, nlvic
-     use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv
+     use column_varcon    , only : icol_roof, icol_whiteroof, icol_greenroof, icol_road_imperv, icol_road_perv
      use abortutils       , only : endrun
      !
      ! !ARGUMENTS:
@@ -1435,7 +1472,7 @@ contains
 
        do fc = 1, num_urbanc
           c = filter_urbanc(fc)
-          if (col%itype(c) /= icol_road_perv) then
+          if (col%itype(c) /= icol_road_perv .and. col%itype(c) /= icol_greenroof) then
              qflx_drain(c) = 0._r8
              ! This must be done for roofs and impervious road (walls will be zero)
              qflx_qrgwl(c) = qflx_snwcp_liq(c)
@@ -1543,7 +1580,7 @@ contains
      ! !USES:
      use clm_varcon       , only : pondmx, tfrz, watmin,denice,denh2o
      use clm_varpar       , only : nlevsoi
-     use column_varcon    , only : icol_roof, icol_road_imperv
+     use column_varcon    , only : icol_roof, icol_whiteroof, icol_greenroof, icol_road_imperv, icol_road_perv
      !
      ! !ARGUMENTS:
      type(bounds_type)        , intent(in)    :: bounds  
@@ -1667,7 +1704,7 @@ contains
      use clm_time_manager , only : get_step_size
      use clm_varpar       , only : nlevsoi, nlevgrnd, nlayer, nlayert
      use clm_varcon       , only : pondmx, tfrz, watmin,rpi, secspday, nlvic
-     use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv
+     use column_varcon    , only : icol_roof, icol_whiteroof, icol_greenroof, icol_road_imperv, icol_road_perv
      use abortutils       , only : endrun
 
      !
@@ -1829,7 +1866,7 @@ contains
      ! !USES:
      use clm_varcon       , only : denice,denh2o
      use clm_varpar       , only : nlevsoi
-     use column_varcon    , only : icol_roof, icol_road_imperv
+     use column_varcon    , only : icol_roof, icol_whiteroof, icol_greenroof, icol_road_imperv, icol_road_perv
      !
      ! !ARGUMENTS:
      type(bounds_type)        , intent(in)    :: bounds  
@@ -1928,7 +1965,7 @@ contains
      use clm_time_manager , only : get_step_size
      use clm_varpar       , only : nlevsoi, nlevgrnd, nlayer, nlayert
      use clm_varcon       , only : pondmx, watmin,rpi, secspday, nlvic
-     use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv
+     use column_varcon    , only : icol_roof, icol_whiteroof, icol_greenroof, icol_road_imperv, icol_road_perv
      use abortutils       , only : endrun
      use GridcellType     , only : grc                
 
@@ -2234,7 +2271,7 @@ contains
 
        do fc = 1, num_urbanc
           c = filter_urbanc(fc)
-          if (col%itype(c) /= icol_road_perv) then
+          if (col%itype(c) /= icol_road_perv .and. col%itype(c) /= icol_greenroof) then
              qflx_drain(c) = 0._r8
              ! This must be done for roofs and impervious road (walls will be zero)
              qflx_qrgwl(c) = qflx_snwcp_liq(c)
@@ -2257,7 +2294,7 @@ contains
      ! !USES:
      use clm_time_manager , only : get_step_size
      use clm_varpar       , only : nlevsoi
-     use column_varcon    , only : icol_roof, icol_road_imperv
+     use column_varcon    , only : icol_roof, icol_whiteroof, icol_greenroof, icol_road_imperv, icol_road_perv
      !
      ! !ARGUMENTS:
      type(bounds_type)        , intent(in)    :: bounds  
@@ -2314,7 +2351,7 @@ contains
           c = filter_urbanc(fc)
           ! Renew the ice and liquid mass due to condensation for urban roof and impervious road
 
-          if (col%itype(c) == icol_roof .or. col%itype(c) == icol_road_imperv) then
+          if (col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof .or. col%itype(c) == icol_road_imperv) then
              if (snl(c)+1 >= 1) then
                 h2osoi_liq(c,1) = h2osoi_liq(c,1) + qflx_dew_grnd(c) * dtime
                 h2osoi_ice(c,1) = h2osoi_ice(c,1) + (qflx_dew_snow(c) * dtime)

@@ -102,7 +102,7 @@ contains
     use clm_varctl          , only : use_cn, use_lch4, use_fates
     use clm_varctl          , only : iulog, fsurdat, paramfile, soil_layerstruct
     use landunit_varcon     , only : istdlak, istwet, istsoil, istcrop, istice_mec
-    use column_varcon       , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv 
+    use column_varcon       , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv, icol_greenroof
     use fileutils           , only : getfil
     use organicFileMod      , only : organicrd 
     use FuncPedotransferMod , only : pedotransf, get_ipedof
@@ -194,6 +194,22 @@ contains
                /real(col%nbedrock(c))
           soilstate_inst%rootfr_road_perv_col(c,col%nbedrock(c)+1:nlevsoi) = 0._r8
        end if
+       
+       if (lun%urbpoi(l) .and. col%itype(c) == icol_greenroof) then 
+          do lev = 1, nlevgrnd
+             soilstate_inst%rootfr_greenroof_col(c,lev) = 0._r8
+          enddo
+          do lev = 1,nlevsoi
+             soilstate_inst%rootfr_greenroof_col(c,lev) = 1.0_r8/real(nlevsoi,r8)
+          end do
+! remove roots below bedrock layer
+          soilstate_inst%rootfr_greenroof_col(c,1:col%nbedrock(c)) = &
+               soilstate_inst%rootfr_greenroof_col(c,1:col%nbedrock(c)) &
+               + sum(soilstate_inst%rootfr_greenroof_col(c,col%nbedrock(c)+1:nlevsoi)) &
+               /real(col%nbedrock(c))
+          soilstate_inst%rootfr_greenroof_col(c,col%nbedrock(c)+1:nlevsoi) = 0._r8
+       end if
+              
     end do
 
     do c = bounds%begc,bounds%endc
@@ -358,7 +374,7 @@ contains
              soilstate_inst%csol_col(c,lev)= spval
           end do
 
-       else if (lun%urbpoi(l) .and. (col%itype(c) /= icol_road_perv) .and. (col%itype(c) /= icol_road_imperv) )then
+       else if (lun%urbpoi(l) .and. (col%itype(c) /= icol_road_perv) .and. (col%itype(c) /= icol_road_imperv) .and. (col%itype(c) /= icol_greenroof) )then
 
           ! Urban Roof, sunwall, shadewall properties set to special value
           do lev = 1,nlevgrnd
@@ -516,7 +532,7 @@ contains
                 soilstate_inst%watdry_col(c,lev) = spval 
                 soilstate_inst%watopt_col(c,lev) = spval 
              end do
-          else if (col%itype(c) == icol_road_perv) then 
+          else if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_greenroof) then 
              ! pervious road layers  - set in UrbanInitTimeConst
           end if
 

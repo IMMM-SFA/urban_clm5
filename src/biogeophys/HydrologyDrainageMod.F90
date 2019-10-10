@@ -47,7 +47,7 @@ contains
     !
     ! !USES:
     use landunit_varcon  , only : istwet, istsoil, istice_mec, istcrop
-    use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall, icol_shadewall
+    use column_varcon    , only : icol_roof, icol_whiteroof, icol_greenroof, icol_road_imperv, icol_road_perv, icol_sunwall, icol_shadewall
     use clm_varcon       , only : denh2o, denice
     use clm_varctl       , only : use_vichydro
     use clm_varpar       , only : nlevgrnd, nlevurb
@@ -150,7 +150,7 @@ contains
          do fc = 1, num_nolakec
             c = filter_nolakec(fc)
             if ((ctype(c) == icol_sunwall .or. ctype(c) == icol_shadewall &
-                 .or. ctype(c) == icol_roof) .and. j > nlevurb) then
+                 .or. ctype(c) == icol_roof .or. ctype(c) == icol_whiteroof ) .and. j > nlevurb) then
             else
                h2osoi_vol(c,j) = h2osoi_liq(c,j)/(dz(c,j)*denh2o) + h2osoi_ice(c,j)/(dz(c,j)*denice)
             end if
@@ -182,7 +182,7 @@ contains
                  qflx_snwcp_discarded_ice(c) - qflx_snwcp_discarded_liq(c) - &
                  (endwb(c)-begwb(c))/dtime
 
-         else if (lun%urbpoi(l) .and. ctype(c) /= icol_road_perv) then
+         else if (lun%urbpoi(l) .and. ctype(c) /= icol_road_perv .and. ctype(c) /= icol_greenroof) then
 
             qflx_drain_perched(c) = 0._r8
             qflx_h2osfc_surf(c)   = 0._r8

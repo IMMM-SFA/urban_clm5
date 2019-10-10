@@ -509,12 +509,13 @@ contains
     ! !USES
     use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon   , only : icol_road_perv, icol_road_imperv
+    use column_varcon   , only : icol_whiteroof, icol_greenroof
     use landunit_varcon , only : isturb_tbd, isturb_hd, isturb_md, isturb_MIN
     use clm_varpar      , only : maxpatch_urb
     use clm_instur      , only : wt_lunit
     use subgridMod      , only : subgrid_get_info_urban_tbd, subgrid_get_info_urban_hd
     use subgridMod      , only : subgrid_get_info_urban_md
-    use UrbanParamsType , only : urbinp
+    use UrbanParamsType , only : urbinp, white_roof_fraction, green_roof_fraction
     use decompMod       , only : ldecomp
     use pftconMod       , only : noveg
     !
@@ -573,10 +574,10 @@ contains
           
           if (m == 1) then
              ctype = icol_roof
-             wtcol2lunit = wtlunit_roof
+             wtcol2lunit = wtlunit_roof * (1 - white_roof_fraction - green_roof_fraction)
           else if (m == 2) then
              ctype = icol_sunwall
-             wtcol2lunit = (1. - wtlunit_roof)/3
+             wtcol2lunit = (1. - wtlunit_roof)/3     ! why divide by 3??
           else if (m == 3) then
              ctype = icol_shadewall
              wtcol2lunit = (1. - wtlunit_roof)/3
@@ -586,6 +587,12 @@ contains
           else if (m == 5) then
              ctype = icol_road_perv
              wtcol2lunit = ((1. - wtlunit_roof)/3) * (wtroad_perv)
+          else if (m == 6) then
+             ctype = icol_whiteroof
+             wtcol2lunit = wtlunit_roof * white_roof_fraction        
+          else if (m == 7) then
+             ctype = icol_greenroof
+             wtcol2lunit = wtlunit_roof * green_roof_fraction                       
           end if
 
           call add_column(ci=ci, li=li, ctype=ctype, wtlunit=wtcol2lunit)

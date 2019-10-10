@@ -45,6 +45,7 @@ module FrictionVelocityMod
      real(r8), pointer, public :: rb1_patch        (:)   ! patch aerodynamical resistance (s/m) (for dry deposition of chemical tracers)
      real(r8), pointer, public :: rb10_patch       (:)   ! 10-day mean patch aerodynamical resistance (s/m) (for LUNA model)
      real(r8), pointer, public :: ram1_patch       (:)   ! patch aerodynamical resistance (s/m)
+     real(r8), pointer, public :: ra_canyon_resistance_patch       (:)   ! patch urban canyon resistance (s/m)
      real(r8), pointer, public :: z0m_patch        (:)   ! patch momentum roughness length (m)
      real(r8), pointer, public :: z0mv_patch       (:)   ! patch roughness length over vegetation, momentum [m]
      real(r8), pointer, public :: z0hv_patch       (:)   ! patch roughness length over vegetation, sensible heat [m]
@@ -122,6 +123,7 @@ contains
     allocate(this%rb1_patch        (begp:endp)) ; this%rb1_patch        (:)   = nan
     allocate(this%rb10_patch       (begp:endp)) ; this%rb10_patch       (:)   = spval
     allocate(this%ram1_patch       (begp:endp)) ; this%ram1_patch       (:)   = nan
+    allocate(this%ra_canyon_resistance_patch       (begp:endp)) ; this%ra_canyon_resistance_patch       (:)   = nan
     allocate(this%z0m_patch        (begp:endp)) ; this%z0m_patch        (:)   = nan
     allocate(this%z0mv_patch       (begp:endp)) ; this%z0mv_patch       (:)   = nan
     allocate(this%z0hv_patch       (begp:endp)) ; this%z0hv_patch       (:)   = nan
@@ -129,6 +131,7 @@ contains
     allocate(this%z0mg_col         (begc:endc)) ; this%z0mg_col         (:)   = nan
     allocate(this%z0qg_col         (begc:endc)) ; this%z0qg_col         (:)   = nan
     allocate(this%z0hg_col         (begc:endc)) ; this%z0hg_col         (:)   = nan
+    
 
   end subroutine InitAllocate
 
@@ -194,6 +197,13 @@ contains
             ptr_patch=this%ram1_patch, default='inactive')
     end if
 
+   ! if (use_cn) then
+       this%ra_canyon_resistance_patch(begp:endp) = spval
+       call hist_addfld1d (fname='RA_CANYON', units='s/m', &
+            avgflag='A', long_name='canyon resistance ', &
+            ptr_patch=this%ra_canyon_resistance_patch, default='inactive')
+   ! end if
+    
     if (use_cn) then
        this%fv_patch(begp:endp) = spval
        call hist_addfld1d (fname='FV', units='m/s', &

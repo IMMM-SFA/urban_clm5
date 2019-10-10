@@ -654,6 +654,21 @@ contains
             ptr_lnd=this%forc_pch4_grc)
     end if
 
+    !!!wangly
+    this%forc_rho_not_downscaled_grc(begg:endg) = spval
+    call hist_addfld1d (fname='ATM_DENSITY', units='kg/m**3',  &
+         avgflag='A', long_name='atmospheric air density', &
+         ptr_gcell=this%forc_rho_not_downscaled_grc, default='inactive')
+    this%forc_pbot_not_downscaled_grc(begg:endg) = spval
+    call hist_addfld1d (fname='PBOT_from_atm', units='Pa',  &
+         avgflag='A', long_name='atmospheric pressure at surface received from atmosphere (pre_downscaling)', &
+         ptr_gcell=this%forc_pbot_not_downscaled_grc, default='inactive')
+    this%forc_q_not_downscaled_grc(begg:endg) = spval
+    call hist_addfld1d (fname='QBOT_from_atm', units='kg/kg',  &
+         avgflag='A', long_name='atmospheric specific humidity received from atmosphere (pre_downscaling)', &
+         ptr_gcell=this%forc_q_not_downscaled_grc, default='inactive')
+    !!!wangly
+
     this%forc_t_not_downscaled_grc(begg:endg) = spval
     call hist_addfld1d (fname='Tair_from_atm', units='K',  &
          avgflag='A', long_name='atmospheric air temperature received from atmosphere (pre-downscaling)', &
