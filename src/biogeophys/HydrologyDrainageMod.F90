@@ -92,6 +92,13 @@ contains
          h2osoi_liq         => waterstate_inst%h2osoi_liq_col        , & ! Output: liquid water (kg/m2) 
          h2osoi_vol         => waterstate_inst%h2osoi_vol_col        , & ! Output: volumetric soil water 
                                                                          ! (0<=h2osoi_vol<=watsat) [m3/m3]
+         h2osoi_vol_greenroof => waterstate_inst%h2osoi_vol_greenroof_col , & ! Output: urban green roof volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+         h2osoi_vol_roadperv  => waterstate_inst%h2osoi_vol_roadperv_col  , & ! Output: urban pervious road volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+         sucsat               => soilstate_inst%sucsat_col                , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
+         watsat               => soilstate_inst%watsat_col                , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)  
+         sucsat_greenroof     => soilstate_inst%sucsat_greenroof_col      , & ! Output: [real(r8) (:,:) ]  urban green roof minimum soil suction (mm)                       
+         watsat_greenroof     => soilstate_inst%watsat_greenroof_col      , & ! Output: [real(r8) (:,:) ]  urban green roof volumetric soil water at saturation (porosity)  
+         watsat_roadperv     => soilstate_inst%watsat_roadperv_col        , & ! Output: [real(r8) (:,:) ]  urban pervious road volumetric soil water at saturation (porosity)  
          qflx_evap_tot      => waterflux_inst%qflx_evap_tot_col      , & ! Input: qflx_evap_soi + qflx_evap_can + qflx_tran_veg     
          qflx_snwcp_ice     => waterflux_inst%qflx_snwcp_ice_col     , & ! Input: excess solid h2o due to snow 
                                                                          ! capping (outgoing) (mm H2O /s) [+]
@@ -108,6 +115,11 @@ contains
          qflx_surf          => waterflux_inst%qflx_surf_col          , & ! surface runoff (mm H2O /s)      
          qflx_infl          => waterflux_inst%qflx_infl_col          , & ! infiltration (mm H2O /s)   
          qflx_qrgwl         => waterflux_inst%qflx_qrgwl_col         , & ! qflx_surf at glaciers, wetlands, lakes
+         qflx_surf_greenroof          => waterflux_inst%qflx_surf_greenroof_col          , & ! urban green roof surface runoff (mm H2O /s)      
+         qflx_h2osfc_surf_greenroof   => waterflux_inst%qflx_h2osfc_surf_greenroof_col   , & ! urban green roof surface water runoff (mm/s)  
+         qflx_qrgwl_greenroof         => waterflux_inst%qflx_qrgwl_greenroof_col         , & ! urban green roof qflx_surf at glaciers, wetlands, lakes
+         qflx_drain_greenroof         => waterflux_inst%qflx_drain_greenroof_col         , & ! urban green roof sub-surface runoff (mm H2O /s) 
+         qflx_drain_perched_greenroof => waterflux_inst%qflx_drain_perched_greenroof_col , & ! urban green roof sub-surface runoff from perched zwt (mm H2O /s)
          qflx_runoff        => waterflux_inst%qflx_runoff_col        , & ! total runoff 
                                                                          ! (qflx_drain+qflx_surf+qflx_qrgwl) (mm H2O /s)
          qflx_runoff_u      => waterflux_inst%qflx_runoff_u_col      , & ! Urban total runoff (qflx_drain+qflx_surf) (mm H2O /s)
@@ -216,6 +228,23 @@ contains
             qflx_runoff_r(c) = qflx_runoff(c)
          end if
 
+      end do
+
+      do fc = 1, num_urbanc
+        c = filter_urbanc(fc)
+        if (col%itype(c) == icol_greenroof) then
+          sucsat_greenroof(c,:) = sucsat(c,:)
+          watsat_greenroof(c,:) = watsat(c,:)
+          h2osoi_vol_greenroof(c,:) = h2osoi_vol(c,:)
+          qflx_surf_greenroof(c) = qflx_surf(c)
+          qflx_h2osfc_surf_greenroof(c) = qflx_h2osfc_surf(c)
+          qflx_qrgwl_greenroof(c) = qflx_qrgwl(c)
+          qflx_drain_greenroof(c) = qflx_drain(c)
+          qflx_drain_perched_greenroof(c) = qflx_drain_perched(c)
+        else if (col%itype(c) == icol_road_perv) then
+          watsat_roadperv(c,:) = watsat(c,:)
+          h2osoi_vol_roadperv(c,:) = h2osoi_vol(c,:)
+        end if
       end do
 
     end associate

@@ -163,9 +163,8 @@ contains
 
          h2osoi_ice       =>    waterstate_inst%h2osoi_ice_col      , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                                
          h2osoi_liq       =>    waterstate_inst%h2osoi_liq_col      , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)                            
-         green_roof_water_added   =>  waterstate_inst%green_roof_water_added_col    , & ! Output: [real(r8) (:) ]  
-         h2osoi_liq_tot_greenroof =>  waterstate_inst%h2osoi_liq_tot_greenroof_col  , & ! Output: [real(r8) (:,:) ]  urban green roof vertically summed soil liquid water (mm)
- 
+         green_roof_water_added   =>  waterstate_inst%green_roof_water_added_col    , & ! Output: [real(r8) (:) ] ! green roof water added for conservation checks (mm H2O) 
+
          qflx_snow_h2osfc =>    waterflux_inst%qflx_snow_h2osfc_col , & ! Input:  [real(r8) (:)   ]  snow falling on surface water (mm/s)              
          qflx_floodc      =>    waterflux_inst%qflx_floodc_col      , & ! Input:  [real(r8) (:)   ]  column flux of flood water from RTM               
          qflx_evap_grnd   =>    waterflux_inst%qflx_evap_grnd_col   , & ! Input:  [real(r8) (:)   ]  ground surface evaporation rate (mm H2O/s) [+]    
@@ -975,6 +974,7 @@ contains
      real(r8) :: frac                     ! temporary variable for ARNO subsurface runoff calculation
      real(r8) :: rel_moist                ! relative moisture, temporary variable
      real(r8) :: wtsub_vic                ! summation of hk*dzmm for layers in the third VIC layer
+     real(r8) :: rsub_top_greenroof(bounds%begc:bounds%endc)       ! subsurface runoff - topographic control (mm/s)
      !-----------------------------------------------------------------------
 
      associate(                                                            & 
@@ -1980,6 +1980,7 @@ contains
      real(r8) :: xsi(bounds%begc:bounds%endc)            ! excess soil water above saturation at layer i (mm)
      real(r8) :: xsia(bounds%begc:bounds%endc)           ! available pore space at layer i (mm)
      real(r8) :: xs1(bounds%begc:bounds%endc)            ! excess soil water above saturation at layer 1 (mm)
+     real(r8) :: xs2(bounds%begc:bounds%endc)            ! excess soil water above saturation at layer 1 (mm)
      real(r8) :: smpfz(1:nlevsoi)                        ! matric potential of layer right above water table (mm)
      real(r8) :: wtsub                                   ! summation of hk*dzmm for layers below water table (mm**2/s)
      real(r8) :: dzsum                                   ! summation of dzmm of layers below water table (mm)
@@ -2039,6 +2040,11 @@ contains
           qcharge            =>    soilhydrology_inst%qcharge_col        , & ! Input:  [real(r8) (:)   ] aquifer recharge rate (mm/s)                      
           origflag           =>    soilhydrology_inst%origflag           , & ! Input:  logical
           h2osfcflag         =>    soilhydrology_inst%h2osfcflag         , & ! Input:  logical
+
+          qflx_drain_greenroof     => waterflux_inst%qflx_drain_greenroof_col    , & ! Output: [real(r8) (:)   ] urban green roof sub-surface runoff (mm H2O /s)    
+          qflx_rsub_sat_greenroof  => waterflux_inst%qflx_rsub_sat_greenroof_col , & ! Output: [real(r8) (:)   ] urban green roof soil saturation excess [mm h2o/s]                 
+          rsub_top_greenroof       => waterflux_inst%rsub_top_greenroof_col      , & ! Output: [real(r8) (:)   ] urban green roof subsurface runoff - topographic control (mm/s)                
+          xs1_greenroof            => waterflux_inst%xs1_greenroof_col           , & ! Output: [real(r8) (:)   ] urban green roof excess soil water above saturation at layer 1 (mm)         
           
           qflx_snwcp_liq     =>    waterflux_inst%qflx_snwcp_liq_col     , & ! Output: [real(r8) (:)   ] excess rainfall due to snow capping (mm H2O /s) [+]
           qflx_ice_runoff_xs =>    waterflux_inst%qflx_ice_runoff_xs_col , & ! Output: [real(r8) (:)   ] solid runoff from excess ice in soil (mm H2O /s) [+]
@@ -2157,7 +2163,7 @@ contains
 
        !  excessive water above saturation added to the above unsaturated layer like a bucket
        !  if column fully saturated, excess water goes to runoff
-
+       xs2(c)=0
        do j = nlevsoi,2,-1
           do fc = 1, num_hydrologyc
              c = filter_hydrologyc(fc)
@@ -2174,6 +2180,7 @@ contains
           xs1(c) = max(max(h2osoi_liq(c,1)-watmin,0._r8)- &
                max(0._r8,(pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_ice(c,1)-watmin)),0._r8)
           h2osoi_liq(c,1) = h2osoi_liq(c,1) - xs1(c)
+          !xs2(c) = max(h2osoi_liq(c,1)-(watsat(c,1)*dzmm(c,1)),0._r8)
 
           if (lun%urbpoi(col%landunit(c))) then
              qflx_rsub_sat(c)     = xs1(c) / dtime
@@ -2183,10 +2190,25 @@ contains
              qflx_rsub_sat(c)     = 0._r8
           endif
           ! add in ice check
+!          xs1(c)          = max(max(h2osoi_ice(c,1),0._r8)-max(0._r8,(pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_liq(c,1))),0._r8)
+!          h2osoi_ice(c,1) = min(max(0._r8,pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_liq(c,1)), h2osoi_ice(c,1))
+!          qflx_ice_runoff_xs(c) = xs1(c) / dtime
+       end do
+
+       do fc = 1, num_urbanc
+          c = filter_urbanc(fc)
+          if (col%itype(c) == icol_greenroof) then
+             xs1_greenroof(c) = xs1(c)
+          end if
+       end do
+
+       do fc = 1, num_hydrologyc
+          c = filter_hydrologyc(fc)
+          ! add in ice check
           xs1(c)          = max(max(h2osoi_ice(c,1),0._r8)-max(0._r8,(pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_liq(c,1))),0._r8)
           h2osoi_ice(c,1) = min(max(0._r8,pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_liq(c,1)), h2osoi_ice(c,1))
           qflx_ice_runoff_xs(c) = xs1(c) / dtime
-       end do
+       end do       
 
        ! Limit h2osoi_liq to be greater than or equal to watmin.
        ! Get water needed to bring h2osoi_liq equal watmin from lower layer.
@@ -2261,6 +2283,12 @@ contains
              qflx_drain(c) = 0._r8
              ! This must be done for roofs and impervious road (walls will be zero)
              qflx_qrgwl(c) = qflx_snwcp_liq(c)
+          end if
+          if (col%itype(c) == icol_greenroof) then
+!             qflx_drain_greenroof(c) = qflx_drain(c)
+             qflx_rsub_sat_greenroof(c) = qflx_rsub_sat(c)
+             rsub_top_greenroof(c) = rsub_top(c)
+!             xs1_greenroof(c) = xs1(c)
           end if
        end do
 

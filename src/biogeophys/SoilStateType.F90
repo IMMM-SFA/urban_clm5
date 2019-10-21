@@ -39,8 +39,9 @@ module SoilStateType
      real(r8), pointer :: smpmin_col           (:)   ! col restriction for min of soil potential (mm) 
      real(r8), pointer :: bsw_col              (:,:) ! col Clapp and Hornberger "b" (nlevgrnd)  
      real(r8), pointer :: watsat_col           (:,:) ! col volumetric soil water at saturation (porosity) 
-     real(r8), pointer :: watsat_greenroof_col (:,:) ! col volumetric soil water at saturation (porosity) 
-     real(r8), pointer :: watsat_roadperv_col  (:,:) ! col volumetric soil water at saturation (porosity) 
+     real(r8), pointer :: watsat_greenroof_col (:,:) ! col urban green roof volumetric soil water at saturation (porosity) 
+     real(r8), pointer :: watsat_roadperv_col  (:,:) ! col urban road pervious volumetric soil water at saturation (porosity) 
+     real(r8), pointer :: sucsat_greenroof_col (:,:) ! col urban green roof minimum soil suction (mm) (nlevgrnd)
      real(r8), pointer :: watdry_col           (:,:) ! col btran parameter for btran = 0
      real(r8), pointer :: watopt_col           (:,:) ! col btran parameter for btran = 1
      real(r8), pointer :: watfc_col            (:,:) ! col volumetric soil water at field capacity (nlevsoi)
@@ -145,6 +146,7 @@ contains
     allocate(this%watsat_col           (begc:endc,nlevgrnd))            ; this%watsat_col           (:,:) = nan
     allocate(this%watsat_greenroof_col (begc:endc,nlevgrnd))            ; this%watsat_greenroof_col (:,:) = nan
     allocate(this%watsat_roadperv_col  (begc:endc,nlevgrnd))            ; this%watsat_roadperv_col  (:,:) = nan
+    allocate(this%sucsat_greenroof_col (begc:endc,nlevgrnd))            ; this%sucsat_greenroof_col (:,:) = spval 
     allocate(this%watdry_col           (begc:endc,nlevgrnd))            ; this%watdry_col           (:,:) = spval
     allocate(this%watopt_col           (begc:endc,nlevgrnd))            ; this%watopt_col           (:,:) = spval
     allocate(this%watfc_col            (begc:endc,nlevgrnd))            ; this%watfc_col            (:,:) = nan
@@ -320,6 +322,11 @@ contains
     call hist_addfld2d (fname='watsat_roadperv', units='m^3/m^3', type2d='levgrnd', &
           avgflag='A', long_name='urban road pervious water saturated', &
           ptr_col=this%watsat_roadperv_col, default='inactive')
+
+    this%sucsat_greenroof_col(begc:endc,:) = spval 
+    call hist_addfld2d (fname='sucsat_greenroof', units='mm', type2d='levgrnd', &
+          avgflag='A', long_name='urban green roof minimum soil suction', &
+          ptr_col=this%sucsat_greenroof_col, default='inactive')
 
     if (use_cn) then
        this%eff_porosity_col(begc:endc,:) = spval

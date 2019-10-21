@@ -34,10 +34,9 @@ module WaterstateType
 
      real(r8), pointer :: h2osno_col             (:)   ! col snow water (mm H2O)
      real(r8), pointer :: h2osno_old_col         (:)   ! col snow mass for previous time step (kg/m2) (new)
-     real(r8), pointer :: h2osoi_liq_col         (:,:) ! col liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd) 
-     real(r8), pointer :: h2osoi_liq_tot_greenroof_col (:) ! vertically summed col liquid water (kg/m2) (new) (1:nlevgrnd)     
-     real(r8), pointer :: h2osoi_vol_greenroof_col (:,:)   ! col volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
-     real(r8), pointer :: h2osoi_vol_roadperv_col  (:,:)   !col volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
+     real(r8), pointer :: h2osoi_liq_col         (:,:) ! col liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)   
+     real(r8), pointer :: h2osoi_vol_greenroof_col (:,:)   ! col urban green roof volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
+     real(r8), pointer :: h2osoi_vol_roadperv_col  (:,:)   ! col urban road pervious volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
      real(r8), pointer :: h2osoi_ice_col         (:,:) ! col ice lens (kg/m2) (new) (-nlevsno+1:nlevgrnd)    
      real(r8), pointer :: h2osoi_liq_tot_col     (:)   ! vertically summed col liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)    
      real(r8), pointer :: h2osoi_ice_tot_col     (:)   ! vertically summed col ice lens (kg/m2) (new) (-nlevsno+1:nlevgrnd)    
@@ -196,7 +195,6 @@ contains
     allocate(this%h2osoi_liqvol_col      (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liqvol_col      (:,:) = nan
     allocate(this%h2osoi_ice_col         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_ice_col         (:,:) = nan
     allocate(this%h2osoi_liq_col         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liq_col         (:,:) = nan
-    allocate(this%h2osoi_liq_tot_greenroof_col (begc:endc))               ; this%h2osoi_liq_tot_greenroof_col (:) = nan
     allocate(this%h2osoi_vol_greenroof_col     (begc:endc, 1:nlevgrnd))   ; this%h2osoi_vol_greenroof_col     (:,:) = nan
     allocate(this%h2osoi_vol_roadperv_col      (begc:endc, 1:nlevgrnd))   ; this%h2osoi_vol_roadperv_col      (:,:) = nan
     allocate(this%h2osoi_ice_tot_col     (begc:endc))                     ; this%h2osoi_ice_tot_col     (:)   = nan
@@ -625,11 +623,6 @@ contains
     call hist_addfld2d (fname='H2OSOI_ROADPERV', units='mm3/mm3', type2d='levgrnd', &
           avgflag='A', long_name='urban road pervious volumetric soil water', &
           ptr_col=this%h2osoi_vol_roadperv_col, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
-
-    this%h2osoi_liq_tot_greenroof_col(begc:endc) = spval 
-    call hist_addfld1d (fname='SOILLIQTOT_GREENROOF', units='mm', &
-          avgflag='A', long_name='urban green roof vertically summed soil liquid water', &
-          ptr_col=this%h2osoi_liq_tot_greenroof_col, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
 
     this%green_roof_water_added_col(begc:endc) = spval
     call hist_addfld1d(fname='GREEN_WATER', units='mm',  &
