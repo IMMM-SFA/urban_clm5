@@ -76,3 +76,13 @@ Sep 26, 2019
 
 2, add output for studying green roof
 
+
+===============================
+Version 2.2 
+
+
+October 30, 2019
+
+1, modify initInterp for warm spinup, initInterpMindist.F90
+
+2, modify the maximum green roof soil moisture after irrigation, SoilHydrologyMod.F90
