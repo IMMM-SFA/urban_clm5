@@ -17,6 +17,7 @@ module initInterpMindist
   use spmdMod        , only: masterproc
   use clm_varcon     , only: spval, re
   use glcBehaviorMod , only: glc_behavior_type
+  use column_varcon  , only: icol_whiteroof, icol_greenroof, icol_roof, icol_road_perv
 
   implicit none
   private
@@ -168,7 +169,6 @@ contains
        ! could potentially lead to different behavior in a transient run, if those points
        ! later became active; that's undesirable.
        if (activeo(no)) then 
-          nmin    = 0
           distmin = spval
           hgtdiffmin = spval
           do ni = begi,endi
@@ -604,6 +604,14 @@ contains
                 subgridi%ctype(ni) == subgrido%ctype(no) .and. &
                 subgridi%ltype(ni) == subgrido%ltype(no)) then
           is_sametype = .true.
+       else if (subgridi%ctype(ni) == icol_roof .and. &
+                subgrido%ctype(no) == icol_whiteroof .and. &
+                subgridi%ltype(ni) == subgrido%ltype(no)) then
+          is_sametype = .true.  
+       else if (subgridi%ctype(ni) == icol_road_perv .and. &
+                subgrido%ctype(no) == icol_greenroof .and. &
+                subgridi%ltype(ni) == subgrido%ltype(no)) then
+          is_sametype = .true.         
        end if
     else if (trim(subgridi%name) == 'column' .and. trim(subgrido%name) == 'column') then
        if ( .not. glcmec_must_be_same_type .and. &
@@ -613,6 +621,14 @@ contains
        else if (subgridi%ctype(ni) == subgrido%ctype(no) .and. &
                 subgridi%ltype(ni) == subgrido%ltype(no)) then
           is_sametype = .true.
+       else if (subgridi%ctype(ni) == icol_roof .and. &
+                subgrido%ctype(no) == icol_whiteroof .and. &
+                subgridi%ltype(ni) == subgrido%ltype(no)) then
+          is_sametype = .true.   
+       else if (subgridi%ctype(ni) == icol_road_perv .and. &
+                subgrido%ctype(no) == icol_greenroof .and. &
+                subgridi%ltype(ni) == subgrido%ltype(no)) then
+          is_sametype = .true.  
        end if
     else if (trim(subgridi%name) == 'landunit' .and. trim(subgrido%name) == 'landunit') then
        if (subgridi%ltype(ni) == subgrido%ltype(no)) then
