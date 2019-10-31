@@ -315,8 +315,9 @@ contains
             green_roof_water_added(c) = 0._r8      
             do j = 1,nlevsoi
                vol_ice(c,j) = min(watsat(c,j), h2osoi_ice(c,j)/(dz(c,j)*denice))
-               xsj(c,j) = (watsat(c,j)-vol_ice(c,j))*(dz(c,j)*denh2o)/dtime - h2osoi_liq(c,j)/dtime 
-               h2osoi_liq(c,j) = (watsat(c,j)-vol_ice(c,j))*(dz(c,j)*denh2o)
+               xsj(c,j) = (watsat(c,j)*0.7-vol_ice(c,j))*(dz(c,j)*denh2o)/dtime - h2osoi_liq(c,j)/dtime 
+               xsj(c,j) = max(xsj(c,j),0._r8)
+               h2osoi_liq(c,j) = max((watsat(c,j)*0.7-vol_ice(c,j))*(dz(c,j)*denh2o),h2osoi_liq(c,j))
             end do
             green_roof_water_added(c) = sum(xsj(c,:))*dtime
             !write(iulog,*) 'water added', sum(xsj(c,:))*dtime
