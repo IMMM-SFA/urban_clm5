@@ -480,15 +480,15 @@ contains
          long_name='landunit weight relative to corresponding gridcell',           &
          interpinic_flag='area', readvar=readvar, data=lun%wtgcell)
 
-    call restartvar(ncid=ncid, flag=flag, varname='cols1d_wtxy', xtype=ncd_double,  &
-         dim1name='column',                                                         &
-         long_name='column weight relative to corresponding gridcell', units=' ',   &
-         interpinic_flag='area', readvar=readvar, data=col%wtgcell)
+!    call restartvar(ncid=ncid, flag=flag, varname='cols1d_wtxy', xtype=ncd_double,  &
+!         dim1name='column',                                                         &
+!         long_name='column weight relative to corresponding gridcell', units=' ',   &
+!         interpinic_flag='area', readvar=readvar, data=col%wtgcell)
 
-    call restartvar(ncid=ncid, flag=flag, varname='cols1d_wtlnd', xtype=ncd_double, &
-         dim1name='column',                                                         &
-         long_name='column weight relative to corresponding landunit', units=' ',   &
-         interpinic_flag='area', readvar=readvar, data=col%wtlunit)
+!    call restartvar(ncid=ncid, flag=flag, varname='cols1d_wtlnd', xtype=ncd_double, &
+!         dim1name='column',                                                         &
+!         long_name='column weight relative to corresponding landunit', units=' ',   &
+!         interpinic_flag='area', readvar=readvar, data=col%wtlunit)
 
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_wtxy', xtype=ncd_double,  &
          dim1name='pft',                                                            &
