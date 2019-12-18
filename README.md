@@ -86,3 +86,7 @@ October 30, 2019
 1, modify initInterp for warm spinup, initInterpMindist.F90
 
 2, modify the maximum green roof soil moisture after irrigation, SoilHydrologyMod.F90
+
+December 10, 2019
+
+1, fix a problem in subgridRestMod.F90 that prevented using correct green roof column weights. Now one can restart green roof case from zero green roof weights cases.
