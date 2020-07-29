@@ -58,15 +58,10 @@ module EnergyFluxType
      real(r8), pointer :: eflx_building_heat_errsoi_col(:) ! col heat flux to interior surface of walls and roof for errsoi check (W m-2)
      real(r8), pointer :: eflx_urban_ac_col       (:)   ! col urban air conditioning flux (W/m**2)
      real(r8), pointer :: eflx_urban_heat_col     (:)   ! col urban heating flux (W/m**2)
-     real(r8), pointer :: eflx_building_heat_errsoi_roof_col(:) ! col heat flux to interior surface of roof for errsoi check (W m-2)
-     real(r8), pointer :: eflx_urban_ac_roof_lun            (:)   ! lun urban roof air conditioning flux (W/m**2)
-     real(r8), pointer :: eflx_urban_heat_roof_lun          (:)   ! lun urban roof heating flux (W/m**2)
-     real(r8), pointer :: eflx_building_heat_errsoi_whiteroof_col(:) ! col heat flux to interior surface of white roof for errsoi check (W m-2)
-     real(r8), pointer :: eflx_urban_ac_whiteroof_lun       (:)   ! lun urban white roof air conditioning flux (W/m**2)
-     real(r8), pointer :: eflx_urban_heat_whiteroof_lun     (:)   ! lun urban white roof heating flux (W/m**2)
-     real(r8), pointer :: eflx_building_heat_errsoi_greenroof_col(:) ! col heat flux to interior surface of green roof for errsoi check (W m-2)
-     real(r8), pointer :: eflx_urban_ac_greenroof_lun       (:)   ! lun urban green roof air conditioning flux (W/m**2)
-     real(r8), pointer :: eflx_urban_heat_greenroof_lun     (:)   ! lun urban green roof heating flux (W/m**2)
+     real(r8), pointer :: eflx_building_heat_errsoi_troof_lun(:) ! lun total heat flux to interior surface of roof for errsoi check (W m-2)
+     real(r8), pointer :: eflx_building_heat_errsoi_roof_lun(:) ! lun heat flux to interior surface of roof for errsoi check (W m-2)
+     real(r8), pointer :: eflx_building_heat_errsoi_whiteroof_lun(:) ! lun heat flux to interior surface of white roof for errsoi check (W m-2)
+     real(r8), pointer :: eflx_building_heat_errsoi_greenroof_lun(:) ! lun heat flux to interior surface of green roof for errsoi check (W m-2)
      real(r8), pointer :: eflx_anthro_patch       (:)   ! patch total anthropogenic heat flux (W/m**2)
      real(r8), pointer :: eflx_traffic_patch      (:)   ! patch traffic sensible heat flux (W/m**2)
      real(r8), pointer :: eflx_wasteheat_patch    (:)   ! patch sensible heat flux from domestic heating/cooling sources of waste heat (W/m**2)
@@ -77,6 +72,7 @@ module EnergyFluxType
      real(r8), pointer :: eflx_building_lun       (:)   ! lun building heat flux from change in interior building air temperature (W/m**2)
      real(r8), pointer :: eflx_urban_ac_lun       (:)   ! lun urban air conditioning flux (W/m**2)
      real(r8), pointer :: eflx_urban_heat_lun     (:)   ! lun urban heating flux (W/m**2)
+     real(r8), pointer :: eflx_building_heat_errsoi_troof2_lun(:) ! lun total heat flux to interior surface of roof for errsoi check (W m-2)
 
      real(r8), pointer :: eflx_sh_roof_lun             (:)   ! lun urban roof sensible heat flux (W/m**2)
      real(r8), pointer :: eflx_sh_whiteroof_lun        (:)   ! lun urban white roof sensible heat flux (W/m**2)
@@ -253,15 +249,10 @@ contains
     allocate( this%eflx_building_heat_errsoi_col  (begc:endc))      ; this%eflx_building_heat_errsoi_col(:)= nan
     allocate( this%eflx_urban_ac_col       (begc:endc))             ; this%eflx_urban_ac_col       (:)   = nan
     allocate( this%eflx_urban_heat_col     (begc:endc))             ; this%eflx_urban_heat_col     (:)   = nan
-    allocate( this%eflx_building_heat_errsoi_roof_col  (begc:endc))      ; this%eflx_building_heat_errsoi_roof_col(:)= nan
-    allocate( this%eflx_urban_ac_roof_lun            (begl:endl))   ; this%eflx_urban_ac_roof_lun            (:)   = nan
-    allocate( this%eflx_urban_heat_roof_lun          (begl:endl))   ; this%eflx_urban_heat_roof_lun          (:)   = nan
-    allocate( this%eflx_building_heat_errsoi_whiteroof_col  (begc:endc))      ; this%eflx_building_heat_errsoi_whiteroof_col(:)= nan
-    allocate( this%eflx_urban_ac_whiteroof_lun       (begl:endl))   ; this%eflx_urban_ac_whiteroof_lun       (:)   = nan
-    allocate( this%eflx_urban_heat_whiteroof_lun     (begl:endl))   ; this%eflx_urban_heat_whiteroof_lun     (:)   = nan
-    allocate( this%eflx_building_heat_errsoi_greenroof_col  (begc:endc))      ; this%eflx_building_heat_errsoi_greenroof_col(:)= nan
-    allocate( this%eflx_urban_ac_greenroof_lun       (begl:endl))   ; this%eflx_urban_ac_greenroof_lun       (:)   = nan
-    allocate( this%eflx_urban_heat_greenroof_lun     (begl:endl))   ; this%eflx_urban_heat_greenroof_lun     (:)   = nan
+    allocate( this%eflx_building_heat_errsoi_troof_lun  (begl:endl))     ; this%eflx_building_heat_errsoi_troof_lun(:)     = nan
+    allocate( this%eflx_building_heat_errsoi_roof_lun  (begl:endl))      ; this%eflx_building_heat_errsoi_roof_lun(:)      = nan
+    allocate( this%eflx_building_heat_errsoi_whiteroof_lun  (begl:endl)) ; this%eflx_building_heat_errsoi_whiteroof_lun(:) = nan
+    allocate( this%eflx_building_heat_errsoi_greenroof_lun  (begl:endl)) ; this%eflx_building_heat_errsoi_greenroof_lun(:) = nan
     allocate( this%eflx_wasteheat_patch    (begp:endp))             ; this%eflx_wasteheat_patch    (:)   = nan
     allocate( this%eflx_traffic_patch      (begp:endp))             ; this%eflx_traffic_patch      (:)   = nan
     allocate( this%eflx_heat_from_ac_patch (begp:endp))             ; this%eflx_heat_from_ac_patch (:)   = nan
@@ -269,6 +260,7 @@ contains
     allocate( this%eflx_building_lun       (begl:endl))             ; this%eflx_building_lun       (:)   = nan
     allocate( this%eflx_urban_ac_lun       (begl:endl))             ; this%eflx_urban_ac_lun       (:)   = nan
     allocate( this%eflx_urban_heat_lun     (begl:endl))             ; this%eflx_urban_heat_lun     (:)   = nan
+    allocate( this%eflx_building_heat_errsoi_troof2_lun  (begl:endl))      ; this%eflx_building_heat_errsoi_troof2_lun(:)      = nan
     allocate( this%eflx_traffic_lun        (begl:endl))             ; this%eflx_traffic_lun        (:)   = nan
     allocate( this%eflx_wasteheat_lun      (begl:endl))             ; this%eflx_wasteheat_lun      (:)   = nan
     allocate( this%eflx_anthro_patch       (begp:endp))             ; this%eflx_anthro_patch       (:)   = nan
@@ -728,79 +720,58 @@ contains
        this%eflx_building_heat_errsoi_col(begc:endc) = spval
        call hist_addfld1d (fname='BUILDHEAT', units='W/m^2',  &
             avgflag='A', long_name='heat flux from urban building interior to walls and roof', &
-            ptr_col=this%eflx_building_heat_errsoi_col, set_nourb=0._r8, c2l_scale_type='urbanf')
+            ptr_col=this%eflx_building_heat_errsoi_col, set_nourb=spval, c2l_scale_type='urbanf')
 
        this%eflx_urban_ac_col(begc:endc) = spval
        call hist_addfld1d (fname='URBAN_AC', units='W/m^2',  &
             avgflag='A', long_name='urban air conditioning flux', &
-            ptr_col=this%eflx_urban_ac_col, set_nourb=0._r8, c2l_scale_type='urbanf')
+            ptr_col=this%eflx_urban_ac_col, set_nourb=spval, c2l_scale_type='urbanf')
    
        this%eflx_urban_heat_col(begc:endc) = spval
        call hist_addfld1d (fname='URBAN_HEAT', units='W/m^2',  &
             avgflag='A', long_name='urban heating flux', &
-            ptr_col=this%eflx_urban_heat_col, set_nourb=0._r8, c2l_scale_type='urbanf')
+            ptr_col=this%eflx_urban_heat_col, set_nourb=spval, c2l_scale_type='urbanf')
 
-       this%eflx_building_heat_errsoi_roof_col(begc:endc) = spval
-       call hist_addfld1d (fname='BUILDHEAT_ROOF', units='W/m^2',  &
+       this%eflx_building_heat_errsoi_roof_lun(begl:endl) = spval
+       call hist_addfld1d (fname='BUILDHEAT_REGULARROOF', units='W/m^2',  &
             avgflag='A', long_name='heat flux from urban building interior to roof', &
-            ptr_col=this%eflx_building_heat_errsoi_roof_col, set_nourb=spval, c2l_scale_type='urbanf', default='inactive')
+            ptr_lunit=this%eflx_building_heat_errsoi_roof_lun, set_nourb=spval, l2g_scale_type='unity', default='inactive')
 
-       this%eflx_urban_ac_roof_lun(begl:endl) = spval
-       call hist_addfld1d (fname='URBAN_ROOF_AC', units='W/m^2',  &
-            avgflag='A', long_name='urban roof air conditioning flux', &
-            ptr_lunit=this%eflx_urban_ac_roof_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
-   
-       this%eflx_urban_heat_roof_lun(begl:endl) = spval
-       call hist_addfld1d (fname='URBAN_ROOF_HEAT', units='W/m^2',  &
-            avgflag='A', long_name='urban roof heating flux', &
-            ptr_lunit=this%eflx_urban_heat_roof_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
-
-       this%eflx_building_heat_errsoi_whiteroof_col(begc:endc) = spval
+       this%eflx_building_heat_errsoi_whiteroof_lun(begl:endl) = spval
        call hist_addfld1d (fname='BUILDHEAT_WHITEROOF', units='W/m^2',  &
             avgflag='A', long_name='heat flux from urban building interior to white roof', &
-            ptr_col=this%eflx_building_heat_errsoi_whiteroof_col, set_nourb=spval, c2l_scale_type='urbanf', default='inactive')
+            ptr_lunit=this%eflx_building_heat_errsoi_whiteroof_lun, set_nourb=spval, l2g_scale_type='unity', default='inactive')
 
-       this%eflx_urban_ac_whiteroof_lun(begl:endl) = spval
-       call hist_addfld1d (fname='URBAN_WHITEROOF_AC', units='W/m^2',  &
-            avgflag='A', long_name='urban white roof air conditioning flux', &
-            ptr_lunit=this%eflx_urban_ac_whiteroof_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
-   
-       this%eflx_urban_heat_whiteroof_lun(begl:endl) = spval
-       call hist_addfld1d (fname='URBAN_WHITEROOF_HEAT', units='W/m^2',  &
-            avgflag='A', long_name='urban white roof heating flux', &
-            ptr_lunit=this%eflx_urban_heat_whiteroof_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
-
-       this%eflx_building_heat_errsoi_greenroof_col(begc:endc) = spval
+       this%eflx_building_heat_errsoi_greenroof_lun(begl:endl) = spval
        call hist_addfld1d (fname='BUILDHEAT_GREENROOF', units='W/m^2',  &
             avgflag='A', long_name='heat flux from urban building interior to green roof', &
-            ptr_col=this%eflx_building_heat_errsoi_greenroof_col, set_nourb=spval, c2l_scale_type='urbanf', default='inactive')
+            ptr_lunit=this%eflx_building_heat_errsoi_greenroof_lun, set_nourb=spval, l2g_scale_type='unity', default='inactive')
 
-       this%eflx_urban_ac_greenroof_lun(begl:endl) = spval
-       call hist_addfld1d (fname='URBAN_GREENROOF_AC', units='W/m^2',  &
-            avgflag='A', long_name='urban green roof air conditioning flux', &
-            ptr_lunit=this%eflx_urban_ac_greenroof_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
-   
-       this%eflx_urban_heat_greenroof_lun(begl:endl) = spval
-       call hist_addfld1d (fname='URBAN_GREENROOF_HEAT', units='W/m^2',  &
-            avgflag='A', long_name='urban green roof heating flux', &
-            ptr_lunit=this%eflx_urban_heat_greenroof_lun, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
-    else
-       this%eflx_urban_ac_lun(begl:endl) = spval
+       this%eflx_building_heat_errsoi_troof_lun(begl:endl) = spval
+       call hist_addfld1d (fname='BUILDHEAT_ROOF', units='W/m^2',  &
+            avgflag='A', long_name='total heat flux from urban building interior to roof', &
+            ptr_lunit=this%eflx_building_heat_errsoi_troof_lun, set_nourb=spval, l2g_scale_type='unity', default='inactive')
+   else
+       this%eflx_building_lun(begl:endl) = spval
        call hist_addfld1d (fname='EFLXBUILD', units='W/m^2',  &
             avgflag='A', long_name='building heat flux from change in interior building air temperature', &
-            ptr_lunit=this%eflx_building_lun, set_nourb=0._r8, l2g_scale_type='unity')
+            ptr_lunit=this%eflx_building_lun, set_nourb=spval, l2g_scale_type='unity')
 
        this%eflx_urban_ac_lun(begl:endl) = spval
        call hist_addfld1d (fname='URBAN_AC', units='W/m^2',  &
             avgflag='A', long_name='urban air conditioning flux', &
-            ptr_lunit=this%eflx_urban_ac_lun, set_nourb=0._r8, l2g_scale_type='unity')
+            ptr_lunit=this%eflx_urban_ac_lun, set_nourb=spval, l2g_scale_type='unity')
 
        this%eflx_urban_heat_lun(begl:endl) = spval
        call hist_addfld1d (fname='URBAN_HEAT', units='W/m^2',  &
             avgflag='A', long_name='urban heating flux', &
-            ptr_lunit=this%eflx_urban_heat_lun, set_nourb=0._r8, l2g_scale_type='unity')
-    end if
+            ptr_lunit=this%eflx_urban_heat_lun, set_nourb=spval, l2g_scale_type='unity')
 
+       this%eflx_building_heat_errsoi_troof2_lun(begl:endl) = spval
+       call hist_addfld1d (fname='BUILDHEAT_ROOF', units='W/m^2',  &
+            avgflag='A', long_name='total heat flux from urban building interior to roof', &
+            ptr_lunit=this%eflx_building_heat_errsoi_troof2_lun, set_nourb=spval, l2g_scale_type='unity', default='inactive')
+    end if
 
     this%dgnetdT_patch(begp:endp) = spval
     call hist_addfld1d (fname='DGNETDT', units='W/m^2/K', &

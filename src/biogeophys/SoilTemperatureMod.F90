@@ -148,7 +148,7 @@ contains
     use landunit_varcon          , only : istsoil, istcrop
     use column_varcon            , only : icol_roof, icol_whiteroof, icol_greenroof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
     use BandDiagonalMod          , only : BandDiagonal
-    use UrbanParamsType          , only : IsSimpleBuildTemp, IsProgBuildTemp
+    use UrbanParamsType          , only : IsSimpleBuildTemp, IsProgBuildTemp, white_roof_fraction, green_roof_fraction
     use UrbBuildTempOleson2015Mod, only : BuildingTemperature
     !
     ! !ARGUMENTS:
@@ -253,16 +253,10 @@ contains
          eflx_building_heat_errsoi => energyflux_inst%eflx_building_heat_errsoi_col, & ! Output: [real(r8) (:)]  heat flux from urban building interior to walls, roof (W/m**2)
          eflx_urban_ac_col       => energyflux_inst%eflx_urban_ac_col       , & ! Output: [real(r8) (:)   ]  urban air conditioning flux (W/m**2)    
          eflx_urban_heat_col     => energyflux_inst%eflx_urban_heat_col     , & ! Output: [real(r8) (:)   ]  urban heating flux (W/m**2)          
-
-         eflx_building_heat_errsoi_roof_col => energyflux_inst%eflx_building_heat_errsoi_roof_col, & ! Output: [real(r8) (:)]  heat flux from urban building interior to roof (W/m**2)
-         eflx_urban_ac_roof_lun            => energyflux_inst%eflx_urban_ac_roof_lun            , & ! Output: [real(r8) (:)   ]  urban roof air conditioning flux (W/m**2)    
-         eflx_urban_heat_roof_lun          => energyflux_inst%eflx_urban_heat_roof_lun          , & ! Output: [real(r8) (:)   ]  urban roof heating flux (W/m**2)  
-         eflx_building_heat_errsoi_whiteroof_col => energyflux_inst%eflx_building_heat_errsoi_whiteroof_col, & ! Output: [real(r8) (:)]  heat flux from urban building interior to white roof (W/m**2)
-         eflx_urban_ac_whiteroof_lun       => energyflux_inst%eflx_urban_ac_whiteroof_lun       , & ! Output: [real(r8) (:)   ]  urban white roof air conditioning flux (W/m**2)    
-         eflx_urban_heat_whiteroof_lun     => energyflux_inst%eflx_urban_heat_whiteroof_lun     , & ! Output: [real(r8) (:)   ]  urban white roof heating flux (W/m**2)  
-         eflx_building_heat_errsoi_greenroof_col => energyflux_inst%eflx_building_heat_errsoi_greenroof_col, & ! Output: [real(r8) (:)]  heat flux from urban building interior to green roof (W/m**2)
-         eflx_urban_ac_greenroof_lun       => energyflux_inst%eflx_urban_ac_greenroof_lun       , & ! Output: [real(r8) (:)   ]  urban green roof air conditioning flux (W/m**2)    
-         eflx_urban_heat_greenroof_lun     => energyflux_inst%eflx_urban_heat_greenroof_lun     , & ! Output: [real(r8) (:)   ]  urban green roof heating flux (W/m**2)           
+         eflx_building_heat_errsoi_troof => energyflux_inst%eflx_building_heat_errsoi_troof_lun, & ! Output: [real(r8) (:)]  total heat flux from urban building interior to roof (W/m**2)
+         eflx_building_heat_errsoi_roof => energyflux_inst%eflx_building_heat_errsoi_roof_lun, & ! Output: [real(r8) (:)]  heat flux from urban building interior to roof (W/m**2)
+         eflx_building_heat_errsoi_whiteroof => energyflux_inst%eflx_building_heat_errsoi_whiteroof_lun, & ! Output: [real(r8) (:)]  heat flux from urban building interior to white roof (W/m**2)
+         eflx_building_heat_errsoi_greenroof => energyflux_inst%eflx_building_heat_errsoi_greenroof_lun, & ! Output: [real(r8) (:)]  heat flux from urban building interior to green roof (W/m**2)
 
          emg                     => temperature_inst%emg_col                , & ! Input:  [real(r8) (:)   ]  ground emissivity                       
          tssbef                  => temperature_inst%t_ssbef_col            , & ! Input:  [real(r8) (:,:) ]  temperature at previous time step [K] 
@@ -285,7 +279,7 @@ contains
          )
 
       ! Get step size
-
+      
       dtime = get_step_size()
 
       if ( IsSimpleBuildTemp() ) call BuildingHAC( bounds, num_urbanl, &
@@ -466,12 +460,9 @@ contains
                         else if (ctype(c) == icol_shadewall) then
                           fn1(c,j) = tk(c,j) * (t_shdw_inner(l) - t_soisno(c,j))/(zi(c,j) - z(c,j))
                           fn(c,j)  = tk(c,j) * (t_shdw_inner(l) - tssbef(c,j))/(zi(c,j) - z(c,j))
-                        else if (ctype(c) == icol_roof) then
+                        else if (ctype(c) == icol_roof .or. ctype(c) == icol_whiteroof) then
                           fn1(c,j) = tk(c,j) * (t_roof_inner(l) - t_soisno(c,j))/(zi(c,j) - z(c,j))
                           fn(c,j)  = tk(c,j) * (t_roof_inner(l) - tssbef(c,j))/(zi(c,j) - z(c,j))
-                        else if (ctype(c) == icol_whiteroof) then
-                          fn1(c,j) = tk(c,j) * (t_whiteroof_inner(l) - t_soisno(c,j))/(zi(c,j) - z(c,j))
-                          fn(c,j)  = tk(c,j) * (t_whiteroof_inner(l) - tssbef(c,j))/(zi(c,j) - z(c,j)) 
                         end if
                      end if
                   end if
@@ -487,8 +478,8 @@ contains
                             fn1(c,j) = tk(c,j) * (t_building(l) - t_soisno(c,j))/(zi(c,j) - z(c,j))
                             fn(c,j)  = tk(c,j) * (t_building(l) - tssbef(c,j) )/(zi(c,j) - z(c,j))    
                          else
-                            fn1(c,j) = tk(c,j) * (t_greenroof_inner(l) - t_soisno(c,j))/(zi(c,j) - z(c,j))
-                            fn(c,j)  = tk(c,j) * (t_greenroof_inner(l) - tssbef(c,j))/(zi(c,j) - z(c,j))
+                            fn1(c,j) = tk(c,j) * (t_roof_inner(l) - t_soisno(c,j))/(zi(c,j) - z(c,j))
+                            fn(c,j)  = tk(c,j) * (t_roof_inner(l) - tssbef(c,j))/(zi(c,j) - z(c,j))
                          end if 
                       else
                         fn1(c,j) = 0._r8
@@ -498,7 +489,6 @@ contains
             end if
          end do
       end do
-
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          l = col%landunit(c)
@@ -521,21 +511,18 @@ contains
                  eflx_urban_ac_col(c) = 0._r8
                  eflx_urban_heat_col(c) = 0._r8
                end if
+               if (col%itype(c) == icol_roof) then
+                 eflx_building_heat_errsoi_roof(l) = eflx_building_heat_errsoi(c)            
+               else if (col%itype(c) == icol_whiteroof) then
+                 eflx_building_heat_errsoi_whiteroof(l) = eflx_building_heat_errsoi(c)           
+               else if (col%itype(c) == icol_greenroof) then
+                 eflx_building_heat_errsoi_greenroof(l) = eflx_building_heat_errsoi(c)
+               end if 
+               eflx_building_heat_errsoi_troof(l) = eflx_building_heat_errsoi_roof(l)*(1._r8-white_roof_fraction-green_roof_fraction) &
+                                                    + eflx_building_heat_errsoi_whiteroof(l)*white_roof_fraction &
+                                                    + eflx_building_heat_errsoi_greenroof(l)*green_roof_fraction        
             end if
-            if (col%itype(c) == icol_roof) then
-                 eflx_building_heat_errsoi_roof_col(c) = eflx_building_heat_errsoi(c)            
-                 eflx_urban_ac_roof_lun(l) = eflx_urban_ac_col(c)
-                 eflx_urban_heat_roof_lun(l) = eflx_urban_heat_col(c)  
-            else if (col%itype(c) == icol_whiteroof) then
-                 eflx_building_heat_errsoi_whiteroof_col(c) = eflx_building_heat_errsoi(c)           
-                 eflx_urban_ac_whiteroof_lun(l) = eflx_urban_ac_col(c)
-                 eflx_urban_heat_whiteroof_lun(l) = eflx_urban_heat_col(c) 
-            else if (col%itype(c) == icol_greenroof) then
-                 eflx_building_heat_errsoi_greenroof_col(c) = eflx_building_heat_errsoi(c)
-                 eflx_urban_ac_greenroof_lun(l) = eflx_urban_ac_col(c)
-                 eflx_urban_heat_greenroof_lun(l) = eflx_urban_heat_col(c)
-            end if            
-         end if
+         end if 
       end do
 
       ! compute phase change of h2osfc
@@ -1803,10 +1790,8 @@ contains
                            fn(c,j) = tk(c,j) * (t_sunw_inner(l) - cnfac*t_soisno(c,j))/(zi(c,j) - z(c,j))
                         else if (ctype(c) == icol_shadewall) then
                            fn(c,j) = tk(c,j) * (t_shdw_inner(l) - cnfac*t_soisno(c,j))/(zi(c,j) - z(c,j))
-                        else if (ctype(c) == icol_roof) then
+                        else if (ctype(c) == icol_roof .or. ctype(c) == icol_whiteroof) then
                            fn(c,j) = tk(c,j) * (t_roof_inner(l) - cnfac*t_soisno(c,j))/(zi(c,j) - z(c,j))
-                        else if (ctype(c) == icol_whiteroof) then
-                           fn(c,j) = tk(c,j) * (t_whiteroof_inner(l) - cnfac*t_soisno(c,j))/(zi(c,j) - z(c,j))
                         end if
                      end if
                   end if
@@ -1827,7 +1812,7 @@ contains
                         if ( IsSimpleBuildTemp() )then
                            fn(c,j) = tk(c,j) * (t_building(l) - cnfac*t_soisno(c,j))/(zi(c,j) - z(c,j))
                         else
-                           fn(c,j) = tk(c,j) * (t_greenroof_inner(l) - cnfac*t_soisno(c,j))/(zi(c,j) - z(c,j))
+                           fn(c,j) = tk(c,j) * (t_roof_inner(l) - cnfac*t_soisno(c,j))/(zi(c,j) - z(c,j))
                         end if 
                      else
                         fn(c,j) = eflx_bot(c)     

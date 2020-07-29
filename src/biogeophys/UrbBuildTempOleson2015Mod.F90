@@ -207,11 +207,11 @@ contains
                                  hcv_floor, hcv_floor_enhanced, hcv_sunw, hcv_shdw, &
                                  em_roof_int, em_floor_int, em_sunw_int, em_shdw_int, &
                                  dz_floor, dens_floor, cp_floor, vent_ach
-    use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall, icol_whiteroof, icol_greenroof
     use clm_varctl      , only : iulog
     use abortutils      , only : endrun
     use clm_varpar      , only : nlevurb, nlevsno, nlevgrnd
-    use UrbanParamsType , only : urban_hac, urban_hac_off, urban_hac_on, urban_wasteheat_on
+    use UrbanParamsType , only : urban_hac, urban_hac_off, urban_hac_on, urban_wasteheat_on, white_roof_fraction, green_roof_fraction
 !
 ! !ARGUMENTS:
     implicit none
@@ -257,17 +257,27 @@ contains
     real(r8) :: vf_ww(bounds%begl:bounds%endl)             ! view factor of wall for wall (-)
     real(r8) :: zi_roof_innerl(bounds%begl:bounds%endl)    ! interface depth of nlevurb roof (m)
     real(r8) :: z_roof_innerl(bounds%begl:bounds%endl)     ! node depth of nlevurb roof (m)
+    real(r8) :: zi_whiteroof_innerl(bounds%begl:bounds%endl)    ! interface depth of nlevurb roof (m)
+    real(r8) :: z_whiteroof_innerl(bounds%begl:bounds%endl)     ! node depth of nlevurb roof (m)
+    real(r8) :: zi_greenroof_innerl(bounds%begl:bounds%endl)    ! interface depth of nlevurb roof (m)
+    real(r8) :: z_greenroof_innerl(bounds%begl:bounds%endl)     ! node depth of nlevurb roof (m)
     real(r8) :: zi_sunw_innerl(bounds%begl:bounds%endl)    ! interface depth of nlevurb sunwall (m)
     real(r8) :: z_sunw_innerl(bounds%begl:bounds%endl)     ! node depth of nlevurb sunwall (m)
     real(r8) :: zi_shdw_innerl(bounds%begl:bounds%endl)    ! interface depth of nlevurb shadewall (m)
     real(r8) :: z_shdw_innerl(bounds%begl:bounds%endl)     ! node depth of nlevurb shadewall (m)
     real(r8) :: t_roof_innerl_bef(bounds%begl:bounds%endl) ! roof temperature at nlevurb node depth at previous time step (K)
+    real(r8) :: t_whiteroof_innerl_bef(bounds%begl:bounds%endl)   ! white roof temperature at nlevurb node depth at previous time step (K)
+    real(r8) :: t_greenroof_innerl_bef(bounds%begl:bounds%endl)   ! green roof temperature at nlevurb node depth at previous time step (K)
     real(r8) :: t_sunw_innerl_bef(bounds%begl:bounds%endl) ! sunwall temperature at nlevurb node depth at previous time step (K)
     real(r8) :: t_shdw_innerl_bef(bounds%begl:bounds%endl) ! shadewall temperature at nlevurb node depth at previous time step (K)
     real(r8) :: t_roof_innerl(bounds%begl:bounds%endl)     ! roof temperature at nlevurb node depth (K)
+    real(r8) :: t_whiteroof_innerl(bounds%begl:bounds%endl)       ! white roof temperature at nlevurb node depth (K)
+    real(r8) :: t_greenroof_innerl(bounds%begl:bounds%endl)       ! green roof temperature at nlevurb node depth (K)
     real(r8) :: t_sunw_innerl(bounds%begl:bounds%endl)     ! sunwall temperature at nlevurb node depth (K)
     real(r8) :: t_shdw_innerl(bounds%begl:bounds%endl)     ! shadewall temperature at nlevurb node depth (K)
     real(r8) :: tk_roof_innerl(bounds%begl:bounds%endl)    ! roof thermal conductivity at nlevurb interface depth (W m-1 K-1)
+    real(r8) :: tk_whiteroof_innerl(bounds%begl:bounds%endl)      ! white roof thermal conductivity at nlevurb interface depth (W m-1 K-1)
+    real(r8) :: tk_greenroof_innerl(bounds%begl:bounds%endl)      ! green roof thermal conductivity at nlevurb interface depth (W m-1 K-1)
     real(r8) :: tk_sunw_innerl(bounds%begl:bounds%endl)    ! sunwall thermal conductivity at nlevurb interface depth (W m-1 K-1)
     real(r8) :: tk_shdw_innerl(bounds%begl:bounds%endl)    ! shadewall thermal conductivity at nlevurb interface depth (W m-1 K-1)
     real(r8) :: qrd_roof(bounds%begl:bounds%endl)          ! roof inside net longwave for energy balance check (W m-2)
@@ -329,7 +339,8 @@ contains
 
     eflx_building     => energyflux_inst%eflx_building_lun , & ! Output:  [real(r8) (:)]  building heat flux from change in interior building air temperature (W/m**2)
     eflx_urban_ac     => energyflux_inst%eflx_urban_ac_lun , & ! Output:  [real(r8) (:)]  urban air conditioning flux (W/m**2)
-    eflx_urban_heat   => energyflux_inst%eflx_urban_heat_lun & ! Output:  [real(r8) (:)]  urban heating flux (W/m**2)
+    eflx_urban_heat   => energyflux_inst%eflx_urban_heat_lun , & ! Output:  [real(r8) (:)]  urban heating flux (W/m**2)
+    eflx_building_heat_errsoi_troof2 => energyflux_inst%eflx_building_heat_errsoi_troof2_lun & ! Output: [real(r8) (:)]  total heat flux from urban building interior to roof (W/m**2)
     )
 
     ! Get step size
@@ -393,6 +404,18 @@ contains
            t_roof_innerl_bef(l) = tssbef(c,nlevurb)
            t_roof_innerl(l) = t_soisno(c,nlevurb)
            tk_roof_innerl(l) = tk(c,nlevurb)
+         else if (ctype(c) == icol_whiteroof) then
+           zi_whiteroof_innerl(l) = zi(c,nlevurb)
+           z_whiteroof_innerl(l) = z(c,nlevurb)
+           t_whiteroof_innerl_bef(l) = tssbef(c,nlevurb)
+           t_whiteroof_innerl(l) = t_soisno(c,nlevurb)
+           tk_whiteroof_innerl(l) = tk(c,nlevurb)
+         else if (ctype(c) == icol_greenroof) then
+           zi_greenroof_innerl(l) = zi(c,nlevgrnd)
+           z_greenroof_innerl(l) = z(c,nlevgrnd)
+           t_greenroof_innerl_bef(l) = tssbef(c,nlevgrnd)
+           t_greenroof_innerl(l) = t_soisno(c,nlevgrnd)
+           tk_greenroof_innerl(l) = tk(c,nlevgrnd)                           
          else if (ctype(c) == icol_sunwall) then
            zi_sunw_innerl(l) = zi(c,nlevurb)
            z_sunw_innerl(l) = z(c,nlevurb)
@@ -473,7 +496,10 @@ contains
 
          ! ROOF
          a(1,1) =   0.5_r8*hcv_roofi(l) &
-                  + 0.5_r8*tk_roof_innerl(l)/(zi_roof_innerl(l) - z_roof_innerl(l)) &
+                  + 0.5_r8*(tk_roof_innerl(l)/(zi_roof_innerl(l) - z_roof_innerl(l)) &
+                  * (1._r8 - white_roof_fraction - green_roof_fraction) &
+                  + tk_whiteroof_innerl(l)/(zi_whiteroof_innerl(l) - z_whiteroof_innerl(l))*white_roof_fraction  &
+                  + tk_greenroof_innerl(l)/(zi_greenroof_innerl(l) - z_greenroof_innerl(l))*green_roof_fraction) &
                   + 4._r8*em_roofi(l)*sb*t_roof_inner_bef(l)**3._r8 &
                   - 4._r8*em_roofi(l)*sb*t_roof_inner_bef(l)**3._r8*vf_rw(l)*(1._r8-em_sunwi(l))*vf_wr(l) &
                   - 4._r8*em_roofi(l)*sb*t_roof_inner_bef(l)**3._r8*vf_rw(l)*(1._r8-em_shdwi(l))*vf_wr(l) &
@@ -493,9 +519,18 @@ contains
 
          a(1,5) = - 0.5_r8*hcv_roofi(l)
 
-         result(1) =   0.5_r8*tk_roof_innerl(l)*t_roof_innerl(l)/(zi_roof_innerl(l) - z_roof_innerl(l)) &
-                     - 0.5_r8*tk_roof_innerl(l)*(t_roof_inner_bef(l)-t_roof_innerl_bef(l))/(zi_roof_innerl(l) &
-                     - z_roof_innerl(l)) &
+         result(1) =   0.5_r8*(tk_roof_innerl(l)*t_roof_innerl(l)/(zi_roof_innerl(l) - z_roof_innerl(l)) &
+                     * (1._r8 - white_roof_fraction - green_roof_fraction) &
+                     + tk_whiteroof_innerl(l)*t_whiteroof_innerl(l)/(zi_whiteroof_innerl(l) - z_whiteroof_innerl(l)) &
+                     * white_roof_fraction  &
+                     + tk_greenroof_innerl(l)*t_greenroof_innerl(l)/(zi_greenroof_innerl(l) - z_greenroof_innerl(l)) &
+                     * green_roof_fraction) &
+                     - 0.5_r8*(tk_roof_innerl(l)*(t_roof_inner_bef(l)-t_roof_innerl_bef(l))/(zi_roof_innerl(l) &
+                     - z_roof_innerl(l))*(1._r8 - white_roof_fraction - green_roof_fraction) &
+                     + tk_whiteroof_innerl(l)*(t_roof_inner_bef(l)-t_whiteroof_innerl_bef(l))/(zi_whiteroof_innerl(l) &
+                     - z_whiteroof_innerl(l))*white_roof_fraction  &
+                     + tk_greenroof_innerl(l)*(t_roof_inner_bef(l)-t_greenroof_innerl_bef(l))/(zi_greenroof_innerl(l) &
+                     - z_greenroof_innerl(l))*green_roof_fraction) & 
                      - 3._r8*em_roofi(l)*em_sunwi(l)*sb*t_sunw_inner_bef(l)**4._r8*vf_wr(l) &
                      - 3._r8*em_roofi(l)*em_shdwi(l)*sb*t_shdw_inner_bef(l)**4._r8*vf_wr(l) &
                      - 3._r8*em_roofi(l)*em_floori(l)*sb*t_floor_bef(l)**4._r8*vf_fr(l) &
@@ -837,9 +872,18 @@ contains
 
          qcv_roof(l) = 0.5_r8*hcv_roofi(l)*(t_roof_inner(l) - t_building(l)) + 0.5_r8*hcv_roofi(l)*(t_roof_inner_bef(l) &
                        - t_building_bef(l))
-         qcd_roof(l) = 0.5_r8*tk_roof_innerl(l)*(t_roof_inner(l) - t_roof_innerl(l))/(zi_roof_innerl(l) - z_roof_innerl(l))  &
-                       + 0.5_r8*tk_roof_innerl(l)*(t_roof_inner_bef(l) - t_roof_innerl_bef(l))/(zi_roof_innerl(l) &
-                       - z_roof_innerl(l))
+         qcd_roof(l) = 0.5_r8*(tk_roof_innerl(l)*(t_roof_inner(l) - t_roof_innerl(l))/(zi_roof_innerl(l) - z_roof_innerl(l))  &
+                       * (1._r8 - white_roof_fraction - green_roof_fraction) &
+                       + tk_whiteroof_innerl(l)*(t_roof_inner(l) - t_whiteroof_innerl(l))/(zi_whiteroof_innerl(l) &
+                       - z_whiteroof_innerl(l))*white_roof_fraction  &
+                       + tk_greenroof_innerl(l)*(t_roof_inner(l) - t_greenroof_innerl(l))/(zi_greenroof_innerl(l) &
+                       - z_greenroof_innerl(l))*green_roof_fraction) &
+                       + 0.5_r8*(tk_roof_innerl(l)*(t_roof_inner_bef(l) - t_roof_innerl_bef(l))/(zi_roof_innerl(l) &
+                       - z_roof_innerl(l))*(1._r8 - white_roof_fraction - green_roof_fraction) &
+                       + tk_whiteroof_innerl(l)*(t_roof_inner_bef(l)-t_whiteroof_innerl_bef(l))/(zi_whiteroof_innerl(l) &
+                       - z_whiteroof_innerl(l))*white_roof_fraction  &
+                       + tk_greenroof_innerl(l)*(t_roof_inner_bef(l)-t_greenroof_innerl_bef(l))/(zi_greenroof_innerl(l) &
+                       - z_greenroof_innerl(l))*green_roof_fraction) 
          enrgy_bal_roof(l) = qrd_roof(l) + qcv_roof(l) + qcd_roof(l)
          if (abs(enrgy_bal_roof(l)) > .10_r8 ) then
            write (iulog,*) 'urban inside roof energy balance error ',enrgy_bal_roof(l)
@@ -926,7 +970,8 @@ contains
             eflx_urban_ac(l) = 0._r8
             eflx_urban_heat(l) = 0._r8
           end if
-          eflx_building(l) = wtlunit_roof(l) * (ht_roof(l) * rho_dair(l)*cpair/dtime) * (t_building(l) - t_building_bef(l))
+          eflx_building(l) = wtlunit_roof(l) * (ht_roof(l) * rho_dair(l)*cpair/dtime) * (t_building(l) - t_building_bef(l))   
+          eflx_building_heat_errsoi_troof2(l) = qcd_roof(l)     
        end if
     end do
 

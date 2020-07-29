@@ -810,9 +810,9 @@ contains
                this%t_building_lun(l)   = this%t_soisno_col(c,nlevurb)        ! arbitrarily set to roof temperature
                this%t_floor_lun(l)      = this%t_soisno_col(c,nlevurb)        ! arbitrarily set to roof temperature
              else if (col%itype(c) == icol_whiteroof)  then
-               this%t_whiteroof_inner_lun(l) = this%t_soisno_col(c,nlevurb)
+               this%t_roof_inner_lun(l) = this%t_soisno_col(c,nlevurb)
              else if (col%itype(c) == icol_greenroof)  then
-               this%t_greenroof_inner_lun(l) = this%t_soisno_col(c,nlevurb)
+               this%t_roof_inner_lun(l) = this%t_soisno_col(c,nlevgrnd)
              else if (col%itype(c) == icol_sunwall) then
                this%t_sunw_inner_lun(l) = this%t_soisno_col(c,nlevurb)
              else if (col%itype(c) == icol_shadewall) then
@@ -1120,7 +1120,7 @@ contains
           this%t_roof_surface_lun(bounds%begl:bounds%endl) = this%taf_lun(bounds%begl:bounds%endl)
        end if
 
-       ! landunit type physical state variable - t_whiteroof_inner
+       ! landunit type physical state variable - t_whiteroof_surface
        call restartvar(ncid=ncid, flag=flag, varname='t_whiteroof_surface', xtype=ncd_double,  &
             dim1name='landunit', &
             long_name='white roof surface temperature', units='K', &
@@ -1131,7 +1131,7 @@ contains
           this%t_whiteroof_surface_lun(bounds%begl:bounds%endl) = this%taf_lun(bounds%begl:bounds%endl)
        end if
        
-       ! landunit type physical state variable - t_greenroof_inner
+       ! landunit type physical state variable - t_greenroof_surface
        call restartvar(ncid=ncid, flag=flag, varname='t_greenroof_surface', xtype=ncd_double,  &
             dim1name='landunit', &
             long_name='green roof surface temperature', units='K', &

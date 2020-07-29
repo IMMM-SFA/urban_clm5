@@ -105,3 +105,12 @@ June 20, 2020
 3, modify the calculation of green roof vertical soil properties based on soil texture from 10 layer input dataset, SoilStateInitTimeConstMod.F90
 
 4, modify the green roof stomatal resistance parameterization, UrbanFluxesMod.F90
+
+
+===============================
+Version 2.3
+
+
+July 18, 2020
+
+1, deal with the boundary condition for green roofs using BUILDING_TEMP_METHOD_PROG, (building_temp_method = 1, prognostic calculation of interior building temp (clm5_0)), UrbBuildTempOleson2015Mod.F90, SoilTemperatureMod.F90
