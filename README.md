@@ -76,3 +76,42 @@ Sep 26, 2019
 
 2, add output for studying green roof
 
+
+===============================
+Version 2.2
+
+
+October 30, 2019
+
+1, modify initInterp for warm spinup, initInterpMindist.F90
+
+2, modify the maximum green roof soil moisture after irrigation, SoilHydrologyMod.F90
+
+December 10, 2019
+
+1, fix a problem in subgridRestMod.F90 that prevented using correct green roof column weights. Now one can restart green roof case from zero green roof weights cases.
+
+
+===============================
+Version 2.2.1
+
+
+June 20, 2020
+
+1, add new options for global uniform green roof properties like green_roof_pct_clay, green_roof_pct_sand, green_roof_fmax, green_roof_slope
+
+2, deal with the boundary condition for green roofs using BUILDING_TEMP_METHOD_SIMPLE, (building_temp_method = 0, simpler method (clm4_5))), SoilTemperatureMod.F90, SoilFluxesMod.F90
+
+3, modify the calculation of green roof vertical soil properties based on soil texture from 10 layer input dataset, SoilStateInitTimeConstMod.F90
+
+4, modify the green roof stomatal resistance parameterization, UrbanFluxesMod.F90
+
+
+===============================
+Version 2.3
+
+
+July 18, 2020
+
+1, deal with the boundary condition for green roofs using BUILDING_TEMP_METHOD_PROG, (building_temp_method = 1, prognostic calculation of interior building temp (clm5_0)), UrbBuildTempOleson2015Mod.F90, SoilTemperatureMod.F90
+
