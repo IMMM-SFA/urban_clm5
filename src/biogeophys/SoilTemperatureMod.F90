@@ -252,7 +252,17 @@ contains
          eflx_gnet               => energyflux_inst%eflx_gnet_patch         , & ! Output: [real(r8) (:)   ]  net ground heat flux into the surface (W/m**2)
          eflx_building_heat_errsoi => energyflux_inst%eflx_building_heat_errsoi_col, & ! Output: [real(r8) (:)]  heat flux from urban building interior to walls, roof (W/m**2)
          eflx_urban_ac_col       => energyflux_inst%eflx_urban_ac_col       , & ! Output: [real(r8) (:)   ]  urban air conditioning flux (W/m**2)    
-         eflx_urban_heat_col     => energyflux_inst%eflx_urban_heat_col     , & ! Output: [real(r8) (:)   ]  urban heating flux (W/m**2)             
+         eflx_urban_heat_col     => energyflux_inst%eflx_urban_heat_col     , & ! Output: [real(r8) (:)   ]  urban heating flux (W/m**2)          
+
+         eflx_building_heat_errsoi_roof_col => energyflux_inst%eflx_building_heat_errsoi_roof_col, & ! Output: [real(r8) (:)]  heat flux from urban building interior to roof (W/m**2)
+         eflx_urban_ac_roof_lun            => energyflux_inst%eflx_urban_ac_roof_lun            , & ! Output: [real(r8) (:)   ]  urban roof air conditioning flux (W/m**2)    
+         eflx_urban_heat_roof_lun          => energyflux_inst%eflx_urban_heat_roof_lun          , & ! Output: [real(r8) (:)   ]  urban roof heating flux (W/m**2)  
+         eflx_building_heat_errsoi_whiteroof_col => energyflux_inst%eflx_building_heat_errsoi_whiteroof_col, & ! Output: [real(r8) (:)]  heat flux from urban building interior to white roof (W/m**2)
+         eflx_urban_ac_whiteroof_lun       => energyflux_inst%eflx_urban_ac_whiteroof_lun       , & ! Output: [real(r8) (:)   ]  urban white roof air conditioning flux (W/m**2)    
+         eflx_urban_heat_whiteroof_lun     => energyflux_inst%eflx_urban_heat_whiteroof_lun     , & ! Output: [real(r8) (:)   ]  urban white roof heating flux (W/m**2)  
+         eflx_building_heat_errsoi_greenroof_col => energyflux_inst%eflx_building_heat_errsoi_greenroof_col, & ! Output: [real(r8) (:)]  heat flux from urban building interior to green roof (W/m**2)
+         eflx_urban_ac_greenroof_lun       => energyflux_inst%eflx_urban_ac_greenroof_lun       , & ! Output: [real(r8) (:)   ]  urban green roof air conditioning flux (W/m**2)    
+         eflx_urban_heat_greenroof_lun     => energyflux_inst%eflx_urban_heat_greenroof_lun     , & ! Output: [real(r8) (:)   ]  urban green roof heating flux (W/m**2)           
 
          emg                     => temperature_inst%emg_col                , & ! Input:  [real(r8) (:)   ]  ground emissivity                       
          tssbef                  => temperature_inst%t_ssbef_col            , & ! Input:  [real(r8) (:,:) ]  temperature at previous time step [K] 
@@ -447,7 +457,6 @@ contains
                        ! Note new formulation for fn, this will be used below in net energey flux computations
                        fn1(c,j) = tk(c,j) * (t_building(l) - t_soisno(c,j))/(zi(c,j) - z(c,j))
                        fn(c,j)  = tk(c,j) * (t_building(l) - tssbef(c,j))/(zi(c,j) - z(c,j))
-
                      else
                         ! the bottom "soil" layer and the equations are derived assuming a prognostic inner
                         ! surface temperature.
@@ -462,7 +471,7 @@ contains
                           fn(c,j)  = tk(c,j) * (t_roof_inner(l) - tssbef(c,j))/(zi(c,j) - z(c,j))
                         else if (ctype(c) == icol_whiteroof) then
                           fn1(c,j) = tk(c,j) * (t_whiteroof_inner(l) - t_soisno(c,j))/(zi(c,j) - z(c,j))
-                          fn(c,j)  = tk(c,j) * (t_whiteroof_inner(l) - tssbef(c,j))/(zi(c,j) - z(c,j))                                                         
+                          fn(c,j)  = tk(c,j) * (t_whiteroof_inner(l) - tssbef(c,j))/(zi(c,j) - z(c,j)) 
                         end if
                      end if
                   end if
@@ -473,7 +482,17 @@ contains
                   if (j <= nlevgrnd-1) then
                      fn1(c,j) = tk(c,j)*(t_soisno(c,j+1)-t_soisno(c,j))/(z(c,j+1)-z(c,j))
                   else if (j == nlevgrnd) then
-                     fn1(c,j) = 0._r8
+                      if(col%itype(c) == icol_greenroof) then
+                         if ( IsSimpleBuildTemp() )then
+                            fn1(c,j) = tk(c,j) * (t_building(l) - t_soisno(c,j))/(zi(c,j) - z(c,j))
+                            fn(c,j)  = tk(c,j) * (t_building(l) - tssbef(c,j) )/(zi(c,j) - z(c,j))    
+                         else
+                            fn1(c,j) = tk(c,j) * (t_greenroof_inner(l) - t_soisno(c,j))/(zi(c,j) - z(c,j))
+                            fn(c,j)  = tk(c,j) * (t_greenroof_inner(l) - tssbef(c,j))/(zi(c,j) - z(c,j))
+                         end if 
+                      else
+                        fn1(c,j) = 0._r8
+                     end if
                   end if
                end if
             end if
@@ -486,6 +505,8 @@ contains
          if (lun%urbpoi(l)) then
             if (col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall .or. col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof) then
                eflx_building_heat_errsoi(c) = cnfac*fn(c,nlevurb) + (1._r8-cnfac)*fn1(c,nlevurb)
+            else if (col%itype(c) == icol_greenroof) then
+               eflx_building_heat_errsoi(c) = cnfac*fn(c,nlevgrnd) + (1._r8-cnfac)*fn1(c,nlevgrnd)
             else
                eflx_building_heat_errsoi(c) = 0._r8
             end if
@@ -501,6 +522,19 @@ contains
                  eflx_urban_heat_col(c) = 0._r8
                end if
             end if
+            if (col%itype(c) == icol_roof) then
+                 eflx_building_heat_errsoi_roof_col(c) = eflx_building_heat_errsoi(c)            
+                 eflx_urban_ac_roof_lun(l) = eflx_urban_ac_col(c)
+                 eflx_urban_heat_roof_lun(l) = eflx_urban_heat_col(c)  
+            else if (col%itype(c) == icol_whiteroof) then
+                 eflx_building_heat_errsoi_whiteroof_col(c) = eflx_building_heat_errsoi(c)           
+                 eflx_urban_ac_whiteroof_lun(l) = eflx_urban_ac_col(c)
+                 eflx_urban_heat_whiteroof_lun(l) = eflx_urban_heat_col(c) 
+            else if (col%itype(c) == icol_greenroof) then
+                 eflx_building_heat_errsoi_greenroof_col(c) = eflx_building_heat_errsoi(c)
+                 eflx_urban_ac_greenroof_lun(l) = eflx_urban_ac_col(c)
+                 eflx_urban_heat_greenroof_lun(l) = eflx_urban_heat_col(c)
+            end if            
          end if
       end do
 
@@ -663,7 +697,9 @@ contains
          csol         =>    soilstate_inst%csol_col	     , & ! Input:  [real(r8) (:,:) ]  heat capacity, soil solids (J/m**3/Kelvin)
          watsat       =>    soilstate_inst%watsat_col	     , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
          tksatu       =>    soilstate_inst%tksatu_col	     , & ! Input:  [real(r8) (:,:) ]  thermal conductivity, saturated soil [W/m-K]
-         thk          =>    soilstate_inst%thk_col             & ! Output: [real(r8) (:,:) ]  thermal conductivity of each layer  [W/m-K] 
+         thk          =>    soilstate_inst%thk_col           , & ! Output: [real(r8) (:,:) ]  thermal conductivity of each layer  [W/m-K]
+         thk_greenroof =>   soilstate_inst%thk_greenroof_col , & ! Output: [real(r8) (:,:) ]  thermal conductivity of green roof  [W/m-K]
+         cv_greenroof  =>   soilstate_inst%cv_greenroof_col    & ! Output: [real(r8) (:,:) ]  heat capacity of green roof [J/(m2 K)]         
          )
 
       ! Thermal conductivity of soil from Farouki (1981)
@@ -683,9 +719,9 @@ contains
                else if ((col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof ).and. j <= nlevurb) then
                   thk(c,j) = tk_roof(l,j)
                else if (col%itype(c) == icol_road_imperv .and. j >= 1 .and. j <= nlev_improad(l)) then
-                  thk(c,j) = tk_improad(l,j)
+                  thk(c,j) = tk_improad(l,j)             
                else if (col%itype(c) == icol_greenroof .and. j > nlevsoi .and. j <= nlevgrnd) then
-               	  thk(c,j) = tk_roof(l,j-nlevsoi)                  
+                  thk(c,j) = tk_roof(l,j-nlevsoi)  
                else if (lun%itype(l) /= istwet .AND. lun%itype(l) /= istice_mec &
                     .AND. col%itype(c) /= icol_sunwall .AND. col%itype(c) /= icol_shadewall .AND. &
                     col%itype(c) /= icol_roof .AND. col%itype(c) /= icol_whiteroof ) then
@@ -705,7 +741,7 @@ contains
                   else
                      thk(c,j) = tkdry(c,j)
                   endif
-                  if (j > nbedrock(c)) thk(c,j) = thk_bedrock
+                  if (j > nbedrock(c) ) thk(c,j) = thk_bedrock
                else if (lun%itype(l) == istice_mec) then
                   thk(c,j) = tkwat
                   if (t_soisno(c,j) < tfrz) thk(c,j) = tkice
@@ -717,6 +753,7 @@ contains
                      if (t_soisno(c,j) < tfrz) thk(c,j) = tkice
                   endif
                endif
+               if (col%itype(c) == icol_greenroof) thk_greenroof(c,j) = thk(c,j)
             endif
 
             ! Thermal conductivity of snow, which from Jordan (1991) pp. 18
@@ -752,7 +789,11 @@ contains
                   tk(c,j) = thk(c,j)*thk(c,j+1)*(z(c,j+1)-z(c,j)) &
                        /(thk(c,j)*(z(c,j+1)-zi(c,j))+thk(c,j+1)*(zi(c,j)-z(c,j)))
                else if (j == nlevgrnd) then
-                  tk(c,j) = 0._r8
+                  if (col%itype(c) == icol_greenroof) then
+                     tk(c,j) = thk(c,j) 
+                  else
+                     tk(c,j) = 0._r8
+                  end if
                end if
             end if
          end do
@@ -780,9 +821,9 @@ contains
             else if (col%itype(c) == icol_roof .and. j <= nlevurb) then
                cv(c,j) = cv_roof(l,j) * dz(c,j)
             else if (col%itype(c) == icol_whiteroof .and. j <= nlevurb) then
-               cv(c,j) = cv_roof(l,j) * dz(c,j)
+               cv(c,j) = cv_roof(l,j) * dz(c,j)                                           
             else if (col%itype(c) == icol_greenroof .and. j > nlevsoi .and. j <= nlevgrnd) then
-               cv(c,j) = cv_roof(l,j-nlevsoi) * dz(c,j)                                           
+               cv(c,j) = cv_roof(l,j-nlevsoi) * dz(c,j)
             else if (col%itype(c) == icol_road_imperv .and. j >= 1 .and. j <= nlev_improad(l)) then
                cv(c,j) = cv_improad(l,j) * dz(c,j)
             else if (lun%itype(l) /= istwet .AND. lun%itype(l) /= istice_mec &
@@ -796,6 +837,7 @@ contains
             else if (lun%itype(l) == istice_mec) then
                cv(c,j) = (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
             endif
+            if (col%itype(c) == icol_greenroof) cv_greenroof(c,j) = cv(c,j)
             if (j == 1) then
                if (snl(c)+1 == 1 .AND. h2osno(c) > 0._r8) then
                   cv(c,j) = cv(c,j) + cpice*h2osno(c)
@@ -1597,7 +1639,7 @@ contains
                           - eflx_lwrad_net(p) &
                           - (eflx_sh_grnd(p) + qflx_evap_soi(p)*htvp(c) + qflx_tran_veg(p)*hvap) &
                           + eflx_wasteheat_patch(p) + eflx_heat_from_ac_patch(p) + eflx_traffic_patch(p)
-		     if ( IsSimpleBuildTemp() ) then
+		                 if ( IsSimpleBuildTemp() ) then
                         eflx_anthro(p)   = eflx_wasteheat_patch(p) + eflx_traffic_patch(p)
                      end if
                      eflx_gnet_snow   = eflx_gnet(p)
@@ -1780,8 +1822,16 @@ contains
                      fn(c,j) = tk(c,j)*(t_soisno(c,j+1)-t_soisno(c,j))/(z(c,j+1)-z(c,j))
                      dzm     = (z(c,j)-z(c,j-1))
                   else if (j == nlevgrnd) then
-                     fact(c,j) = dtime/cv(c,j)
-                     fn(c,j) = eflx_bot(c)                     
+                     fact(c,j) = dtime/cv(c,j)                  
+                     if (col%itype(c) == icol_greenroof) then
+                        if ( IsSimpleBuildTemp() )then
+                           fn(c,j) = tk(c,j) * (t_building(l) - cnfac*t_soisno(c,j))/(zi(c,j) - z(c,j))
+                        else
+                           fn(c,j) = tk(c,j) * (t_greenroof_inner(l) - cnfac*t_soisno(c,j))/(zi(c,j) - z(c,j))
+                        end if 
+                     else
+                        fn(c,j) = eflx_bot(c)     
+                     end if                
                   end if
                end if
             end if
@@ -4080,7 +4130,8 @@ contains
     SHR_ASSERT_ALL((ubound(bmatrix_soil)   == (/bounds%endc, nband, nlevgrnd/)), errMsg(sourcefile, __LINE__))
 
     associate(       &
-         z => col%z  & ! Input:  [real(r8) (:,:)]  layer thickness (m)
+         zi   =>    col%zi , & ! Input:  [real(r8) (:,:)]  interface level below a "z" level (m)
+         z    =>    col%z    & ! Input:  [real(r8) (:,:)]  layer thickness (m)
          )
 
       !
@@ -4119,10 +4170,19 @@ contains
                         bmatrix_soil(c,3,j) = 1._r8+ (1._r8-cnfac)*fact(c,j)*(tk(c,j)/dzp + tk(c,j-1)/dzm)
                         bmatrix_soil(c,2,j) =   - (1._r8-cnfac)*fact(c,j)* tk(c,j)/dzp
                      else if (j == nlevgrnd) then
-                        dzm     = (z(c,j)-z(c,j-1))
-                        bmatrix_soil(c,4,j) =   - (1._r8-cnfac)*fact(c,j)*tk(c,j-1)/dzm
-                        bmatrix_soil(c,3,j) = 1._r8+ (1._r8-cnfac)*fact(c,j)*tk(c,j-1)/dzm
-                        bmatrix_soil(c,2,j) = 0._r8
+                        if(col%itype(c) == icol_greenroof) then
+                           dzm     = ( z(c,j)-z(c,j-1))
+                           dzp     = (zi(c,j)-z(c,j))
+                           bmatrix_soil(c,4,j) =   - (1._r8-cnfac)*fact(c,j)*(tk(c,j-1)/dzm)
+                           !bmatrix_soil(c,3,j) = 1._r8+ (1._r8-cnfac)*fact(c,j)*tk(c,j-1)/dzm
+                           bmatrix_soil(c,3,j) = 1._r8+ (1._r8-cnfac)*fact(c,j)*(tk(c,j-1)/dzm + tk(c,j)/dzp)
+                           bmatrix_soil(c,2,j) = 0._r8
+                        else
+                           dzm     = (z(c,j)-z(c,j-1))
+                           bmatrix_soil(c,4,j) =   - (1._r8-cnfac)*fact(c,j)*tk(c,j-1)/dzm
+                           bmatrix_soil(c,3,j) = 1._r8+ (1._r8-cnfac)*fact(c,j)*tk(c,j-1)/dzm
+                           bmatrix_soil(c,2,j) = 0._r8
+                        end if
                      end if
                   end if
                end if
@@ -4461,7 +4521,7 @@ contains
                         dzp     = (z(c,j+1)-z(c,j))
 
                         bmatrix_soil_snow(c,5,j) =   - frac_sno_eff(c) * (1._r8-cnfac) * fact(c,j) &
-                             * tk(c,j-1)/dzm
+                             * tk(c,j-1)/dzm                  
                      end if
                   end if
                end if

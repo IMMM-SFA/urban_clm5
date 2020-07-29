@@ -67,13 +67,13 @@ contains
     use filterMod           , only : filter
     use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni, frictionvel_parms_inst
     use QSatMod             , only : QSat
-    use clm_varpar          , only : maxpatch_urb, nlevurb, nlevgrnd
+    use clm_varpar          , only : maxpatch_urb, nlevurb, nlevgrnd, nlevsoi
     use clm_time_manager    , only : get_curr_date, get_step_size, get_nstep
     use HumanIndexMod       , only : calc_human_stress_indices, Wet_Bulb, Wet_BulbS, HeatIndex, AppTemp, &
                                      swbgt, hmdex, dis_coi, dis_coiS, THIndex, &
                                      SwampCoolEff, KtoC, VaporPres
     use UrbanParamsType     , only : white_roof_fraction, green_roof_fraction
-    use UrbanParamsType     , only : green_roof_rsmin, green_roof_rsmax, green_roof_sdlim, green_roof_lai, green_roof_watsat, green_roof_watwilt 
+    use UrbanParamsType     , only : green_roof_rsmin, green_roof_rsmax, green_roof_sdlim, green_roof_lai, green_roof_watwilt 
                                     
     !
     ! !ARGUMENTS:
@@ -195,9 +195,6 @@ contains
     real(r8) :: qflx_scale(bounds%begl:bounds%endl)                  ! sum of scaled water vapor fluxes for urban columns for error check (kg/m**2/s)
     real(r8) :: eflx_err(bounds%begl:bounds%endl)                    ! sensible heat flux error (W/m**2)
     real(r8) :: qflx_err(bounds%begl:bounds%endl)                    ! water vapor flux error (kg/m**2/s)
-    !real(r8) :: fwet_roof                                            ! fraction of roof surface that is wet (-)
-    !real(r8) :: fwet_whiteroof                                       ! fraction of white roof surface that is wet (-)
-    !real(r8) :: fwet_greenroof                                       ! fraction of green roof surface that is wet (-)
     real(r8) :: fsr_greenroof(bounds%begl:bounds%endl)               ! green roof adjusting factor for solar radiation
     real(r8) :: f_greenroof(bounds%begl:bounds%endl)                 ! green roof adjusting factor for solar radiation
     real(r8) :: fq_greenroof(bounds%begl:bounds%endl)                ! green roof adjusting factor for soil water content
@@ -205,7 +202,13 @@ contains
     real(r8) :: ft_greenroof(bounds%begl:bounds%endl)                ! green roof adjusting factor for temperature
     real(r8) :: es_greenroof(bounds%begl:bounds%endl)                ! green roof surface saturated vapor pressure [Pa]
     real(r8) :: ea_greenroof(bounds%begl:bounds%endl)                ! green roof vapor pressure [Pa]
-    
+    real(r8) :: h2osoi_vol_temp(bounds%begl:bounds%endl)             ! volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+    real(r8) :: watsat_temp(bounds%begl:bounds%endl)                 ! volumetric soil water at saturation (porosity)
+    real(r8) :: qs_greenroof(bounds%begl:bounds%endl)                ! green roof surface saturated specific humidity [kg/kg]
+    real(r8) :: esdT_greenroof(bounds%begl:bounds%endl)              ! derivative of green roof surface saturated vapor pressure on green roof surface temperature
+    real(r8) :: qsdT_greenroof(bounds%begl:bounds%endl)              ! derivative of green roof surface saturated specific humidity on green roof surface temperature
+
+
     real(r8) :: fwet_road_imperv                                     ! fraction of impervious road surface that is wet (-)
     integer  :: local_secp1(bounds%begl:bounds%endl)                 ! seconds into current date in local time (sec)
     real(r8) :: dtime                                                ! land model time step (sec)
@@ -247,6 +250,7 @@ contains
          rootr_greenroof     =>   soilstate_inst%rootr_greenroof_col        , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer for urban green roof       
          soilalpha_u         =>   soilstate_inst%soilalpha_u_col            , & ! Input:  [real(r8) (:)   ]  Urban factor that reduces ground saturated specific humidity (-)
          rootr               =>   soilstate_inst%rootr_patch                , & ! Output: [real(r8) (:,:) ]  effective fraction of roots in each soil layer  
+         watsat              =>   soilstate_inst%watsat_col                 , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)  
 
          t_grnd              =>   temperature_inst%t_grnd_col               , & ! Input:  [real(r8) (:)   ]  ground surface temperature (K)                    
          t_soisno            =>   temperature_inst%t_soisno_col             , & ! Input:  [real(r8) (:,:) ]  soil temperature (K)                            
@@ -643,19 +647,21 @@ contains
                !end if
                fwet_greenroof(l) = 1._r8
 
-               f_greenroof(l) = 0.55*(forc_solar(g)/green_roof_sdlim)*(2/green_roof_lai)
+               f_greenroof(l) = 0.55*(forc_solar(g)/green_roof_sdlim)*(2./green_roof_lai)
                fsr_greenroof(l) = (1+f_greenroof(l))/(f_greenroof(l)+green_roof_rsmin/green_roof_rsmax)
 
-               if (h2osoi_vol(c,1) > 0.75*green_roof_watsat) then
+               h2osoi_vol_temp(l) = sum(h2osoi_vol(c,1:nlevsoi))/nlevsoi
+               watsat_temp(l) = 0.75*sum(watsat(c,1:nlevsoi))/nlevsoi
+               if (h2osoi_vol_temp(l) > watsat_temp(l)) then
                   fq_greenroof(l) = 1._r8
-               else if(h2osoi_vol(c,1) < green_roof_watwilt) then
+               else if(h2osoi_vol_temp(l) < green_roof_watwilt) then
                   fq_greenroof(l) = 0._r8
                else
-                  fq_greenroof(l) = (h2osoi_vol(c,1)-green_roof_watwilt)/(0.75*green_roof_watsat-green_roof_watwilt)
+                  fq_greenroof(l) = (h2osoi_vol_temp(l)-green_roof_watwilt)/(watsat_temp(l)-green_roof_watwilt)
                end if
 
-               es_greenroof(l) = 611*exp(17.27*(t_greenroof_surface(l)-273.15)/(t_greenroof_surface(l)-273.15+237.3))
-               ea_greenroof(l) = forc_pbot(g)*qaf(l)/0.622
+               call QSat(t_soisno(c,1), forc_pbot(g), es_greenroof(l), esdT_greenroof(l), qs_greenroof(l), qsdT_greenroof(l))
+               ea_greenroof(l) = forc_pbot(g)*qaf(l)/(0.622+0.378*qaf(l))
                fe_greenroof(l) = 1-0.025*(es_greenroof(l)-ea_greenroof(l))
 
                ft_greenroof(l) = 1-0.0016*(25-(taf(l)-273.15))**2
@@ -663,8 +669,6 @@ contains
                rs_greenroof(l) = green_roof_rsmin*fsr_greenroof(l)*fq_greenroof(l)*fe_greenroof(l)*ft_greenroof(l)/green_roof_lai
                rs_greenroof(l) = min(green_roof_rsmax,rs_greenroof(l))
                rs_greenroof(l) = max(green_roof_rsmin,rs_greenroof(l))
-               !rs_greenroof(l) = 0._r8
-               !write (iulog,*) 'rs_greenroof(l)= ', rs_greenroof(l)
 
                ! scaled latent heat conductance
                wtuq(c) = fwet_greenroof(l)*(wtlunit_roof(l)*green_roof_fraction/(canyon_resistance(l)+rs_greenroof(l)))

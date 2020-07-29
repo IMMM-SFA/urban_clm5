@@ -229,6 +229,9 @@ module clm_varcon
   real(r8) ,allocatable :: zsoifl(:)       !original soil midpoint (used in interpolation of sand and clay)
   real(r8) ,allocatable :: zisoifl(:)      !original soil interface depth (used in interpolation of sand and clay)
   real(r8) ,allocatable :: dzsoifl(:)      !original soil thickness  (used in interpolation of sand and clay)
+  real(r8), allocatable :: zsoi_greenroof(:)         !green roof soil z  (layers)
+  real(r8), allocatable :: dzsoi_greenroof(:)        !green roof soil dz (thickness)
+  real(r8), allocatable :: zisoi_greenroof(:)        !green roof soil zi (interfaces)
 
   !------------------------------------------------------------------
   ! (Non-tunable) Constants for the CH4 submodel (Tuneable constants in ch4varcon)
@@ -292,6 +295,9 @@ contains
     allocate( zsoifl(1:nlevsoifl             ))
     allocate( zisoifl(0:nlevsoifl            ))
     allocate( dzsoifl(1:nlevsoifl            ))
+    allocate( zsoi_greenroof(1:nlevgrnd                ))
+    allocate( dzsoi_greenroof(1:nlevgrnd               ))
+    allocate( zisoi_greenroof(0:nlevgrnd               ))
 
     ! Zero out wastheat factors for simpler building temperature method (introduced in CLM4.5)
     if ( is_simple_buildtemp )then

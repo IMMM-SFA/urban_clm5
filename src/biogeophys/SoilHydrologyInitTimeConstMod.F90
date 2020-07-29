@@ -40,13 +40,14 @@ contains
     use clm_varctl      , only : fsurdat, paramfile, iulog, use_vichydro, soil_layerstruct
     use clm_varpar      , only : nlevsoifl, toplev_equalspace 
     use clm_varpar      , only : nlevsoi, nlevgrnd, nlevsno, nlevlak, nlevurb, nlayer, nlayert 
-    use clm_varcon      , only : zsoi, dzsoi, zisoi, spval, nlvic, dzvic, pc, grlnd
+    use clm_varcon      , only : zsoi, dzsoi, zisoi, spval, nlvic, dzvic, pc, grlnd,  zsoi_greenroof, dzsoi_greenroof, zisoi_greenroof
     use clm_varcon      , only : aquifer_water_baseline
     use landunit_varcon , only : istwet, istsoil, istdlak, istcrop, istice_mec
     use column_varcon   , only : icol_shadewall, icol_road_perv, icol_road_imperv, icol_roof, icol_whiteroof, icol_greenroof, icol_sunwall
     use fileutils       , only : getfil
     use organicFileMod  , only : organicrd 
     use ncdio_pio       , only : file_desc_t, ncd_io, ncd_pio_openfile, ncd_pio_closefile
+    use UrbanParamsType     , only : green_roof_pct_sand, green_roof_pct_clay, green_roof_soil_global_uniform
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds                                    
@@ -254,10 +255,18 @@ contains
                          om_frac = organic3d(g,1)/organic_max 
                       else if (lev <= nlevsoi) then
                          do j = 1,nlevsoifl-1
-                            if (zisoi(lev) >= zisoifl(j) .AND. zisoi(lev) < zisoifl(j+1)) then
-                               clay    = clay3d(g,j+1)
-                               sand    = sand3d(g,j+1)
-                               om_frac = organic3d(g,j+1)/organic_max    
+                            if (col%itype(c) == icol_greenroof) then
+                               if (zisoi_greenroof(lev) >= zisoifl(j) .AND. zisoi_greenroof(lev) < zisoifl(j+1)) then
+                                  clay = clay3d(g,j+1)
+                                  sand = sand3d(g,j+1)
+                                  om_frac = organic3d(g,j+1)/organic_max    
+                               endif
+                            else
+                               if (zisoi(lev) >= zisoifl(j) .AND. zisoi(lev) < zisoifl(j+1)) then
+                                  clay    = clay3d(g,j+1)
+                                  sand    = sand3d(g,j+1)
+                                  om_frac = organic3d(g,j+1)/organic_max    
+                               endif
                             endif
                          end do
                       else
@@ -265,6 +274,10 @@ contains
                          sand    = sand3d(g,nlevsoifl)
                          om_frac = 0._r8
                       endif
+                      if (green_roof_soil_global_uniform .and. col%itype(c) == icol_greenroof) then
+                         clay = green_roof_pct_clay
+                         sand = green_roof_pct_sand
+                      endif                        
                    else
                       ! duplicate clay and sand values from 10th soil layer
                       if (lev <= nlevsoi) then

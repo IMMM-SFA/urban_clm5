@@ -119,8 +119,12 @@ module UrbanParamsType
   real(r8), public                     :: green_roof_rsmax = 5000._r8    ! green roof maximum stomatal resistance (s m-1)
   real(r8), public                     :: green_roof_sdlim = 100._r8     ! green roof radiation limit at which photosynthesis is assumed to start
   real(r8), public                     :: green_roof_lai = 3._r8         ! green roof leaf area index (m^2/m^2)
-  real(r8), public                     :: green_roof_watsat = 0.477_r8   ! green roof volumetric soil water at saturation (porosity)
-  real(r8), public                     :: green_roof_watwilt = 0.05_r8   ! green roof volumetric soil water at wilting point
+  real(r8), public                     :: green_roof_watwilt = 0.15_r8   ! green roof volumetric soil water at wilting point
+  real(r8), public                     :: green_roof_pct_clay = 18._r8   ! green roof percent clay
+  real(r8), public                     :: green_roof_pct_sand = 43._r8   ! green roof percent sand
+  real(r8), public                     :: green_roof_fmax = 0.4_r8       ! green roof maximum fractional saturated area
+  real(r8), public                     :: green_roof_slope = 0.2_r8      ! green roof mean topographic slope
+  logical, public                      :: green_roof_soil_global_uniform   = .false.       ! green roof global uniform soil texture
       
   ! !PRIVATE MEMBER DATA:
   logical, private    :: ReadNamelist = .false.     ! If namelist was read yet or not
@@ -882,7 +886,7 @@ contains
     integer :: unitn                ! unit for namelist file
     character(len=32) :: subname = 'UrbanReadNML'  ! subroutine name
 
-    namelist / clmu_inparm / urban_hac, urban_traffic, building_temp_method, white_roof, white_roof_fraction, white_roof_albedo, green_roof, green_roof_fraction, green_roof_irrigation, green_roof_albedo, green_roof_soil_depth, green_roof_rsmin, green_roof_rsmax, green_roof_sdlim, green_roof_lai, green_roof_watsat, green_roof_watwilt
+    namelist / clmu_inparm / urban_hac, urban_traffic, building_temp_method, white_roof, white_roof_fraction, white_roof_albedo, green_roof, green_roof_fraction, green_roof_irrigation, green_roof_albedo, green_roof_soil_depth, green_roof_rsmin, green_roof_rsmax, green_roof_sdlim, green_roof_lai, green_roof_watwilt, green_roof_pct_clay, green_roof_pct_sand, green_roof_fmax, green_roof_slope, green_roof_soil_global_uniform
     !EOP
     !-----------------------------------------------------------------------
 
@@ -924,9 +928,12 @@ contains
     call shr_mpi_bcast(green_roof_rsmax,      mpicom)
     call shr_mpi_bcast(green_roof_sdlim,      mpicom)
     call shr_mpi_bcast(green_roof_lai,        mpicom)
-    call shr_mpi_bcast(green_roof_watsat,     mpicom)
     call shr_mpi_bcast(green_roof_watwilt,    mpicom)
-
+    call shr_mpi_bcast(green_roof_pct_clay,   mpicom)
+    call shr_mpi_bcast(green_roof_pct_sand,   mpicom)
+    call shr_mpi_bcast(green_roof_fmax,       mpicom)
+    call shr_mpi_bcast(green_roof_slope,      mpicom)
+    call shr_mpi_bcast(green_roof_soil_global_uniform, mpicom)
     !
     if (urban_traffic) then
        write(iulog,*)'Urban traffic fluxes are not implemented currently'

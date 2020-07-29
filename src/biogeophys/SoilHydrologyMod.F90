@@ -297,7 +297,6 @@ contains
          end if
          ! send flood water flux to runoff for all urban columns
          qflx_surf(c) = qflx_surf(c)  + qflx_floodc(c)
-
       end do
       
       ! remove stormflow and snow on h2osfc from qflx_top_soil

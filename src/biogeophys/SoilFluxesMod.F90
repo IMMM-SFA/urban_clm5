@@ -366,7 +366,7 @@ contains
          errsoi_patch(p) =  errsoi_patch(p)+eflx_h2osfc_to_snow_col(c) 
          ! For urban sunwall, shadewall, and roof columns, the "soil" energy balance check
          ! must include the heat flux from the interior of the building.
-         if (col%itype(c)==icol_sunwall .or. col%itype(c)==icol_shadewall .or. col%itype(c)==icol_roof .or. col%itype(c)==icol_whiteroof) then
+         if (col%itype(c)==icol_sunwall .or. col%itype(c)==icol_shadewall .or. col%itype(c)==icol_roof .or. col%itype(c)==icol_whiteroof .or. col%itype(c)==icol_greenroof) then
             errsoi_patch(p) = errsoi_patch(p) + eflx_building_heat_errsoi(c) 
          end if
       end do
@@ -376,7 +376,7 @@ contains
             c = patch%column(p)
 
             if ((col%itype(c) /= icol_sunwall .and. col%itype(c) /= icol_shadewall &
-                 .and. col%itype(c) /= icol_roof .and. col%itype(c) /= icol_whiteroof ) .or. ( j <= nlevurb)) then
+                 .and. col%itype(c) /= icol_roof .and. col%itype(c) /= icol_whiteroof) .or. ( j <= nlevurb)) then
                ! area weight heat absorbed by snow layers
                if (j >= col%snl(c)+1 .and. j < 1) errsoi_patch(p) = errsoi_patch(p) &
                     - frac_sno_eff(c)*(t_soisno(c,j)-tssbef(c,j))/fact(c,j)

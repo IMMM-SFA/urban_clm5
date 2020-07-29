@@ -627,7 +627,7 @@ contains
     this%green_roof_water_added_col(begc:endc) = spval
     call hist_addfld1d(fname='GREEN_WATER', units='mm',  &
         avgflag='A', long_name='green roof water added', &
-        ptr_col=this%green_roof_water_added_col, c2l_scale_type='urbanf', set_nourb=spval)
+        ptr_col=this%green_roof_water_added_col, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
         
   end subroutine InitHistory
 

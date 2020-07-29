@@ -19,7 +19,8 @@ module initVerticalMod
   use clm_varctl        , only : use_vancouver, use_mexicocity, use_vertsoilc, use_extralakelayers
   use clm_varctl        , only : use_bedrock, soil_layerstruct
   use clm_varctl        , only : use_fates
-  use clm_varcon        , only : zlak, dzlak, zsoi, dzsoi, zisoi, dzsoi_decomp, spval, ispval, grlnd 
+  use clm_varcon        , only : zlak, dzlak, zsoi, dzsoi, zisoi, dzsoi_decomp, spval, ispval, grlnd
+  use clm_varcon        , only : zsoi_greenroof, dzsoi_greenroof, zisoi_greenroof
   use column_varcon     , only : icol_roof, icol_sunwall, icol_shadewall, is_hydrologically_active, icol_whiteroof, icol_greenroof
   use landunit_varcon   , only : istdlak, istice_mec
   use fileutils         , only : getfil
@@ -29,7 +30,7 @@ module initVerticalMod
   use glcBehaviorMod    , only : glc_behavior_type
   use SnowHydrologyMod  , only : InitSnowLayers             
   use abortUtils        , only : endrun
-  use UrbanParamsType   , only : green_roof_soil_depth    
+  use UrbanParamsType   , only : green_roof_soil_depth, green_roof_slope, green_roof_soil_global_uniform   
   use ncdio_pio
   !
   ! !PUBLIC TYPES:
@@ -139,9 +140,6 @@ contains
     real(r8), allocatable :: dzurb_roof(:,:)   ! roof (layer thickness)
     real(r8), allocatable :: ziurb_wall(:,:)   ! wall (layer interface)
     real(r8), allocatable :: ziurb_roof(:,:)   ! roof (layer interface)
-    real(r8), allocatable :: zsoi_greenroof(:)  !green roof soil z  (layers)
-    real(r8), allocatable :: dzsoi_greenroof(:) !green roof soil dz (thickness)
-    real(r8), allocatable :: zisoi_greenroof(:) !green roof soil zi (interfaces)   
     real(r8)              :: depthratio        ! ratio of lake depth to standard deep lake depth 
     integer               :: begc, endc
     integer               :: begl, endl
@@ -437,10 +435,6 @@ contains
           end if
        end if
     end do
-
-    allocate( zsoi_greenroof(1:nlevgrnd                ))
-    allocate( dzsoi_greenroof(1:nlevgrnd               ))
-    allocate( zisoi_greenroof(0:nlevgrnd               ))
     
     do c = bounds%begc,bounds%endc
        l = col%landunit(c)
@@ -715,6 +709,7 @@ contains
        g = col%gridcell(c)
        ! check for near zero slopes, set minimum value
        col%topo_slope(c) = max(tslope(g), 0.2_r8)
+       if (green_roof_soil_global_uniform .and. col%itype(c)==icol_greenroof) col%topo_slope(c) = green_roof_slope
     end do
     deallocate(tslope)
 
@@ -797,7 +792,7 @@ contains
     if (lun_itype == istice_mec) then
        hasBedrock = .false.
     else if (lun_itype >= isturb_MIN .and. lun_itype <= isturb_MAX) then
-       if (col_itype == icol_road_perv ) then
+       if (col_itype == icol_road_perv .or. col_itype == icol_greenroof) then
           hasBedrock = .true.
        else
           hasBedrock = .false.
@@ -821,3 +816,4 @@ contains
 
 
 end module initVerticalMod
+

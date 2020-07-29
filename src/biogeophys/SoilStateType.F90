@@ -29,6 +29,7 @@ module SoilStateType
      real(r8), pointer :: cellorg_col          (:,:) ! col organic matter for gridcell containing column (1:nlevsoi)
      real(r8), pointer :: cellsand_col         (:,:) ! sand value for gridcell containing column (1:nlevsoi)
      real(r8), pointer :: cellclay_col         (:,:) ! clay value for gridcell containing column (1:nlevsoi)
+     real(r8), pointer :: cellclay_greenroof_col         (:,:) ! clay value for gridcell containing column (1:nlevsoi)
      real(r8), pointer :: bd_col               (:,:) ! col bulk density of dry soil material [kg/m^3] (CN)
 
      ! hydraulic properties
@@ -67,6 +68,8 @@ module SoilStateType
      real(r8), pointer :: tkdry_col            (:,:) ! col thermal conductivity, dry soil (W/m/Kelvin) (nlevgrnd) 
      real(r8), pointer :: tksatu_col           (:,:) ! col thermal conductivity, saturated soil [W/m-K] (new) (nlevgrnd) 
      real(r8), pointer :: csol_col             (:,:) ! col heat capacity, soil solids (J/m**3/Kelvin) (nlevgrnd) 
+     real(r8), pointer :: thk_greenroof_col    (:,:) ! col thermal conductivity of green roof [W/m-K] 
+     real(r8), pointer :: cv_greenroof_col     (:,:) ! col heat capacity of green roof [W/m-K] 
 
      ! roots
      real(r8), pointer :: rootr_patch          (:,:) ! patch effective fraction of roots in each soil layer (nlevgrnd)
@@ -131,9 +134,10 @@ contains
     allocate(this%mss_frc_cly_vld_col  (begc:endc))                     ; this%mss_frc_cly_vld_col  (:)   = nan
     allocate(this%sandfrac_patch       (begp:endp))                     ; this%sandfrac_patch       (:)   = nan
     allocate(this%clayfrac_patch       (begp:endp))                     ; this%clayfrac_patch       (:)   = nan
-    allocate(this%cellorg_col          (begc:endc,nlevsoi))             ; this%cellorg_col          (:,:) = nan 
-    allocate(this%cellsand_col         (begc:endc,nlevsoi))             ; this%cellsand_col         (:,:) = nan 
-    allocate(this%cellclay_col         (begc:endc,nlevsoi))             ; this%cellclay_col         (:,:) = nan 
+    allocate(this%cellorg_col          (begc:endc,nlevgrnd))             ; this%cellorg_col          (:,:) = nan 
+    allocate(this%cellsand_col         (begc:endc,nlevgrnd))             ; this%cellsand_col         (:,:) = nan 
+    allocate(this%cellclay_col         (begc:endc,nlevgrnd))             ; this%cellclay_col         (:,:) = nan 
+    allocate(this%cellclay_greenroof_col (begc:endc,nlevgrnd))          ; this%cellclay_greenroof_col         (:,:) = nan 
     allocate(this%bd_col               (begc:endc,nlevgrnd))            ; this%bd_col               (:,:) = nan
 
     allocate(this%hksat_col            (begc:endc,nlevgrnd))            ; this%hksat_col            (:,:) = spval
@@ -167,6 +171,8 @@ contains
     allocate(this%tkdry_col            (begc:endc,nlevgrnd))            ; this%tkdry_col            (:,:) = nan
     allocate(this%tksatu_col           (begc:endc,nlevgrnd))            ; this%tksatu_col           (:,:) = nan
     allocate(this%csol_col             (begc:endc,nlevgrnd))            ; this%csol_col             (:,:) = nan
+    allocate(this%thk_greenroof_col    (begc:endc,1:nlevgrnd))          ; this%thk_greenroof_col    (:,:) = nan
+    allocate(this%cv_greenroof_col     (begc:endc,1:nlevgrnd))          ; this%cv_greenroof_col     (:,:) = nan
 
     allocate(this%rootr_patch          (begp:endp,1:nlevgrnd))          ; this%rootr_patch          (:,:) = nan
     allocate(this%root_depth_patch     (begp:endp))                     ; this%root_depth_patch     (:)   = nan
@@ -285,6 +291,21 @@ contains
     call hist_addfld2d (fname='SNO_TK', units='W/m-K', type2d='levsno', &
          avgflag='A', long_name='Thermal conductivity', &
          ptr_col=data2dptr, no_snow_behavior=no_snow_normal, default='inactive')
+
+    this%thk_greenroof_col(begc:endc,:) = spval 
+    call hist_addfld2d (fname='TK_GREENROOF', units='W/m-K', type2d='levgrnd', &
+          avgflag='A', long_name='urban green roof thermal conductivity', &
+          ptr_col=this%thk_greenroof_col, default='inactive')    
+
+    this%cv_greenroof_col(begc:endc,:) = spval 
+    call hist_addfld2d (fname='CV_GREENROOF', units='J/(m2 K)', type2d='levgrnd', &
+          avgflag='A', long_name='urban green roof heat capacity', &
+          ptr_col=this%cv_greenroof_col, default='inactive')    
+
+    this%cellclay_greenroof_col(begc:endc,:) = spval 
+    call hist_addfld2d (fname='CLAY_GREENROOF', units='unitless', type2d='levgrnd', &
+          avgflag='A', long_name='urban green roof percent clay', &
+          ptr_col=this%cellclay_greenroof_col, default='inactive')    
 
     call hist_addfld2d (fname='SNO_TK_ICE', units='W/m-K', type2d='levsno', &
          avgflag='A', long_name='Thermal conductivity (ice landunits only)', &

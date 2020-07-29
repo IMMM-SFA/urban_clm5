@@ -97,7 +97,7 @@ contains
     use ncdio_pio           , only : ncd_pio_openfile, ncd_pio_closefile, ncd_inqdlen
     use clm_varpar          , only : numpft, numrad
     use clm_varpar          , only : nlevsoi, nlevgrnd, nlevlak, nlevsoifl, nlayer, nlayert, nlevurb, nlevsno
-    use clm_varcon          , only : zsoi, dzsoi, zisoi, spval
+    use clm_varcon          , only : zsoi, dzsoi, zisoi, spval, zsoi_greenroof, dzsoi_greenroof, zisoi_greenroof
     use clm_varcon          , only : secspday, pc, mu, denh2o, denice, grlnd
     use clm_varctl          , only : use_cn, use_lch4, use_fates
     use clm_varctl          , only : iulog, fsurdat, paramfile, soil_layerstruct
@@ -107,6 +107,7 @@ contains
     use organicFileMod      , only : organicrd 
     use FuncPedotransferMod , only : pedotransf, get_ipedof
     use RootBiophysMod      , only : init_vegrootfr
+    use UrbanParamsType     , only : green_roof_pct_sand, green_roof_pct_clay, green_roof_fmax, green_roof_soil_global_uniform
     use GridcellType     , only : grc                
     !
     ! !ARGUMENTS:
@@ -306,6 +307,7 @@ contains
     do c = begc, endc
        g = col%gridcell(c)
        soilstate_inst%wtfact_col(c) = gti(g)
+       if (green_roof_soil_global_uniform .and. col%itype(c)==icol_greenroof) soilstate_inst%wtfact_col(c) = green_roof_fmax
     end do
     deallocate(gti)
 
@@ -405,24 +407,36 @@ contains
           do lev = 1,nlevgrnd
              ! DML - this if statement could probably be removed and just the
              ! top part used for all soil layer structures
-             if ( soil_layerstruct /= '10SL_3.5m' )then ! apply soil texture from 10 layer input dataset 
+             if ( soil_layerstruct /= '10SL_3.5m' )then ! apply soil texture from 10 layer input dataset                
                 if (lev .eq. 1) then
                    clay = clay3d(g,1)
                    sand = sand3d(g,1)
                    om_frac = organic3d(g,1)/organic_max 
                 else if (lev <= nlevsoi) then
                    do j = 1,nlevsoifl-1
-                      if (zisoi(lev) >= zisoifl(j) .AND. zisoi(lev) < zisoifl(j+1)) then
-                         clay = clay3d(g,j+1)
-                         sand = sand3d(g,j+1)
-                         om_frac = organic3d(g,j+1)/organic_max    
-                      endif
+                      if (col%itype(c) == icol_greenroof) then
+                         if (zisoi_greenroof(lev) >= zisoifl(j) .AND. zisoi_greenroof(lev) < zisoifl(j+1)) then
+                            clay = clay3d(g,j+1)
+                            sand = sand3d(g,j+1)
+                            om_frac = organic3d(g,j+1)/organic_max    
+                         endif
+                      else
+                         if (zisoi(lev) >= zisoifl(j) .AND. zisoi(lev) < zisoifl(j+1)) then
+                            clay = clay3d(g,j+1)
+                            sand = sand3d(g,j+1)
+                            om_frac = organic3d(g,j+1)/organic_max    
+                         endif
+                      end if
                    end do
                 else
                    clay = clay3d(g,nlevsoifl)
                    sand = sand3d(g,nlevsoifl)
                    om_frac = 0._r8
                 endif
+                if (green_roof_soil_global_uniform .and. col%itype(c) == icol_greenroof) then
+                   clay = green_roof_pct_clay
+                   sand = green_roof_pct_sand
+                endif   
              else
                 if (lev <= nlevsoi) then ! duplicate clay and sand values from 10th soil layer
                    clay = clay3d(g,lev)
@@ -458,6 +472,7 @@ contains
                    soilstate_inst%cellclay_col(c,lev) = clay
                    soilstate_inst%cellorg_col(c,lev)  = om_frac*organic_max
                 end if
+                if (col%itype(c) == icol_greenroof) soilstate_inst%cellclay_greenroof_col(c,lev) = clay
 
                 ! Note that the following properties are overwritten for urban impervious road 
                 ! layers that are not soil in SoilThermProp.F90 within SoilTemperatureMod.F90
@@ -535,7 +550,6 @@ contains
           else if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_greenroof) then 
              ! pervious road layers  - set in UrbanInitTimeConst
           end if
-
        end if
     end do
 
