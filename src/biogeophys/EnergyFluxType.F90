@@ -96,7 +96,18 @@ module EnergyFluxType
      real(r8), pointer :: lwnet_whiteroof_surface_lun  (:)   ! lun urban white roof net (outgoing-incoming) longwave radiation (W/m**2)
      real(r8), pointer :: lwnet_greenroof_surface_lun  (:)   ! lun urban green roof net (outgoing-incoming) longwave radiation (W/m**2)
      real(r8), pointer :: rs_greenroof_lun             (:)   ! lun urban green roof vegetation stomatal resistance (s/m)
-     real(r8), pointer :: canyon_resistance_lun        (:)   ! lun resistance to heat and moisture transfer from canyon road/walls to canyon air (s/m)
+     real(r8), pointer :: canyon_resistance_lun        (:)   ! lun urban resistance to heat and moisture transfer from canyon road/walls to canyon air (s/m)
+     real(r8), pointer :: canyon_wind_lun              (:)   ! lun urban net wind speed inside canyon (s/m)
+
+     ! adjusting factor for green roof vegetation stomatal resistance 
+      real(r8), pointer :: fs_greenroof_lun            (:)   ! lun urban green roof adjusting factor for solar radiation [-]
+      real(r8), pointer :: fw_greenroof_lun            (:)   ! lun urban green roof adjusting factor for soil water content [-]
+      real(r8), pointer :: fvpd_greenroof_lun          (:)   ! lun urban green roof adjusting factor for vapour pressure deficit [-] 
+      real(r8), pointer :: ft_greenroof_lun            (:)   ! lun urban green roof adjusting factor for temperature [-]
+      real(r8), pointer :: fs2_greenroof_lun           (:)   ! lun urban green roof adjusting factor for solar radiation [-]
+      real(r8), pointer :: fvpd2_greenroof_lun         (:)   ! lun urban green roof adjusting factor for vapour pressure deficit [-] 
+      real(r8), pointer :: vpd_greenroof_lun           (:)   ! lun urban green roof vapour pressure deficit [hPa]
+      real(r8), pointer :: canyon_wind_greenroof_lun   (:)   ! lun urban green roof net wind speed inside canyon (m/s)
 
      ! Derivatives of energy fluxes
      real(r8), pointer :: dgnetdT_patch           (:)   ! patch derivative of net ground heat flux wrt soil temp  (W/m**2 K)
@@ -288,6 +299,16 @@ contains
     allocate( this%lwnet_greenroof_surface_lun   (begl:endl))       ; this%lwnet_greenroof_surface_lun     (:)   = nan
     allocate( this%rs_greenroof_lun              (begl:endl))       ; this%rs_greenroof_lun                (:)   = nan
     allocate( this%canyon_resistance_lun         (begl:endl))       ; this%canyon_resistance_lun           (:)   = nan
+    allocate( this%canyon_wind_lun               (begl:endl))       ; this%canyon_wind_lun                 (:)   = nan
+
+    allocate( this%fs_greenroof_lun              (begl:endl))       ; this%fs_greenroof_lun                (:)   = nan
+    allocate( this%fw_greenroof_lun              (begl:endl))       ; this%fw_greenroof_lun                (:)   = nan
+    allocate( this%fvpd_greenroof_lun            (begl:endl))       ; this%fvpd_greenroof_lun              (:)   = nan
+    allocate( this%ft_greenroof_lun              (begl:endl))       ; this%ft_greenroof_lun                (:)   = nan
+    allocate( this%fs2_greenroof_lun             (begl:endl))       ; this%fs2_greenroof_lun               (:)   = nan
+    allocate( this%fvpd2_greenroof_lun           (begl:endl))       ; this%fvpd2_greenroof_lun             (:)   = nan
+    allocate( this%vpd_greenroof_lun             (begl:endl))       ; this%vpd_greenroof_lun               (:)   = nan
+    allocate( this%canyon_wind_greenroof_lun     (begl:endl))       ; this%canyon_wind_greenroof_lun       (:)   = nan
 
     allocate( this%dgnetdT_patch           (begp:endp))             ; this%dgnetdT_patch           (:)   = nan
     allocate( this%cgrnd_patch             (begp:endp))             ; this%cgrnd_patch             (:)   = nan
@@ -662,6 +683,45 @@ contains
          avgflag='A', long_name='Resistance to heat and moisture transfer from canyon road/walls to canyon air', &
          ptr_lunit=this%canyon_resistance_lun, default='inactive')
 
+    this%canyon_wind_lun(begl:endl) = spval
+    call hist_addfld1d (fname='WIND_CANYON', units='m/',  &
+         avgflag='A', long_name='Urban net wind speed inside canyon', &
+         ptr_lunit=this%canyon_wind_lun, default='inactive')
+
+    this%fs_greenroof_lun(begl:endl) = spval
+    call hist_addfld1d (fname='FS_GREENROOF', units='unitless',  &
+         avgflag='A', long_name='Urban green roof adjusting factor for solar radiation', &
+         ptr_lunit=this%fs_greenroof_lun, default='inactive')
+
+    this%fw_greenroof_lun(begl:endl) = spval
+    call hist_addfld1d (fname='FW_GREENROOF', units='unitless',  &
+         avgflag='A', long_name='Urban green roof adjusting factor for soil water content', &
+         ptr_lunit=this%fw_greenroof_lun, default='inactive')
+
+    this%fvpd_greenroof_lun(begl:endl) = spval
+    call hist_addfld1d (fname='FVPD_GREENROOF', units='unitless',  &
+         avgflag='A', long_name='Urban green roof adjusting factor for vapour pressure deficit', &
+         ptr_lunit=this%fvpd_greenroof_lun, default='inactive')
+
+    this%ft_greenroof_lun(begl:endl) = spval
+    call hist_addfld1d (fname='FT_GREENROOF', units='unitless',  &
+         avgflag='A', long_name='Urban green roof adjusting factor for solar radiation', &
+         ptr_lunit=this%ft_greenroof_lun, default='inactive')
+
+    this%fs2_greenroof_lun(begl:endl) = spval
+    call hist_addfld1d (fname='FS2_GREENROOF', units='unitless',  &
+         avgflag='A', long_name='Urban green roof adjusting factor for solar radiation', &
+         ptr_lunit=this%fs2_greenroof_lun, default='inactive')
+
+    this%fvpd2_greenroof_lun(begl:endl) = spval
+    call hist_addfld1d (fname='FVPD2_GREENROOF', units='unitless',  &
+         avgflag='A', long_name='Urban green roof adjusting factor for solar radiation', &
+         ptr_lunit=this%fvpd2_greenroof_lun, default='inactive')
+
+    this%vpd_greenroof_lun(begl:endl) = spval
+    call hist_addfld1d (fname='VPD_GREENROOF', units='hPa',  &
+         avgflag='A', long_name='Urban green roof vapour pressure deficit', &
+         ptr_lunit=this%vpd_greenroof_lun, default='inactive')
 
     this%netrad_patch(begp:endp) = spval
     call hist_addfld1d (fname='Rnet', units='W/m^2',  &

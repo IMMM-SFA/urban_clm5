@@ -153,8 +153,8 @@ contains
           forc_rain               =>    atm2lnd_inst%forc_rain_downscaled_col   , & ! Input:  [real(r8) (:)   ]  rain rate [mm/s]
           forc_snow               =>    atm2lnd_inst%forc_snow_downscaled_col   , & ! Input:  [real(r8) (:)   ]  snow rate [mm/s]
           forc_lwrad              =>    atm2lnd_inst%forc_lwrad_downscaled_col  , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)
-		
-		  green_roof_water_added  =>	waterstate_inst%green_roof_water_added_col              , & ! Input:  [real(r8) (:)   ] green_roof_water_added
+
+          green_roof_water_added  =>    waterstate_inst%green_roof_water_added_col , & ! Input:  [real(r8) (:)   ] green_roof_water_added
           h2osno                  =>    waterstate_inst%h2osno_col              , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                     
           h2osno_old              =>    waterstate_inst%h2osno_old_col          , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O) at previous time step
           frac_sno_eff            =>    waterstate_inst%frac_sno_eff_col        , & ! Input:  [real(r8) (:)   ]  effective snow fraction                 
@@ -202,6 +202,18 @@ contains
           qflx_irrig              =>    irrigation_inst%qflx_irrig_col          , & ! Input:  [real(r8) (:)   ]  irrigation flux (mm H2O /s)             
 
           qflx_glcice_dyn_water_flux => glacier_smb_inst%qflx_glcice_dyn_water_flux_col, & ! Input: [real(r8) (:)]  water flux needed for balance check due to glc_dyn_runoff_routing (mm H2O/s) (positive means addition of water to the system)
+
+          qflx_evap_tot_greenroof            => waterflux_inst%qflx_evap_tot_greenroof_col      , & ! urban green roof qflx_evap_soi + qflx_evap_can + qflx_tran_veg (mm H2O /s)      
+          qflx_surf_greenroof                => waterflux_inst%qflx_surf_greenroof_col          , & ! urban green roof surface runoff (mm H2O /s)      
+          qflx_h2osfc_surf_greenroof         => waterflux_inst%qflx_h2osfc_surf_greenroof_col   , & ! urban green roof surface water runoff (mm/s)  
+          qflx_qrgwl_greenroof               => waterflux_inst%qflx_qrgwl_greenroof_col         , & ! urban green roof qflx_surf at glaciers, wetlands, lakes
+          qflx_drain_greenroof               => waterflux_inst%qflx_drain_greenroof_col         , & ! urban green roof sub-surface runoff (mm H2O /s) 
+          qflx_drain_perched_greenroof       => waterflux_inst%qflx_drain_perched_greenroof_col , & ! urban green roof sub-surface runoff from perched zwt (mm H2O /s)
+          qflx_ice_runoff_snwcp_greenroof    => waterflux_inst%qflx_ice_runoff_snwcp_greenroof_col    , & ! urban green roof solid runoff from snow capping (mm/s)  
+          qflx_ice_runoff_xs_greenroof       => waterflux_inst%qflx_ice_runoff_xs_greenroof_col       , & ! urban green roof solid runoff from excess ice in soil (mm/s) 
+          qflx_snwcp_discarded_liq_greenroof => waterflux_inst%qflx_snwcp_discarded_liq_greenroof_col , & ! urban green roof excess liquid h2o due to snow capping, which we simply discard in order to reset the snow pack (mm H2O /s) [+]`
+          qflx_snwcp_discarded_ice_greenroof => waterflux_inst%qflx_snwcp_discarded_ice_greenroof_col , & ! urban green roof excess solid h2o due to snow capping, which we simply discard in order to reset the snow pack (mm H2O /s) [+]`
+          deltawb_greenroof                  => waterflux_inst%deltawb_greenroof_col            , & ! urban green roof water mass change in the time step (endwb - begwb) (mm H2O /s)
 
           eflx_lwrad_out          =>    energyflux_inst%eflx_lwrad_out_patch    , & ! Input:  [real(r8) (:)   ]  emitted infrared (longwave) radiation (W/m**2)
           eflx_lwrad_net          =>    energyflux_inst%eflx_lwrad_net_patch    , & ! Input:  [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm]
@@ -267,10 +279,10 @@ contains
 
           ! add qflx_drain_perched and qflx_flood
           if (col%active(c)) then
-			
-			if (col%itype(c) == icol_greenroof .and. green_roof_irrigation ) then
 
-             errh2o(c) = endwb(c) - begwb(c) &
+             if (green_roof_irrigation .and. col%itype(c) == icol_greenroof) then
+
+               errh2o(c) = endwb(c) - begwb(c) &
                   - (forc_rain_col(c)        &
                   + forc_snow_col(c)         &
                   + qflx_floodc(c)           &
@@ -287,10 +299,10 @@ contains
                   - qflx_ice_runoff_xs(c)    &
                   - qflx_snwcp_discarded_liq(c) &
                   - qflx_snwcp_discarded_ice(c)) * dtime
-			
-			else 
-			
-             errh2o(c) = endwb(c) - begwb(c) &
+
+             else
+
+               errh2o(c) = endwb(c) - begwb(c) &
                   - (forc_rain_col(c)        &
                   + forc_snow_col(c)         &
                   + qflx_floodc(c)           &
@@ -306,8 +318,23 @@ contains
                   - qflx_ice_runoff_xs(c)    &
                   - qflx_snwcp_discarded_liq(c) &
                   - qflx_snwcp_discarded_ice(c)) * dtime
-			end if
-			
+
+            end if
+
+            if (col%itype(c) == icol_greenroof) then
+               qflx_evap_tot_greenroof(c) = qflx_evap_tot(c)
+               qflx_surf_greenroof(c) = qflx_surf(c)
+               qflx_h2osfc_surf_greenroof(c) = qflx_h2osfc_surf(c)
+               qflx_qrgwl_greenroof(c) = qflx_qrgwl(c)
+               qflx_drain_greenroof(c) = qflx_drain(c)
+               qflx_drain_perched_greenroof(c) = qflx_drain_perched(c)
+               qflx_ice_runoff_snwcp_greenroof(c) = qflx_ice_runoff_snwcp(c)
+               qflx_ice_runoff_xs_greenroof(c) = qflx_ice_runoff_xs(c)
+               qflx_snwcp_discarded_liq_greenroof(c) = qflx_snwcp_discarded_liq(c)
+               qflx_snwcp_discarded_ice_greenroof(c) = qflx_snwcp_discarded_ice(c)
+               deltawb_greenroof(c) = (endwb(c) - begwb(c))/dtime
+            end if
+
           else
 
              errh2o(c) = 0.0_r8

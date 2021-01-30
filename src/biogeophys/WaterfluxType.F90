@@ -99,14 +99,17 @@ module WaterfluxType
      real(r8), pointer :: snow_sources_col         (:)   ! col snow sources (mm H2O/s)
      real(r8), pointer :: snow_sinks_col           (:)   ! col snow sinks (mm H2O/s)
 
+     real(r8), pointer :: qflx_evap_tot_greenroof_col        (:)   ! col urban green roof qflx_evap_soi + qflx_evap_can + qflx_tran_veg (mm H2O /s) 
      real(r8), pointer :: qflx_surf_greenroof_col            (:)   ! col urban green roof surface runoff (mm H2O /s)
      real(r8), pointer :: qflx_h2osfc_surf_greenroof_col     (:)   ! col urban green roof surface water runoff
      real(r8), pointer :: qflx_qrgwl_greenroof_col           (:)   ! col urban green roof qflx_surf at glaciers, wetlands, lakes
      real(r8), pointer :: qflx_drain_greenroof_col           (:)   ! col urban green roof sub-surface runoff (mm H2O /s)
      real(r8), pointer :: qflx_drain_perched_greenroof_col   (:)   ! col urban green roof sub-surface runoff from perched wt (mm H2O /s)
-     real(r8), pointer :: qflx_rsub_sat_greenroof_col        (:)   ! col urban green roof sub-surface runoff (mm H2O /s)
-     real(r8), pointer :: rsub_top_greenroof_col             (:)   ! col urban green roof sub-surface runoff (mm H2O /s)
-     real(r8), pointer :: xs1_greenroof_col                  (:)   ! col urban green roof sub-surface runoff (mm H2O /s)
+     real(r8), pointer :: qflx_ice_runoff_snwcp_greenroof_col (:)  ! col urban green roof solid runoff from snow capping (mm/s)  
+     real(r8), pointer :: qflx_ice_runoff_xs_greenroof_col    (:)  ! col urban green roof solid runoff from excess ice in soil (mm/s) 
+     real(r8), pointer :: qflx_snwcp_discarded_liq_greenroof_col (:)   ! col urban green roof excess liquid h2o due to snow capping, which we simply discard in order to reset the snow pack (mm H2O /s) [+]`
+     real(r8), pointer :: qflx_snwcp_discarded_ice_greenroof_col (:)   ! col urban green roof excess solid h2o due to snow capping, which we simply discard in order to reset the snow pack (mm H2O /s) [+]`
+     real(r8), pointer :: deltawb_greenroof_col              (:)   ! col urban green roof water mass change in the time step (endwb - begwb) (mm H2O /s)
 
      ! Dynamic land cover change
      real(r8), pointer :: qflx_liq_dynbal_grc      (:)   ! grc liq dynamic land cover change conversion runoff flux
@@ -252,15 +255,17 @@ contains
     allocate(this%qflx_ice_dynbal_grc      (begg:endg))              ; this%qflx_ice_dynbal_grc      (:)   = nan
     allocate(this%AnnET                    (begc:endc))              ; this%AnnET                    (:)   = nan
 
+    allocate(this%qflx_evap_tot_greenroof_col       (begc:endc))     ; this%qflx_evap_tot_greenroof_col      (:)   = nan
     allocate(this%qflx_surf_greenroof_col           (begc:endc))     ; this%qflx_surf_greenroof_col          (:)   = nan
     allocate(this%qflx_h2osfc_surf_greenroof_col    (begc:endc))     ; this%qflx_h2osfc_surf_greenroof_col   (:)   = nan
     allocate(this%qflx_qrgwl_greenroof_col          (begc:endc))     ; this%qflx_qrgwl_greenroof_col         (:)   = nan
     allocate(this%qflx_drain_greenroof_col          (begc:endc))     ; this%qflx_drain_greenroof_col         (:)   = nan
     allocate(this%qflx_drain_perched_greenroof_col  (begc:endc))     ; this%qflx_drain_perched_greenroof_col (:)   = nan
-    allocate(this%qflx_rsub_sat_greenroof_col       (begc:endc))     ; this%qflx_rsub_sat_greenroof_col      (:)   = nan
-    allocate(this%rsub_top_greenroof_col            (begc:endc))     ; this%rsub_top_greenroof_col           (:)   = nan
-    allocate(this%xs1_greenroof_col                 (begc:endc))     ; this%xs1_greenroof_col                (:)   = nan
-
+    allocate(this%qflx_ice_runoff_snwcp_greenroof_col    (begc:endc)) ; this%qflx_ice_runoff_snwcp_greenroof_col (:)   = nan
+    allocate(this%qflx_ice_runoff_xs_greenroof_col       (begc:endc)) ; this%qflx_ice_runoff_xs_greenroof_col    (:)   = nan
+    allocate(this%qflx_snwcp_discarded_liq_greenroof_col (begc:endc)) ; this%qflx_snwcp_discarded_liq_greenroof_col (:)   = nan
+    allocate(this%qflx_snwcp_discarded_ice_greenroof_col (begc:endc)) ; this%qflx_snwcp_discarded_ice_greenroof_col (:)   = nan
+    allocate(this%deltawb_greenroof_col             (begc:endc))      ; this%deltawb_greenroof_col            (:)   = nan
 
     this%qflx_liq_dynbal_dribbler = annual_flux_dribbler_gridcell( &
          bounds = bounds, &
@@ -554,6 +559,11 @@ contains
          avgflag='A', long_name='Annual ET', &
          ptr_col=this%AnnET, c2l_scale_type='urbanf', default='inactive')
 
+    this%qflx_evap_tot_greenroof_col(begc:endc) = spval
+    call hist_addfld1d (fname='qflx_evap_tot_GREENROOF',  units='mm/s',  &
+         avgflag='A', long_name='urban green roof qflx_evap_soi + qflx_evap_can + qflx_tran_veg', &
+         ptr_col=this%qflx_evap_tot_greenroof_col, c2l_scale_type='urbanf', default='inactive')
+
     this%qflx_surf_greenroof_col(begc:endc) = spval
     call hist_addfld1d (fname='QOVER_GREENROOF',  units='mm/s',  &
          avgflag='A', long_name='urban green roof surface runoff', &
@@ -579,20 +589,30 @@ contains
          avgflag='A', long_name='urban green roof perched wt drainage', &
          ptr_col=this%qflx_drain_perched_greenroof_col, c2l_scale_type='urbanf', default='inactive')
 
-    this%qflx_rsub_sat_greenroof_col(begc:endc) = spval
-    call hist_addfld1d (fname='QRSUB_SAT_GREENROOF',  units='mm/s',  &
-         avgflag='A', long_name='urban green roof saturation excess drainage', &
-         ptr_col=this%qflx_rsub_sat_greenroof_col, c2l_scale_type='urbanf', default='inactive')
+    this%qflx_ice_runoff_snwcp_greenroof_col(begc:endc) = spval
+    call hist_addfld1d (fname='qflx_ice_runoff_snwcp_GREENROOF',  units='mm/s',  &
+         avgflag='A', long_name='urban green roof solid runoff from snow capping ', &
+         ptr_col=this%qflx_ice_runoff_snwcp_greenroof_col, c2l_scale_type='urbanf', default='inactive')
 
-    this%rsub_top_greenroof_col(begc:endc) = spval
-    call hist_addfld1d (fname='RSUB_TOP_GREENROOF',  units='mm/s',  &
-         avgflag='A', long_name='urban green roof subsurface runoff - topographic control', &
-         ptr_col=this%rsub_top_greenroof_col, c2l_scale_type='urbanf', default='inactive')
+    this%qflx_ice_runoff_xs_greenroof_col(begc:endc) = spval
+    call hist_addfld1d (fname='qflx_ice_runoff_xs_GREENROOF',  units='mm/s',  &
+         avgflag='A', long_name='urban green roof solid runoff from excess ice in soil', &
+         ptr_col=this%qflx_ice_runoff_xs_greenroof_col, c2l_scale_type='urbanf', default='inactive')
 
-    this%xs1_greenroof_col(begc:endc) = spval
-    call hist_addfld1d (fname='XS1_GREENROOF',  units='mm',  &
-         avgflag='A', long_name='urban green roof excess soil water above saturation at layer 1', &
-         ptr_col=this%xs1_greenroof_col, c2l_scale_type='urbanf', default='inactive')
+    this%qflx_snwcp_discarded_liq_greenroof_col(begc:endc) = spval
+    call hist_addfld1d (fname='qflx_snwcp_discarded_liq_greenroof_GREENROOF',  units='mm/s',  &
+         avgflag='A', long_name='urban green roof excess liquid h2o due to snow capping, which we simply discard in order to reset the snow pack (mm H2O /s) [+]', &
+         ptr_col=this%qflx_snwcp_discarded_liq_greenroof_col, c2l_scale_type='urbanf', default='inactive')
+
+    this%qflx_snwcp_discarded_ice_greenroof_col(begc:endc) = spval
+    call hist_addfld1d (fname='qflx_snwcp_discarded_ice_greenroof_GREENROOF',  units='mm/s',  &
+         avgflag='A', long_name='urban green roof excess solid h2o due to snow capping, which we simply discard in order to reset the snow pack (mm H2O /s) [+]', &
+         ptr_col=this%qflx_snwcp_discarded_ice_greenroof_col, c2l_scale_type='urbanf', default='inactive')
+
+    this%deltawb_greenroof_col(begc:endc) = spval
+    call hist_addfld1d (fname='DELTAWB_GREENROOF',  units='mm/s',  &
+         avgflag='A', long_name='urban green roof water mass change in the time step (endwb - begwb)', &
+         ptr_col=this%deltawb_greenroof_col, c2l_scale_type='urbanf', default='inactive')
 
   end subroutine InitHistory
   

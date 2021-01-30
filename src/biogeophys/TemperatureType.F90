@@ -930,6 +930,8 @@ contains
     use spmdMod         , only : masterproc
     use abortutils      , only : endrun
     use ncdio_pio       , only : file_desc_t, ncd_double, ncd_int
+    use column_varcon   , only : icol_greenroof
+    use UrbanParamsType , only : green_roof_THU_test
     use restUtilMod
     !
     ! !ARGUMENTS:
@@ -941,7 +943,7 @@ contains
     logical          , intent(in)    :: is_prog_buildtemp    ! Prognostic building temp is being used
     !
     ! !LOCAL VARIABLES:
-    integer :: j,c       ! indices
+    integer :: j,c,l     ! indices
     logical :: readvar   ! determine if variable is on initial file
     !-----------------------------------------------------------------------
 
@@ -949,6 +951,18 @@ contains
          dim1name='column', dim2name='levtot', switchdim=.true., &
          long_name='soil-snow temperature', units='K', &
          interpinic_flag='interp', readvar=readvar, data=this%t_soisno_col)
+
+    if (flag == 'read' ) then
+       do c = bounds%begc, bounds%endc
+          l = col%landunit(c)
+          if (green_roof_THU_test .and. col%itype(c) == icol_greenroof) then
+             do j = 1,nlevgrnd
+                this%t_soisno_col(c,j) = 298.26_r8
+             end do
+             !write(iulog,*) 'initial, t_soisno_greenroof', this%t_soisno_col(c,:)                              
+          end if
+       end do
+    end if
 
     call restartvar(ncid=ncid, flag=flag, varname='T_VEG', xtype=ncd_double,  &
          dim1name='pft', &
@@ -1139,7 +1153,6 @@ contains
        if (flag=='read' .and. .not. readvar) then
           if (masterproc) write(iulog,*) "can't find t_greenroof_surface in initial file..."
           if (masterproc) write(iulog,*) "Initialize t_greenroof_surface to taf"
-          this%t_greenroof_surface_lun(bounds%begl:bounds%endl) = this%taf_lun(bounds%begl:bounds%endl)
        end if
        
        ! landunit type physical state variable - t_roof_inner
@@ -1208,7 +1221,6 @@ contains
           this%t_floor_lun(bounds%begl:bounds%endl) = this%taf_lun(bounds%begl:bounds%endl)
        end if
     end if
-
 
   end subroutine Restart
 

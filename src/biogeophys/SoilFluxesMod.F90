@@ -86,6 +86,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                & 
+         ctype               =>   col%itype                                 , & ! Input:  [integer  (:)   ]  column type  
+
          eflx_h2osfc_to_snow_col => energyflux_inst%eflx_h2osfc_to_snow_col , & ! Input:  [real(r8) (:)   ]  col snow melt to h2osfc heat flux (W/m**2)
 
          forc_lwrad              => atm2lnd_inst%forc_lwrad_downscaled_col  , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)
@@ -137,7 +139,23 @@ contains
          qflx_ev_snow            => waterflux_inst%qflx_ev_snow_patch       , & ! In/Out: [real(r8) (:)   ]  evaporation flux from snow (mm H2O/s) [+ to atm]
          qflx_ev_soil            => waterflux_inst%qflx_ev_soil_patch       , & ! In/Out: [real(r8) (:)   ]  evaporation flux from soil (mm H2O/s) [+ to atm]
          qflx_ev_h2osfc          => waterflux_inst%qflx_ev_h2osfc_patch     , & ! In/Out: [real(r8) (:)   ]  evaporation flux from soil (mm H2O/s) [+ to atm]
-         
+
+         lwup_roof_surface          =>    energyflux_inst%lwup_roof_surface_lun          , & ! Output: [real(r8) (:,:) ]  urban roof upward longwave radiation (W/m**2) 
+         lwup_whiteroof_surface     =>    energyflux_inst%lwup_whiteroof_surface_lun     , & ! Output: [real(r8) (:,:) ]  urban white roof upward longwave radiation (W/m**2) 
+         lwup_greenroof_surface     =>    energyflux_inst%lwup_greenroof_surface_lun     , & ! Output: [real(r8) (:,:) ]  urban green roof upward longwave radiation (W/m**2) 
+         lwnet_roof_surface         =>    energyflux_inst%lwnet_roof_surface_lun         , & ! Output: [real(r8) (:,:) ]  urban roof net longwave radiation (W/m**2) 
+         lwnet_whiteroof_surface    =>    energyflux_inst%lwnet_whiteroof_surface_lun    , & ! Output: [real(r8) (:,:) ]  urban white roof net longwave radiation (W/m**2) 
+         lwnet_greenroof_surface    =>    energyflux_inst%lwnet_greenroof_surface_lun    , & ! Output: [real(r8) (:,:) ]  urban green roof net longwave radiation (W/m**2) 
+         eflx_sh_roof        =>   energyflux_inst%eflx_sh_roof_lun          , & ! Output: [real(r8) (:)   ]  roof sensible heat flux (W/m**2) [+ to atm] 
+         eflx_sh_whiteroof   =>   energyflux_inst%eflx_sh_whiteroof_lun     , & ! Output: [real(r8) (:)   ]  white roof sensible heat flux (W/m**2) [+ to atm] 
+         eflx_sh_greenroof   =>   energyflux_inst%eflx_sh_greenroof_lun     , & ! Output: [real(r8) (:)   ]  green roof sensible heat flux (W/m**2) [+ to atm] 
+         eflx_lh_roof        =>   energyflux_inst%eflx_lh_roof_lun          , & ! Output: [real(r8) (:)   ]  roof latent heat flux (W/m**2) [+ to atm] 
+         eflx_lh_whiteroof   =>   energyflux_inst%eflx_lh_whiteroof_lun     , & ! Output: [real(r8) (:)   ]  white roof latent heat flux (W/m**2) [+ to atm] 
+         eflx_lh_greenroof   =>   energyflux_inst%eflx_lh_greenroof_lun     , & ! Output: [real(r8) (:)   ]  green roof latent heat flux (W/m**2) [+ to atm] 
+         eflx_gnet_roof      =>   energyflux_inst%eflx_gnet_roof_lun        , & ! Output: [real(r8) (:)   ]  roof net ground heat flux (W/m**2) [+ to atm] 
+         eflx_gnet_whiteroof =>   energyflux_inst%eflx_gnet_whiteroof_lun   , & ! Output: [real(r8) (:)   ]  white roof net ground heat flux (W/m**2) [+ to atm] 
+         eflx_gnet_greenroof =>   energyflux_inst%eflx_gnet_greenroof_lun   , & ! Output: [real(r8) (:)   ]  green roof net ground heat flux (W/m**2) [+ to atm] 
+
          eflx_sh_grnd            => energyflux_inst%eflx_sh_grnd_patch      , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
          eflx_sh_veg             => energyflux_inst%eflx_sh_veg_patch       , & ! Output: [real(r8) (:)   ]  sensible heat flux from leaves (W/m**2) [+ to atm]
          eflx_soil_grnd          => energyflux_inst%eflx_soil_grnd_patch    , & ! Output: [real(r8) (:)   ]  soil heat flux (W/m**2) [+ = into soil] 
@@ -432,6 +450,35 @@ contains
             eflx_lwrad_net(p) = eflx_lwrad_net(p) + eflx_lwrad_del(p)
             eflx_lwrad_net_u(p) = eflx_lwrad_net_u(p) + eflx_lwrad_del(p)
             eflx_lwrad_out_u(p) = eflx_lwrad_out(p)
+         end if
+      end do
+
+      do fp = 1, num_urbanp
+         p = filter_urbanp(fp)
+         c = patch%column(p)
+         g = patch%gridcell(p)
+         l = patch%landunit(p)
+
+         if (ctype(c) == icol_roof) then
+            lwup_roof_surface(l) = eflx_lwrad_out(p)
+            lwnet_roof_surface(l) = eflx_lwrad_net(p)        
+            eflx_sh_roof(l)  = eflx_sh_tot(p)
+            eflx_lh_roof(l)  = eflx_lh_tot(p)
+            eflx_gnet_roof(l)= eflx_soil_grnd(p)
+         else if (ctype(c) == icol_whiteroof) then
+            lwup_whiteroof_surface(l) = eflx_lwrad_out(p)
+            lwnet_whiteroof_surface(l) = eflx_lwrad_net(p)        
+            eflx_sh_whiteroof(l)  = eflx_sh_tot(p)         
+            eflx_lh_whiteroof(l)  = eflx_lh_tot(p)
+            eflx_gnet_whiteroof(l)= eflx_soil_grnd(p)
+         else if (ctype(c) == icol_greenroof) then         
+            lwup_greenroof_surface(l) = eflx_lwrad_out(p)
+            lwnet_greenroof_surface(l) = eflx_lwrad_net(p)       
+            eflx_sh_greenroof(l)  = eflx_sh_tot(p)                              
+            eflx_lh_greenroof(l)  = eflx_lh_tot(p)
+            eflx_gnet_greenroof(l) = eflx_soil_grnd(p) !sabg(p) - lwnet_greenroof_surface(l) - eflx_lh_greenroof(l) - eflx_sh_greenroof(l)
+            !write(iulog,*) 'sabs, lwnet_greenroof_surface, eflx_lh_greenroof, eflx_sh_greenroof, eflx_gnet_greenroof, dlrad, eflx_soil_grnd', sabg(p), lwnet_greenroof_surface(l), eflx_lh_greenroof(l), eflx_sh_greenroof(l), eflx_gnet_greenroof(l), dlrad(p), eflx_soil_grnd(p)
+            !write(iulog,*) 'eflx_lh_greenroof, ET, qflx_evap_veg, qflx_evap_soi', eflx_lh_greenroof(l), eflx_lh_greenroof(l)/hvap, qflx_evap_tot(p), qflx_evap_veg(p), qflx_evap_soi(p)
          end if
       end do
 

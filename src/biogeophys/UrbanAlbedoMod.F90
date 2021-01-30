@@ -1366,7 +1366,8 @@ contains
                sref_greenroof_dir(l,ib) = alb_greenroof_dir(l,ib) * sdir(l,ib)
                sref_greenroof_dif(l,ib) = alb_greenroof_dif(l,ib) * sdif(l,ib)
                sabs_greenroof_dir(l,ib) = sdir(l,ib) - sref_greenroof_dir(l,ib)
-               sabs_greenroof_dif(l,ib) = sdif(l,ib) - sref_greenroof_dif(l,ib)                              
+               sabs_greenroof_dif(l,ib) = sdif(l,ib) - sref_greenroof_dif(l,ib)
+               !write(iulog,*) 'alb_greenroof_dir', alb_greenroof_dir(l,:), 'alb_greenroof_dif', alb_greenroof_dif(l,:), 'sdir', sdir(l,:), 'sdif', sdif(l,:), 'sabs_greenroof_dir', sabs_greenroof_dif(l,:)                               
             end if
          end do
 

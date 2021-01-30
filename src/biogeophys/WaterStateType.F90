@@ -11,7 +11,7 @@ module WaterstateType
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use decompMod      , only : bounds_type
   use clm_varctl     , only : use_vancouver, use_mexicocity, use_cn, iulog, use_luna
-  use clm_varpar     , only : nlevgrnd, nlevurb, nlevsno   
+  use clm_varpar     , only : nlevgrnd, nlevurb, nlevsno, nlevsoi
   use clm_varcon     , only : spval
   use LandunitType   , only : lun                
   use ColumnType     , only : col                
@@ -35,8 +35,8 @@ module WaterstateType
      real(r8), pointer :: h2osno_col             (:)   ! col snow water (mm H2O)
      real(r8), pointer :: h2osno_old_col         (:)   ! col snow mass for previous time step (kg/m2) (new)
      real(r8), pointer :: h2osoi_liq_col         (:,:) ! col liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)   
-     real(r8), pointer :: h2osoi_vol_greenroof_col (:,:)   ! col urban green roof volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
-     real(r8), pointer :: h2osoi_vol_roadperv_col  (:,:)   ! col urban road pervious volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
+     real(r8), pointer :: h2osoi_vol_greenroof_col (:,:)   ! col urban green roof volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevsoi)
+     real(r8), pointer :: icesoi_vol_greenroof_col  (:,:)  ! col urban green roof volumetric ice water (0<=icesoi_vol<=watsat) [m3/m3]  (nlevsoi)
      real(r8), pointer :: h2osoi_ice_col         (:,:) ! col ice lens (kg/m2) (new) (-nlevsno+1:nlevgrnd)    
      real(r8), pointer :: h2osoi_liq_tot_col     (:)   ! vertically summed col liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)    
      real(r8), pointer :: h2osoi_ice_tot_col     (:)   ! vertically summed col ice lens (kg/m2) (new) (-nlevsno+1:nlevgrnd)    
@@ -195,8 +195,8 @@ contains
     allocate(this%h2osoi_liqvol_col      (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liqvol_col      (:,:) = nan
     allocate(this%h2osoi_ice_col         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_ice_col         (:,:) = nan
     allocate(this%h2osoi_liq_col         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liq_col         (:,:) = nan
-    allocate(this%h2osoi_vol_greenroof_col     (begc:endc, 1:nlevgrnd))   ; this%h2osoi_vol_greenroof_col     (:,:) = nan
-    allocate(this%h2osoi_vol_roadperv_col      (begc:endc, 1:nlevgrnd))   ; this%h2osoi_vol_roadperv_col      (:,:) = nan
+    allocate(this%h2osoi_vol_greenroof_col     (begc:endc, 1:nlevsoi))    ; this%h2osoi_vol_greenroof_col     (:,:) = nan
+    allocate(this%icesoi_vol_greenroof_col     (begc:endc, 1:nlevsoi))    ; this%icesoi_vol_greenroof_col     (:,:) = nan
     allocate(this%h2osoi_ice_tot_col     (begc:endc))                     ; this%h2osoi_ice_tot_col     (:)   = nan
     allocate(this%h2osoi_liq_tot_col     (begc:endc))                     ; this%h2osoi_liq_tot_col     (:)   = nan
     allocate(this%h2ocan_patch           (begp:endp))                     ; this%h2ocan_patch           (:)   = nan  
@@ -615,14 +615,14 @@ contains
          ptr_col=this%errh2osno_col, c2l_scale_type='urbanf')
 
     this%h2osoi_vol_greenroof_col(begc:endc,:) = spval 
-    call hist_addfld2d (fname='H2OSOI_GREENROOF', units='mm3/mm3', type2d='levgrnd', &
+    call hist_addfld2d (fname='H2OSOI_GREENROOF', units='mm3/mm3', type2d='levsoi', &
           avgflag='A', long_name='urban green roof volumetric soil water', &
           ptr_col=this%h2osoi_vol_greenroof_col, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
 
-    this%h2osoi_vol_roadperv_col(begc:endc,:) = spval 
-    call hist_addfld2d (fname='H2OSOI_ROADPERV', units='mm3/mm3', type2d='levgrnd', &
-          avgflag='A', long_name='urban road pervious volumetric soil water', &
-          ptr_col=this%h2osoi_vol_roadperv_col, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
+    this%icesoi_vol_greenroof_col(begc:endc,:) = spval 
+    call hist_addfld2d (fname='ICESOI_GREENROOF', units='mm3/mm3', type2d='levsoi', &
+          avgflag='A', long_name='urban green roof volumetric soil ice', &
+          ptr_col=this%icesoi_vol_greenroof_col, c2l_scale_type='urbanf', set_nourb=spval, default='inactive')
 
     this%green_roof_water_added_col(begc:endc) = spval
     call hist_addfld1d(fname='GREEN_WATER', units='mm',  &
@@ -914,10 +914,12 @@ contains
     use spmdMod          , only : masterproc
     use clm_varcon       , only : denice, denh2o, pondmx, watmin, spval, nameg
     use landunit_varcon  , only : istcrop, istdlak, istsoil  
-    use column_varcon    , only : icol_roof, icol_whiteroof, icol_sunwall, icol_shadewall
+    use column_varcon    , only : icol_roof, icol_whiteroof, icol_greenroof, icol_sunwall, icol_shadewall
+    use UrbanParamsType  , only : green_roof_THU_test    
     use clm_time_manager , only : is_first_step
     use clm_varctl       , only : bound_h2osoi
     use ncdio_pio        , only : file_desc_t, ncd_io, ncd_double
+    use clm_varpar       , only : nlevsoi
     use restUtilMod
     !
     ! !ARGUMENTS:
@@ -1021,6 +1023,19 @@ contains
                 this%h2osoi_vol_col(c,j) = this%h2osoi_liq_col(c,j)/(col%dz(c,j)*denh2o) &
                                          + this%h2osoi_ice_col(c,j)/(col%dz(c,j)*denice)
              end do
+          end if
+          if (green_roof_THU_test .and. col%itype(c) == icol_greenroof) then
+             do j = 1,nlevgrnd
+                if (j <= nlevsoi) then ! soil
+                   this%h2osoi_liq_col(c,j) = 2.59_r8
+                   this%h2osoi_vol_col(c,j) = 0.259_r8
+                else                  ! bedrock
+                   this%h2osoi_liq_col(c,j) = 0._r8
+                   this%h2osoi_vol_col(c,j) = 0._r8
+                end if
+             end do
+             !write(iulog,*) 'initial, h2osoi_vol_greenroof', this%h2osoi_vol_col(c,:)
+             !write(iulog,*) 'initial, h2osoi_liq_greenroof', this%h2osoi_liq_col(c,:)
           end if
        end do
     end if

@@ -62,6 +62,7 @@ contains
     use column_varcon       , only : icol_road_perv, icol_road_imperv
     use column_varcon       , only : icol_roof, icol_whiteroof, icol_greenroof, icol_sunwall, icol_shadewall
     use clm_time_manager    , only : get_curr_date, get_step_size
+    use UrbanParamsType     , only : green_roof_emissivity
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds    
@@ -176,15 +177,9 @@ contains
          sabs_roof_surface          =>    energyflux_inst%sabs_roof_surface_lun          , & ! Output: [real(r8) (:,:) ]  urban roof solar radiation absorbed (W/m**2) 
          sabs_whiteroof_surface     =>    energyflux_inst%sabs_whiteroof_surface_lun     , & ! Output: [real(r8) (:,:) ]  urban white roof solar radiation absorbed (W/m**2) 
          sabs_greenroof_surface     =>    energyflux_inst%sabs_greenroof_surface_lun     , & ! Output: [real(r8) (:,:) ]  urban green roof solar radiation absorbed (W/m**2) 
-         lwup_roof_surface          =>    energyflux_inst%lwup_roof_surface_lun          , & ! Output: [real(r8) (:,:) ]  urban roof upward longwave radiation (W/m**2) 
-         lwup_whiteroof_surface     =>    energyflux_inst%lwup_whiteroof_surface_lun     , & ! Output: [real(r8) (:,:) ]  urban white roof upward longwave radiation (W/m**2) 
-         lwup_greenroof_surface     =>    energyflux_inst%lwup_greenroof_surface_lun     , & ! Output: [real(r8) (:,:) ]  urban green roof upward longwave radiation (W/m**2) 
          lwdown_roof_surface        =>    energyflux_inst%lwdown_roof_surface_lun        , & ! Output: [real(r8) (:,:) ]  urban roof downward longwave radiation (W/m**2) 
          lwdown_whiteroof_surface   =>    energyflux_inst%lwdown_whiteroof_surface_lun   , & ! Output: [real(r8) (:,:) ]  urban white roof downward longwave radiation (W/m**2) 
          lwdown_greenroof_surface   =>    energyflux_inst%lwdown_greenroof_surface_lun   , & ! Output: [real(r8) (:,:) ]  urban green roof downward longwave radiation (W/m**2) 
-         lwnet_roof_surface         =>    energyflux_inst%lwnet_roof_surface_lun         , & ! Output: [real(r8) (:,:) ]  urban roof net longwave radiation (W/m**2) 
-         lwnet_whiteroof_surface    =>    energyflux_inst%lwnet_whiteroof_surface_lun    , & ! Output: [real(r8) (:,:) ]  urban white roof net longwave radiation (W/m**2) 
-         lwnet_greenroof_surface    =>    energyflux_inst%lwnet_greenroof_surface_lun    , & ! Output: [real(r8) (:,:) ]  urban green roof net longwave radiation (W/m**2) 
 
          begl               =>    bounds%begl                                , &
          endl               =>    bounds%endl                                  &
@@ -230,7 +225,7 @@ contains
          ! Initial assignment of emissivity
          em_roof_s(l)    = em_roof(l)
          em_whiteroof_s(l)    = em_roof(l)
-         em_greenroof_s(l)    = em_roof(l)        
+         em_greenroof_s(l)    = green_roof_emissivity        
          em_improad_s(l) = em_improad(l)
          em_perroad_s(l) = em_perroad(l)
 
@@ -254,7 +249,7 @@ contains
                em_whiteroof_s(l) = em_roof(l)*(1._r8-frac_sno(c)) + snoem*frac_sno(c)               
             else if (ctype(c) == icol_greenroof  ) then
                t_greenroof(l) = t_grnd(c)   
-               em_greenroof_s(l) = em_roof(l)*(1._r8-frac_sno(c)) + snoem*frac_sno(c)                                                         
+               em_greenroof_s(l) = green_roof_emissivity*(1._r8-frac_sno(c)) + snoem*frac_sno(c)                                                         
             end if
          end do
          lwdown(l) = forc_lwrad(g)
@@ -326,9 +321,7 @@ contains
                  sabs_roof_dif(l,2)*forc_solai(g,2) 
             sabs_roof_surface(l) = sabg(p)
             lwdown_roof_surface(l) = lwdown(l)
-            lwup_roof_surface(l) = lwup_roof(l)
-            lwnet_roof_surface(l) = lwnet_roof(l)
-                   
+
          else if (ctype(c) == icol_sunwall) then   
             eflx_lwrad_out(p)   = lwup_sunwall(l)
             eflx_lwrad_net(p)   = lwnet_sunwall(l)
@@ -375,8 +368,6 @@ contains
                  sabs_whiteroof_dif(l,2)*forc_solai(g,2) 
             sabs_whiteroof_surface(l) = sabg(p)
             lwdown_whiteroof_surface(l) = lwdown(l)
-            lwup_whiteroof_surface(l) = lwup_whiteroof(l)
-            lwnet_whiteroof_surface(l) = lwnet_whiteroof(l)
             
          else if (ctype(c) == icol_greenroof) then   
             eflx_lwrad_out(p) = lwup_greenroof(l)
@@ -388,8 +379,6 @@ contains
                  sabs_greenroof_dif(l,2)*forc_solai(g,2) 
             sabs_greenroof_surface(l) = sabg(p)
             lwdown_greenroof_surface(l) = lwdown(l)
-            lwup_greenroof_surface(l) = lwup_greenroof(l)
-            lwnet_greenroof_surface(l) = lwnet_greenroof(l)
                                   
          end if
 
@@ -814,12 +803,11 @@ contains
          lwnet_roof(l) = lwup_roof(l) - lwdown(l)
          
          lwup_whiteroof(l) = em_whiteroof(l)*sb*(t_whiteroof(l)**4) + (1._r8-em_whiteroof(l))*lwdown(l)
-         !lwup_whiteroof(l) = em_roof(l)*sb*(t_whiteroof(l)**4) + (1._r8-em_roof(l))*lwdown(l)
          lwnet_whiteroof(l) = lwup_whiteroof(l) - lwdown(l)
          
          lwup_greenroof(l) = em_greenroof(l)*sb*(t_greenroof(l)**4) + (1._r8-em_greenroof(l))*lwdown(l)
-         !lwup_greenroof(l) = em_roof(l)*sb*(t_greenroof(l)**4) + (1._r8-em_roof(l))*lwdown(l)
          lwnet_greenroof(l) = lwup_greenroof(l) - lwdown(l)
+         !write(iulog,*) 'em_greenroof', em_greenroof(l)
       end do
 
     end associate

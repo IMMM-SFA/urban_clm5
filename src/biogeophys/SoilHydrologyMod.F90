@@ -148,6 +148,12 @@ contains
     real(r8) :: top_ice(bounds%begc:bounds%endc)           !temporary, ice len in top VIC layers
     real(r8) :: xsj(bounds%begc:bounds%endc,1:nlevsoi)     !excess soil water above urban ponding limit
     character(len=32) :: subname = 'SurfaceRunoff'         !subroutine name
+
+    real(r8), parameter :: irrig_target_smp_greenroof  = -3400._r8   ! Target soil matric potential for irrigation on green roof (mm) (note: 3400 is a standard value for field capacity)
+    real(r8) :: irrig_target_wat_greenroof(bounds%begc:bounds%endc,1:nlevsoi)   ! Target volumetric soil water for irrigation on green roof [m3/m3]
+    real(r8) :: watfc_greenroof(bounds%begc:bounds%endc,1:nlevsoi)   ! volumetric soil water at field capacity [m3/m3]
+    real(r8) :: vol_liq_temp(bounds%begc:bounds%endc,1:nlevsoi) ! partial volume of liq lens in layer
+
     !-----------------------------------------------------------------------
 
     associate(                                                        & 
@@ -158,8 +164,7 @@ contains
          watsat           =>    soilstate_inst%watsat_col           , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)  
          wtfact           =>    soilstate_inst%wtfact_col           , & ! Input:  [real(r8) (:)   ]  maximum saturated fraction for a gridcell         
          hksat            =>    soilstate_inst%hksat_col            , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity at saturation (mm H2O /s)
-         bsw              =>    soilstate_inst%bsw_col              , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b" 
-                                
+         bsw              =>    soilstate_inst%bsw_col              , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"                                 
 
          h2osoi_ice       =>    waterstate_inst%h2osoi_ice_col      , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                                
          h2osoi_liq       =>    waterstate_inst%h2osoi_liq_col      , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)                            
@@ -313,13 +318,43 @@ contains
          if (col%itype(c) == icol_greenroof) then 
             green_roof_water_added(c) = 0._r8      
             do j = 1,nlevsoi
+               ! ! scheme 1
+               ! vol_ice(c,j) = min(watsat(c,j), h2osoi_ice(c,j)/(dz(c,j)*denice))
+               ! xsj(c,j) = (watsat(c,j)*0.7*denh2o-vol_ice(c,j)*denice)*dz(c,j)/dtime - h2osoi_liq(c,j)/dtime 
+               ! xsj(c,j) = max(xsj(c,j),0._r8)
+               ! h2osoi_liq(c,j) = max((watsat(c,j)*0.7*denh2o-vol_ice(c,j)*denice)*dz(c,j),h2osoi_liq(c,j))
+
+               ! ! scheme 2
+               watfc_greenroof(c,j) = watsat(c,j)*(-irrig_target_smp_greenroof/sucsat(c,j))**(-1._r8/bsw(c,j))
                vol_ice(c,j) = min(watsat(c,j), h2osoi_ice(c,j)/(dz(c,j)*denice))
-               xsj(c,j) = (watsat(c,j)*0.7-vol_ice(c,j))*(dz(c,j)*denh2o)/dtime - h2osoi_liq(c,j)/dtime 
+               xsj(c,j) = (watfc_greenroof(c,j)*denh2o-vol_ice(c,j)*denice)*dz(c,j)/dtime - h2osoi_liq(c,j)/dtime
                xsj(c,j) = max(xsj(c,j),0._r8)
-               h2osoi_liq(c,j) = max((watsat(c,j)*0.7-vol_ice(c,j))*(dz(c,j)*denh2o),h2osoi_liq(c,j))
+               h2osoi_liq(c,j) = max((watfc_greenroof(c,j)*denh2o-vol_ice(c,j)*denice)*dz(c,j),h2osoi_liq(c,j))
+
+               ! ! scheme 3
+               ! watfc_greenroof(c,j) = watsat(c,j)*(-irrig_target_smp_greenroof/sucsat(c,j))**(-1._r8/bsw(c,j))
+               ! irrig_target_wat_greenroof(c,j) = min(watfc_greenroof(c,j), watsat(c,j)-h2osoi_ice(c,j)/(dz(c,j)*denice))
+               ! xsj(c,j) = irrig_target_wat_greenroof(c,j)*dz(c,j)*denh2o/dtime - h2osoi_liq(c,j)/dtime 
+               ! xsj(c,j) = max(xsj(c,j), 0._r8)
+               ! h2osoi_liq(c,j) = max(irrig_target_wat_greenroof(c,j)*dz(c,j)*denh2o, h2osoi_liq(c,j))
+
+               ! ! scheme 4      
+               ! watfc_greenroof(c,j) = watsat(c,j)*(-irrig_target_smp_greenroof/sucsat(c,j))**(-1._r8/bsw(c,j))
+               ! if (sum(h2osoi_ice(c,1:nlevsoi))>0._r8) then
+               !    xsj(c,j) = 0._r8
+               ! else  
+               !    irrig_target_wat_greenroof(c,j) = watfc_greenroof(c,j)
+               !    xsj(c,j) = irrig_target_wat_greenroof(c,j)*dz(c,j)*denh2o/dtime - h2osoi_liq(c,j)/dtime 
+               !    xsj(c,j) = max(xsj(c,j), 0._r8)
+               !    h2osoi_liq(c,j) = max(irrig_target_wat_greenroof(c,j)*dz(c,j)*denh2o, h2osoi_liq(c,j))
+               ! end if    
+               vol_liq_temp(c,j) = h2osoi_liq(c,j)/(dz(c,j)*denh2o)               
             end do
-            green_roof_water_added(c) = sum(xsj(c,:))*dtime
+            green_roof_water_added(c) = sum(xsj(c,:))*dtime 
             !write(iulog,*) 'water added', sum(xsj(c,:))*dtime
+            !write(iulog,*) 'watfc_greenroof', watfc_greenroof(c,:)
+            !write(iulog,*) 'vol_liq_after_irr', vol_liq_temp(c,:)
+            !write(iulog,*) ''
           end if 
         end do
               
@@ -1451,7 +1486,6 @@ contains
           ! Set imbalance for snow capping
 
           qflx_qrgwl(c) = qflx_snwcp_liq(c)
-
        end do
 
        ! No drainage for urban columns (except for pervious road as computed above)
@@ -2040,12 +2074,7 @@ contains
           qcharge            =>    soilhydrology_inst%qcharge_col        , & ! Input:  [real(r8) (:)   ] aquifer recharge rate (mm/s)                      
           origflag           =>    soilhydrology_inst%origflag           , & ! Input:  logical
           h2osfcflag         =>    soilhydrology_inst%h2osfcflag         , & ! Input:  logical
-
-          qflx_drain_greenroof     => waterflux_inst%qflx_drain_greenroof_col    , & ! Output: [real(r8) (:)   ] urban green roof sub-surface runoff (mm H2O /s)    
-          qflx_rsub_sat_greenroof  => waterflux_inst%qflx_rsub_sat_greenroof_col , & ! Output: [real(r8) (:)   ] urban green roof soil saturation excess [mm h2o/s]                 
-          rsub_top_greenroof       => waterflux_inst%rsub_top_greenroof_col      , & ! Output: [real(r8) (:)   ] urban green roof subsurface runoff - topographic control (mm/s)                
-          xs1_greenroof            => waterflux_inst%xs1_greenroof_col           , & ! Output: [real(r8) (:)   ] urban green roof excess soil water above saturation at layer 1 (mm)         
-          
+                    
           qflx_snwcp_liq     =>    waterflux_inst%qflx_snwcp_liq_col     , & ! Output: [real(r8) (:)   ] excess rainfall due to snow capping (mm H2O /s) [+]
           qflx_ice_runoff_xs =>    waterflux_inst%qflx_ice_runoff_xs_col , & ! Output: [real(r8) (:)   ] solid runoff from excess ice in soil (mm H2O /s) [+]
           qflx_dew_grnd      =>    waterflux_inst%qflx_dew_grnd_col      , & ! Output: [real(r8) (:)   ] ground surface dew formation (mm H2O /s) [+]      
@@ -2195,13 +2224,6 @@ contains
 !          qflx_ice_runoff_xs(c) = xs1(c) / dtime
        end do
 
-       do fc = 1, num_urbanc
-          c = filter_urbanc(fc)
-          if (col%itype(c) == icol_greenroof) then
-             xs1_greenroof(c) = xs1(c)
-          end if
-       end do
-
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
           ! add in ice check
@@ -2283,12 +2305,6 @@ contains
              qflx_drain(c) = 0._r8
              ! This must be done for roofs and impervious road (walls will be zero)
              qflx_qrgwl(c) = qflx_snwcp_liq(c)
-          end if
-          if (col%itype(c) == icol_greenroof) then
-!             qflx_drain_greenroof(c) = qflx_drain(c)
-             qflx_rsub_sat_greenroof(c) = qflx_rsub_sat(c)
-             rsub_top_greenroof(c) = rsub_top(c)
-!             xs1_greenroof(c) = xs1(c)
           end if
        end do
 

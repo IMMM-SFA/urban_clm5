@@ -107,25 +107,33 @@ module UrbanParamsType
   character(len= 16), public           :: urban_hac = urban_hac_off
   logical, public                      :: urban_traffic = .false.     ! urban traffic fluxes
 
-  logical, public                      :: white_roof          = .false.       ! white roof option
+  logical, public                      :: white_roof          = .true.        ! white roof option
   real(r8), public                     :: white_roof_fraction = 0.0_r8        ! white roof fraction
   real(r8), public                     :: white_roof_albedo   = 0.8_r8        ! white roof albedo
-  logical, public                      :: green_roof          = .false.       ! green roof option
-  real(r8), public                     :: green_roof_fraction     = 0.0_r8        ! green roof fraction
-  logical, public                      :: green_roof_irrigation   = .false.       ! green roof irrigation
-  real(r8), public                     :: green_roof_albedo       = 0.2_r8        ! green roof albedo
-  real(r8), public                     :: green_roof_soil_depth   = 0.2_r8        ! green roof soil depth
-  real(r8), public                     :: green_roof_rsmin = 40._r8      ! green roof minimum stomatal resistance (s m-1)
-  real(r8), public                     :: green_roof_rsmax = 5000._r8    ! green roof maximum stomatal resistance (s m-1)
-  real(r8), public                     :: green_roof_sdlim = 100._r8     ! green roof radiation limit at which photosynthesis is assumed to start
-  real(r8), public                     :: green_roof_lai = 3._r8         ! green roof leaf area index (m^2/m^2)
-  real(r8), public                     :: green_roof_watwilt = 0.15_r8   ! green roof volumetric soil water at wilting point
-  real(r8), public                     :: green_roof_pct_clay = 18._r8   ! green roof percent clay
-  real(r8), public                     :: green_roof_pct_sand = 43._r8   ! green roof percent sand
-  real(r8), public                     :: green_roof_fmax = 0.4_r8       ! green roof maximum fractional saturated area
-  real(r8), public                     :: green_roof_slope = 0.2_r8      ! green roof mean topographic slope
-  logical, public                      :: green_roof_soil_global_uniform   = .false.       ! green roof global uniform soil texture
-      
+  logical, public                      :: green_roof          = .true.        ! green roof option
+  real(r8), public                     :: green_roof_fraction     = 0.0_r8    ! green roof fraction
+  logical, public                      :: green_roof_irrigation   = .false.   ! green roof irrigation
+  logical, public                      :: green_roof_soil_global_uniform   = .false.   ! green roof global uniform soil texture
+  logical, public                      :: green_roof_THU_test     = .false.            ! green roof THU site specified soil parameters 
+  real(r8), public                     :: green_roof_albedo       = 0.2_r8    ! green roof albedo
+  real(r8), public                     :: green_roof_emissivity   = 0.95_r8   ! green roof albedo
+  real(r8), public                     :: green_roof_soil_depth   = 0.2_r8    ! green roof soil depth
+  real(r8), public                     :: green_roof_rsmin = 40.0_r8      ! green roof minimum stomatal resistance (s m-1)
+  real(r8), public                     :: green_roof_rsmax = 5000.0_r8    ! green roof maximum stomatal resistance (s m-1)
+  real(r8), public                     :: green_roof_sdlim = 100.0_r8     ! green roof radiation limit at which photosynthesis is assumed to start
+  real(r8), public                     :: green_roof_lai = 2.0_r8         ! green roof leaf area index (m^2/m^2)
+  real(r8), public                     :: green_roof_watwilt = 0.15_r8    ! green roof volumetric soil water at wilting point 
+  real(r8), public                     :: green_roof_watfc = 0.32_r8      ! green roof volumetric soil water at field capacity
+  real(r8), public                     :: green_roof_watsat = 0.37_r8     ! green roof saturate moisture, v/v
+  real(r8), public                     :: green_roof_gd = 0.0_r8          ! green roof exponent for VPD response, (hPa−1)
+  real(r8), public                     :: green_roof_bsw = 2.33_r8        ! green roof b shape parameter
+  real(r8), public                     :: green_roof_sucsat = 500.0_r8    ! green roof soil matric potential (mm)
+  real(r8), public                     :: green_roof_xksat = 0.117_r8     ! green roof saturated hydraulic conductivity (mm/s)
+  real(r8), public                     :: green_roof_pct_clay = 18.0_r8   ! green roof percent clay
+  real(r8), public                     :: green_roof_pct_sand = 43.0_r8   ! green roof percent sand
+  real(r8), public                     :: green_roof_fmax = 0.4_r8        ! green roof maximum fractional saturated area
+  real(r8), public                     :: green_roof_slope = 0.2_r8       ! green roof mean topographic slope
+
   ! !PRIVATE MEMBER DATA:
   logical, private    :: ReadNamelist = .false.     ! If namelist was read yet or not
   integer, parameter, private :: BUILDING_TEMP_METHOD_SIMPLE = 0       ! Simple method introduced in CLM4.5
@@ -886,7 +894,7 @@ contains
     integer :: unitn                ! unit for namelist file
     character(len=32) :: subname = 'UrbanReadNML'  ! subroutine name
 
-    namelist / clmu_inparm / urban_hac, urban_traffic, building_temp_method, white_roof, white_roof_fraction, white_roof_albedo, green_roof, green_roof_fraction, green_roof_irrigation, green_roof_albedo, green_roof_soil_depth, green_roof_rsmin, green_roof_rsmax, green_roof_sdlim, green_roof_lai, green_roof_watwilt, green_roof_pct_clay, green_roof_pct_sand, green_roof_fmax, green_roof_slope, green_roof_soil_global_uniform
+    namelist / clmu_inparm / urban_hac, urban_traffic, building_temp_method, white_roof, white_roof_fraction, white_roof_albedo, green_roof, green_roof_fraction, green_roof_irrigation, green_roof_soil_global_uniform, green_roof_THU_test, green_roof_albedo, green_roof_emissivity, green_roof_soil_depth, green_roof_rsmin, green_roof_rsmax, green_roof_sdlim, green_roof_lai, green_roof_watwilt, green_roof_watfc, green_roof_watsat, green_roof_gd, green_roof_bsw, green_roof_sucsat, green_roof_xksat, green_roof_pct_clay, green_roof_pct_sand, green_roof_fmax, green_roof_slope
     !EOP
     !-----------------------------------------------------------------------
 
@@ -922,18 +930,26 @@ contains
     call shr_mpi_bcast(green_roof,            mpicom)
     call shr_mpi_bcast(green_roof_fraction,   mpicom)    
     call shr_mpi_bcast(green_roof_irrigation, mpicom)
+    call shr_mpi_bcast(green_roof_soil_global_uniform, mpicom)
+    call shr_mpi_bcast(green_roof_THU_test,   mpicom)        
     call shr_mpi_bcast(green_roof_albedo,     mpicom) 
+    call shr_mpi_bcast(green_roof_emissivity, mpicom) 
     call shr_mpi_bcast(green_roof_soil_depth, mpicom) 
     call shr_mpi_bcast(green_roof_rsmin,      mpicom)
     call shr_mpi_bcast(green_roof_rsmax,      mpicom)
     call shr_mpi_bcast(green_roof_sdlim,      mpicom)
     call shr_mpi_bcast(green_roof_lai,        mpicom)
     call shr_mpi_bcast(green_roof_watwilt,    mpicom)
+    call shr_mpi_bcast(green_roof_watfc,      mpicom)    
+    call shr_mpi_bcast(green_roof_watsat,     mpicom) 
+    call shr_mpi_bcast(green_roof_gd,     mpicom) 
+    call shr_mpi_bcast(green_roof_bsw,        mpicom)
+    call shr_mpi_bcast(green_roof_sucsat,     mpicom)
+    call shr_mpi_bcast(green_roof_xksat,      mpicom)
     call shr_mpi_bcast(green_roof_pct_clay,   mpicom)
     call shr_mpi_bcast(green_roof_pct_sand,   mpicom)
     call shr_mpi_bcast(green_roof_fmax,       mpicom)
     call shr_mpi_bcast(green_roof_slope,      mpicom)
-    call shr_mpi_bcast(green_roof_soil_global_uniform, mpicom)
     !
     if (urban_traffic) then
        write(iulog,*)'Urban traffic fluxes are not implemented currently'

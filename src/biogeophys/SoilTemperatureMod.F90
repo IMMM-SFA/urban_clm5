@@ -624,6 +624,7 @@ contains
     use clm_varcon      , only : denh2o, denice, tfrz, tkwat, tkice, tkair, cpice,  cpliq, thk_bedrock, csol_bedrock
     use landunit_varcon , only : istice_mec, istwet
     use column_varcon   , only : icol_roof, icol_whiteroof, icol_greenroof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
+    use UrbanParamsType , only : green_roof_THU_test
     use clm_varctl      , only : iulog
     !
     ! !ARGUMENTS:
@@ -686,7 +687,7 @@ contains
          tksatu       =>    soilstate_inst%tksatu_col	     , & ! Input:  [real(r8) (:,:) ]  thermal conductivity, saturated soil [W/m-K]
          thk          =>    soilstate_inst%thk_col           , & ! Output: [real(r8) (:,:) ]  thermal conductivity of each layer  [W/m-K]
          thk_greenroof =>   soilstate_inst%thk_greenroof_col , & ! Output: [real(r8) (:,:) ]  thermal conductivity of green roof  [W/m-K]
-         cv_greenroof  =>   soilstate_inst%cv_greenroof_col    & ! Output: [real(r8) (:,:) ]  heat capacity of green roof [J/(m2 K)]         
+         cv_greenroof  =>   soilstate_inst%cv_greenroof_col    & ! Output: [real(r8) (:,:) ]  heat capacity of green roof (J/m**3/Kelvin)         
          )
 
       ! Thermal conductivity of soil from Farouki (1981)
@@ -740,7 +741,14 @@ contains
                      if (t_soisno(c,j) < tfrz) thk(c,j) = tkice
                   endif
                endif
-               if (col%itype(c) == icol_greenroof) thk_greenroof(c,j) = thk(c,j)
+               if (col%itype(c) == icol_greenroof) then
+                  if (green_roof_THU_test) then
+                     thk(c,j) = 0.8_r8
+                     if(j > nlevsoi .and. j <= 5) thk(c,j) = 1.2_r8  
+                     if(j > nlevsoi .and. j <= nlevgrnd) thk(c,j) = 1.8_r8  
+                  end if
+                 thk_greenroof(c,j) = thk(c,j)                   
+               endif
             endif
 
             ! Thermal conductivity of snow, which from Jordan (1991) pp. 18
@@ -824,7 +832,14 @@ contains
             else if (lun%itype(l) == istice_mec) then
                cv(c,j) = (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
             endif
-            if (col%itype(c) == icol_greenroof) cv_greenroof(c,j) = cv(c,j)
+            if (col%itype(c) == icol_greenroof) then
+               if (green_roof_THU_test) then
+                  cv(c,j) = 1.6e6_r8 * dz(c,j)
+                  if(j > nlevsoi .and. j <= 5) cv(c,j) = 2.e6_r8 * dz(c,j)
+                  if(j > nlevsoi .and. j <= nlevgrnd) cv(c,j) = 2.9e6_r8 * dz(c,j)
+               end if
+               cv_greenroof(c,j) = cv(c,j) / dz(c,j)          
+            end if
             if (j == 1) then
                if (snl(c)+1 == 1 .AND. h2osno(c) > 0._r8) then
                   cv(c,j) = cv(c,j) + cpice*h2osno(c)

@@ -69,7 +69,7 @@ module SoilStateType
      real(r8), pointer :: tksatu_col           (:,:) ! col thermal conductivity, saturated soil [W/m-K] (new) (nlevgrnd) 
      real(r8), pointer :: csol_col             (:,:) ! col heat capacity, soil solids (J/m**3/Kelvin) (nlevgrnd) 
      real(r8), pointer :: thk_greenroof_col    (:,:) ! col thermal conductivity of green roof [W/m-K] 
-     real(r8), pointer :: cv_greenroof_col     (:,:) ! col heat capacity of green roof [W/m-K] 
+     real(r8), pointer :: cv_greenroof_col     (:,:) ! col heat capacity of green roof (J/m**3/Kelvin) 
 
      ! roots
      real(r8), pointer :: rootr_patch          (:,:) ! patch effective fraction of roots in each soil layer (nlevgrnd)
@@ -298,7 +298,7 @@ contains
           ptr_col=this%thk_greenroof_col, default='inactive')    
 
     this%cv_greenroof_col(begc:endc,:) = spval 
-    call hist_addfld2d (fname='CV_GREENROOF', units='J/(m2 K)', type2d='levgrnd', &
+    call hist_addfld2d (fname='CV_GREENROOF', units='J/(m3 K)', type2d='levgrnd', &
           avgflag='A', long_name='urban green roof heat capacity', &
           ptr_col=this%cv_greenroof_col, default='inactive')    
 

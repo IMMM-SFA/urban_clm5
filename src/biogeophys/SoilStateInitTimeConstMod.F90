@@ -107,7 +107,7 @@ contains
     use organicFileMod      , only : organicrd 
     use FuncPedotransferMod , only : pedotransf, get_ipedof
     use RootBiophysMod      , only : init_vegrootfr
-    use UrbanParamsType     , only : green_roof_pct_sand, green_roof_pct_clay, green_roof_fmax, green_roof_soil_global_uniform
+    use UrbanParamsType     , only : green_roof_watsat, green_roof_bsw, green_roof_sucsat, green_roof_xksat, green_roof_pct_sand, green_roof_pct_clay, green_roof_fmax, green_roof_soil_global_uniform, green_roof_THU_test
     use GridcellType     , only : grc                
     !
     ! !ARGUMENTS:
@@ -307,7 +307,11 @@ contains
     do c = begc, endc
        g = col%gridcell(c)
        soilstate_inst%wtfact_col(c) = gti(g)
-       if (green_roof_soil_global_uniform .and. col%itype(c)==icol_greenroof) soilstate_inst%wtfact_col(c) = green_roof_fmax
+       if (green_roof_THU_test .or. green_roof_soil_global_uniform) then
+          if(col%itype(c)==icol_greenroof) then
+             soilstate_inst%wtfact_col(c) = green_roof_fmax
+          end if
+       end if       
     end do
     deallocate(gti)
 
@@ -496,6 +500,12 @@ contains
                 soilstate_inst%bsw_col(c,lev)       = (1._r8-om_frac) * (2.91_r8 + 0.159_r8*clay) + om_frac*om_b   
                 soilstate_inst%sucsat_col(c,lev)    = (1._r8-om_frac) * soilstate_inst%sucsat_col(c,lev) + om_sucsat*om_frac  
                 soilstate_inst%hksat_min_col(c,lev) = xksat
+                if (green_roof_THU_test .and. col%itype(c) == icol_greenroof) then
+                   soilstate_inst%watsat_col(c,lev)    = green_roof_watsat
+                   soilstate_inst%bsw_col(c,lev)       = green_roof_bsw 
+                   soilstate_inst%sucsat_col(c,lev)    = green_roof_sucsat
+                   soilstate_inst%hksat_min_col(c,lev) = green_roof_xksat
+                end if
 
                 ! perc_frac is zero unless perf_frac greater than percolation threshold
                 if (om_frac > pcalpha) then

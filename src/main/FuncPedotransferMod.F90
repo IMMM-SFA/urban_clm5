@@ -98,7 +98,7 @@ contains
    watsat = 0.489_r8 - 0.00126_r8*sand
    bsw    = 2.91 + 0.159*clay
    sucsat = 10._r8 * ( 10._r8**(1.88_r8-0.0131_r8*sand) )            
-   xksat         = 0.0070556 *( 10.**(-0.884+0.0153*sand) ) ! mm/s, from table 5 
+   xksat  = 0.0070556 *( 10.**(-0.884+0.0153*sand) ) ! mm/s, from table 5 
       
    end subroutine pedotransf_cosby1984_table5
    

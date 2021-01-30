@@ -30,7 +30,7 @@ module initVerticalMod
   use glcBehaviorMod    , only : glc_behavior_type
   use SnowHydrologyMod  , only : InitSnowLayers             
   use abortUtils        , only : endrun
-  use UrbanParamsType   , only : green_roof_soil_depth, green_roof_slope, green_roof_soil_global_uniform   
+  use UrbanParamsType   , only : green_roof_soil_depth, green_roof_slope, green_roof_soil_global_uniform, green_roof_THU_test   
   use ncdio_pio
   !
   ! !PUBLIC TYPES:
@@ -467,7 +467,7 @@ contains
                 dzsoi_greenroof(j)= dzurb_roof(l,j-nlevsoi) 
              enddo
              ! danli 
-             ! write(iulog,*)'Green roof layer thicknesses    = ',dzsoi_greenroof
+             !write(iulog,*)'Green roof layer thicknesses    = ',dzsoi_greenroof
              zisoi_greenroof(0) = 0._r8
        			 do j = 1,nlevgrnd
                 zisoi_greenroof(j)= sum(dzsoi_greenroof(1:j))
@@ -709,7 +709,11 @@ contains
        g = col%gridcell(c)
        ! check for near zero slopes, set minimum value
        col%topo_slope(c) = max(tslope(g), 0.2_r8)
-       if (green_roof_soil_global_uniform .and. col%itype(c)==icol_greenroof) col%topo_slope(c) = green_roof_slope
+       if (green_roof_THU_test .or. green_roof_soil_global_uniform) then
+          if(col%itype(c)==icol_greenroof) then
+             col%topo_slope(c) = max(green_roof_slope, 0.2_r8)
+          end if
+       end if              
     end do
     deallocate(tslope)
 

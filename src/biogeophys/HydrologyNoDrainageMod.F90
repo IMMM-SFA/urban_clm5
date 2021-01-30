@@ -137,6 +137,10 @@ contains
          tsoi17             => temperature_inst%t_soi17cm_col         , & ! Output: [real(r8) (:)   ]  soil temperature in top 17cm of soil (Kelvin) 
          t_sno_mul_mss      => temperature_inst%t_sno_mul_mss_col     , & ! Output: [real(r8) (:)   ]  col snow temperature multiplied by layer mass, layer sum (K * kg/m2) 
 
+         t_roof_surface         =>    temperature_inst%t_roof_surface_lun       , & ! Output: [real(r8) (:)]  roof surface temperature (K) 
+         t_whiteroof_surface    =>    temperature_inst%t_whiteroof_surface_lun  , & ! Output: [real(r8) (:)]  white roof surface temperature (K)   
+         t_greenroof_surface    =>    temperature_inst%t_greenroof_surface_lun  , & ! Output: [real(r8) (:)]  green roof surface temperature (K)
+
          snow_depth         => waterstate_inst%snow_depth_col         , & ! Input:  [real(r8) (:)   ]  snow height of snow covered area (m)     
          snowdp             => waterstate_inst%snowdp_col             , & ! Input:  [real(r8) (:)   ]  area-averaged snow height (m)       
          frac_sno_eff       => waterstate_inst%frac_sno_eff_col       , & ! Input:  [real(r8) (:)   ]  eff.  snow cover fraction (col) [frc]    
@@ -440,6 +444,19 @@ contains
                h2osoi_vol(c,j) = h2osoi_liq(c,j)/(dz(c,j)*denh2o) + h2osoi_ice(c,j)/(dz(c,j)*denice)
             end if
          end do
+      end do
+
+      do fc = 1,num_urbanc
+         c = filter_urbanc(fc)
+         l = col%landunit(c)
+         if (col%itype(c) == icol_roof) then
+            t_roof_surface(l)     = t_soisno(c,1)         
+         else if (col%itype(c) == icol_whiteroof) then
+            t_whiteroof_surface(l) = t_soisno(c,1)          
+         else if (col%itype(c) == icol_greenroof) then
+            t_greenroof_surface(l) = t_soisno(c,1)    
+            !write(iulog,*) 't_greenroof_surface', t_greenroof_surface(l)                              
+         end if                
       end do
 
 !      if (use_cn) then

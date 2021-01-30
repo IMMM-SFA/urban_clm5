@@ -50,7 +50,7 @@ contains
     use column_varcon    , only : icol_roof, icol_whiteroof, icol_greenroof, icol_road_imperv, icol_road_perv, icol_sunwall, icol_shadewall
     use clm_varcon       , only : denh2o, denice
     use clm_varctl       , only : use_vichydro
-    use clm_varpar       , only : nlevgrnd, nlevurb
+    use clm_varpar       , only : nlevsoi, nlevgrnd, nlevurb
     use clm_time_manager , only : get_step_size, get_nstep
     use SoilHydrologyMod , only : CLMVICMap, Drainage, PerchedLateralFlow, LateralFlowPowerLaw
     use SoilWaterMovementMod , only : use_aquifer_layer
@@ -93,7 +93,7 @@ contains
          h2osoi_vol         => waterstate_inst%h2osoi_vol_col        , & ! Output: volumetric soil water 
                                                                          ! (0<=h2osoi_vol<=watsat) [m3/m3]
          h2osoi_vol_greenroof => waterstate_inst%h2osoi_vol_greenroof_col , & ! Output: urban green roof volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
-         h2osoi_vol_roadperv  => waterstate_inst%h2osoi_vol_roadperv_col  , & ! Output: urban pervious road volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+         icesoi_vol_greenroof => waterstate_inst%icesoi_vol_greenroof_col , & ! Output: urban green roof volumetric soil ice (0<=icesoi_vol<=watsat) [m3/m3]
          sucsat               => soilstate_inst%sucsat_col                , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
          watsat               => soilstate_inst%watsat_col                , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)  
          sucsat_greenroof     => soilstate_inst%sucsat_greenroof_col      , & ! Output: [real(r8) (:,:) ]  urban green roof minimum soil suction (mm)                       
@@ -115,11 +115,6 @@ contains
          qflx_surf          => waterflux_inst%qflx_surf_col          , & ! surface runoff (mm H2O /s)      
          qflx_infl          => waterflux_inst%qflx_infl_col          , & ! infiltration (mm H2O /s)   
          qflx_qrgwl         => waterflux_inst%qflx_qrgwl_col         , & ! qflx_surf at glaciers, wetlands, lakes
-         qflx_surf_greenroof          => waterflux_inst%qflx_surf_greenroof_col          , & ! urban green roof surface runoff (mm H2O /s)      
-         qflx_h2osfc_surf_greenroof   => waterflux_inst%qflx_h2osfc_surf_greenroof_col   , & ! urban green roof surface water runoff (mm/s)  
-         qflx_qrgwl_greenroof         => waterflux_inst%qflx_qrgwl_greenroof_col         , & ! urban green roof qflx_surf at glaciers, wetlands, lakes
-         qflx_drain_greenroof         => waterflux_inst%qflx_drain_greenroof_col         , & ! urban green roof sub-surface runoff (mm H2O /s) 
-         qflx_drain_perched_greenroof => waterflux_inst%qflx_drain_perched_greenroof_col , & ! urban green roof sub-surface runoff from perched zwt (mm H2O /s)
          qflx_runoff        => waterflux_inst%qflx_runoff_col        , & ! total runoff 
                                                                          ! (qflx_drain+qflx_surf+qflx_qrgwl) (mm H2O /s)
          qflx_runoff_u      => waterflux_inst%qflx_runoff_u_col      , & ! Urban total runoff (qflx_drain+qflx_surf) (mm H2O /s)
@@ -233,17 +228,13 @@ contains
       do fc = 1, num_urbanc
         c = filter_urbanc(fc)
         if (col%itype(c) == icol_greenroof) then
-          sucsat_greenroof(c,:) = sucsat(c,:)
-          watsat_greenroof(c,:) = watsat(c,:)
-          h2osoi_vol_greenroof(c,:) = h2osoi_vol(c,:)
-          qflx_surf_greenroof(c) = qflx_surf(c)
-          qflx_h2osfc_surf_greenroof(c) = qflx_h2osfc_surf(c)
-          qflx_qrgwl_greenroof(c) = qflx_qrgwl(c)
-          qflx_drain_greenroof(c) = qflx_drain(c)
-          qflx_drain_perched_greenroof(c) = qflx_drain_perched(c)
-        else if (col%itype(c) == icol_road_perv) then
-          watsat_roadperv(c,:) = watsat(c,:)
-          h2osoi_vol_roadperv(c,:) = h2osoi_vol(c,:)
+          h2osoi_vol_greenroof(c,:)=h2osoi_vol(c,1:nlevsoi)          
+      !     write(iulog,*) 'h2osoi_vol_greenroof',h2osoi_vol_greenroof(c,1:nlevsoi)
+      !     sucsat_greenroof(c,:) = sucsat(c,:)
+      !     watsat_greenroof(c,:) = watsat(c,:)        
+      !   else if (col%itype(c) == icol_road_perv) then
+      !     h2osoi_vol_roadperv(c,:) = h2osoi_vol(c,:)
+      !     watsat_roadperv(c,:) = watsat(c,:)      
         end if
       end do
 

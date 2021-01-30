@@ -2,9 +2,9 @@
 Version 2.1
 
 
-Mar 15, 2019, 9:02 AM
+March 15, 2019, 9:02 AM
 
-1, do something with green roof°Øs structure in initVerticalMod.F90 and get rid of hasBedrock for greenroof
+1, do something with green roof��s structure in initVerticalMod.F90 and get rid of hasBedrock for greenroof
 
 2, UrbanParamsType. F90: add new namelist inputs: green roof albedo and green roof soil depth
 
@@ -18,7 +18,7 @@ still need to deal the boundary condition for green roofs
 Version 2.1.1
 
 
-Mar 18, 2019 12:09 PM
+March 18, 2019 12:09 PM
 
 1, irrigation related 
 
@@ -27,16 +27,13 @@ SoilHydrologyMod.F90, WaterStateType.F90, BalanceCheckMod.F90
 2, fixed a bug in TemperatureType.F90 about adding t_roof_surface, t_greenroof_surface, t_whiteroof_surface in restarts (this has not entered CASE7 but should not affect the code)
 
 
-===============================
-Version 2.1.1
-
 April 23, 2019
 
 1, fix a problem in BalanceCheckMod.F90 that prevented using green roofs without irrigation. Now one can have green roofs without irrigation. 
 
-
 ===============================
 Version 2.1.2
+
 
 May 26, 2019
 
@@ -46,6 +43,7 @@ May 26, 2019
 ===============================
 Version 2.1.3
 
+
 July 23, 2019
 
 1, add urban surface flux output for studying white roof
@@ -54,7 +52,8 @@ July 23, 2019
 ===============================
 Version 2.1.4
 
-Aug 19, 2019
+
+August 19, 2019
 
 1, modify temperature scaling for studying white roof 
 
@@ -64,13 +63,15 @@ Aug 19, 2019
 ===============================
 Version 2.1.5
 
-Aug 23, 2019
 
-1, add stomatal resistance for green roof evapotranspiration
+August 23, 2019
 
-2, add new options like green_roof_rsmin and green_roof_watwilt
+1, add stomatal resistance for green roof evapotranspiration 
 
-Sep 26, 2019
+2, add new options like green_roof_rsmin and green_roof_watwilt 
+
+
+September 26, 2019
 
 1, fixed a bug in SoilHydrologyMod.F90 about green roof irrigation initialization. Now one can get green roof water added per unit area on green roofs.
 
@@ -78,7 +79,7 @@ Sep 26, 2019
 
 
 ===============================
-Version 2.2 
+Version 2.2
 
 
 October 30, 2019
@@ -114,3 +115,23 @@ Version 2.3
 July 18, 2020
 
 1, deal with the boundary condition for green roofs using BUILDING_TEMP_METHOD_PROG, (building_temp_method = 1, prognostic calculation of interior building temp (clm5_0)), UrbBuildTempOleson2015Mod.F90, SoilTemperatureMod.F90
+
+
+===============================
+Version 2.3.1
+
+
+December 14, 2020
+
+1, add new options for green roof properties like green_roof_watwilt, green_roof_watfc, green_roof_watsat, green_roof_bsw, green_roof_sucsat, green_roof_xksat 
+
+2, modify cv_greenroof and thk_greenroof according to THU site, SoilTemperatureMod.F90
+
+3, modify the green roof stomatal resistance parameterization, UrbanFluxesMod.F90  
+
+
+January 26, 2021
+
+1, modify the green roof irrigation scheme to avoid irrigation when soil includes ice, SoilHydrologyMod.F90
+
+2, modify the roof surface temperatures and fluxes output
