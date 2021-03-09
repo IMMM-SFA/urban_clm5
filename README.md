@@ -3,7 +3,7 @@ Version 2.1
 
 March 15, 2019, 9:02 AM
 
-1, do something with green roof��s structure in initVerticalMod.F90 and get rid of hasBedrock for greenroof
+1, do something with green roofs structure in initVerticalMod.F90 and get rid of hasBedrock for greenroof
 
 2, UrbanParamsType. F90: add new namelist inputs: green roof albedo and green roof soil depth
 
