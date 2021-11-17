@@ -177,9 +177,17 @@ contains
          sabs_roof_surface          =>    energyflux_inst%sabs_roof_surface_lun          , & ! Output: [real(r8) (:,:) ]  urban roof solar radiation absorbed (W/m**2) 
          sabs_whiteroof_surface     =>    energyflux_inst%sabs_whiteroof_surface_lun     , & ! Output: [real(r8) (:,:) ]  urban white roof solar radiation absorbed (W/m**2) 
          sabs_greenroof_surface     =>    energyflux_inst%sabs_greenroof_surface_lun     , & ! Output: [real(r8) (:,:) ]  urban green roof solar radiation absorbed (W/m**2) 
+         sabs_sunwall_surface       =>    energyflux_inst%sabs_sunwall_surface_lun       , & ! Output: [real(r8) (:,:) ]  urban sunwall solar radiation absorbed (W/m**2) 
+         sabs_shadewall_surface     =>    energyflux_inst%sabs_shadewall_surface_lun     , & ! Output: [real(r8) (:,:) ]  urban shadewall solar radiation absorbed (W/m**2) 
+         sabs_improad_surface       =>    energyflux_inst%sabs_improad_surface_lun       , & ! Output: [real(r8) (:,:) ]  urban improad solar radiation absorbed (W/m**2) 
+         sabs_perroad_surface       =>    energyflux_inst%sabs_perroad_surface_lun       , & ! Output: [real(r8) (:,:) ]  urban perroad solar radiation absorbed (W/m**2)          
          lwdown_roof_surface        =>    energyflux_inst%lwdown_roof_surface_lun        , & ! Output: [real(r8) (:,:) ]  urban roof downward longwave radiation (W/m**2) 
          lwdown_whiteroof_surface   =>    energyflux_inst%lwdown_whiteroof_surface_lun   , & ! Output: [real(r8) (:,:) ]  urban white roof downward longwave radiation (W/m**2) 
          lwdown_greenroof_surface   =>    energyflux_inst%lwdown_greenroof_surface_lun   , & ! Output: [real(r8) (:,:) ]  urban green roof downward longwave radiation (W/m**2) 
+         lwdown_sunwall_surface     =>    energyflux_inst%lwdown_sunwall_surface_lun     , & ! Output: [real(r8) (:,:) ]  urban sunwall downward longwave radiation (W/m**2) 
+         lwdown_shadewall_surface   =>    energyflux_inst%lwdown_shadewall_surface_lun   , & ! Output: [real(r8) (:,:) ]  urban shadewall downward longwave radiation (W/m**2) 
+         lwdown_improad_surface     =>    energyflux_inst%lwdown_improad_surface_lun     , & ! Output: [real(r8) (:,:) ]  urban improad downward longwave radiation (W/m**2) 
+         lwdown_perroad_surface     =>    energyflux_inst%lwdown_perroad_surface_lun     , & ! Output: [real(r8) (:,:) ]  urban perroad downward longwave radiation (W/m**2) 
 
          begl               =>    bounds%begl                                , &
          endl               =>    bounds%endl                                  &
@@ -330,6 +338,8 @@ contains
                  sabs_sunwall_dif(l,1)*forc_solai(g,1) + &
                  sabs_sunwall_dir(l,2)*forc_solad(g,2) + &
                  sabs_sunwall_dif(l,2)*forc_solai(g,2) 
+            sabs_sunwall_surface(l) = sabg(p) 
+            lwdown_sunwall_surface(l) = lwdown(l)   
 
          else if (ctype(c) == icol_shadewall) then   
             eflx_lwrad_out(p)   = lwup_shadewall(l)
@@ -339,6 +349,8 @@ contains
                  sabs_shadewall_dif(l,1)*forc_solai(g,1) + &
                  sabs_shadewall_dir(l,2)*forc_solad(g,2) + &
                  sabs_shadewall_dif(l,2)*forc_solai(g,2) 
+            sabs_shadewall_surface(l) = sabg(p) 
+            lwdown_shadewall_surface(l) = lwdown(l)  
 
          else if (ctype(c) == icol_road_perv) then       
             eflx_lwrad_out(p)   = lwup_perroad(l)
@@ -348,6 +360,8 @@ contains
                  sabs_perroad_dif(l,1)*forc_solai(g,1) + &
                  sabs_perroad_dir(l,2)*forc_solad(g,2) + &
                  sabs_perroad_dif(l,2)*forc_solai(g,2) 
+            sabs_perroad_surface(l) = sabg(p) 
+            lwdown_perroad_surface(l) = lwdown(l)                   
 
          else if (ctype(c) == icol_road_imperv) then       
             eflx_lwrad_out(p)   = lwup_improad(l)
@@ -357,6 +371,8 @@ contains
                  sabs_improad_dif(l,1)*forc_solai(g,1) + &
                  sabs_improad_dir(l,2)*forc_solad(g,2) + &
                  sabs_improad_dif(l,2)*forc_solai(g,2) 
+            sabs_improad_surface(l) = sabg(p) 
+            lwdown_improad_surface(l) = lwdown(l)                   
 
          else if (ctype(c) == icol_whiteroof) then   
             eflx_lwrad_out(p) = lwup_whiteroof(l)

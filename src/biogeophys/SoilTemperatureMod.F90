@@ -449,8 +449,13 @@ contains
                        ! the bottom "soil" layer and the equations are derived assuming a prescribed internal
                        ! building temperature. (See Oleson urban notes of 6/18/03).
                        ! Note new formulation for fn, this will be used below in net energey flux computations
-                       fn1(c,j) = tk(c,j) * (t_building(l) - t_soisno(c,j))/(zi(c,j) - z(c,j))
-                       fn(c,j)  = tk(c,j) * (t_building(l) - tssbef(c,j))/(zi(c,j) - z(c,j))
+                        ! if (col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof) then
+                           fn1(c,j) = tk(c,j) * (t_building(l) - t_soisno(c,j))/(zi(c,j) - z(c,j))
+                           fn(c,j)  = tk(c,j) * (t_building(l) - tssbef(c,j))/(zi(c,j) - z(c,j))
+                        ! else
+                        !    fn1(c,j) = 0._r8
+                        !    fn(c,j) = 0._r8
+                        ! end if
                      else
                         ! the bottom "soil" layer and the equations are derived assuming a prognostic inner
                         ! surface temperature.
@@ -494,6 +499,7 @@ contains
          l = col%landunit(c)
          if (lun%urbpoi(l)) then
             if (col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall .or. col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof) then
+            ! if (col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof) then
                eflx_building_heat_errsoi(c) = cnfac*fn(c,nlevurb) + (1._r8-cnfac)*fn1(c,nlevurb)
             else if (col%itype(c) == icol_greenroof) then
                eflx_building_heat_errsoi(c) = cnfac*fn(c,nlevgrnd) + (1._r8-cnfac)*fn1(c,nlevgrnd)
@@ -4820,12 +4826,12 @@ contains
           heat_on(l) = .false. 
           if (t_building(l) > t_building_max(l)) then
             t_building(l) = t_building_max(l)
-            cool_on(l) = .true.
+            cool_on(l) = .false.
             heat_on(l) = .false.
           else if (t_building(l) < t_building_min(l)) then
             t_building(l) = t_building_min(l)
             cool_on(l) = .false.
-            heat_on(l) = .true.
+            heat_on(l) = .false.
           end if
       end if
     end do
