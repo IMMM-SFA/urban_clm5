@@ -45,11 +45,15 @@ module TemperatureType
      real(r8), pointer :: t_building_lun           (:)   ! lun internal building air temperature (K)
      real(r8), pointer :: t_roof_surface_lun       (:)   ! lun roof surface temperature (K)
      real(r8), pointer :: t_whiteroof_surface_lun  (:)   ! lun white roof surface temperature (K)
-     real(r8), pointer :: f_roof_factor_lun        (:)   ! lun roof surface f redistributed factor 
-     real(r8), pointer :: f_whiteroof_factor_lun   (:)   ! lun white roof surface f redistributed factor 
-     real(r8), pointer :: t_roof_scaling_lun       (:)   ! lun roof surface scaling temperature (K)          
-     real(r8), pointer :: t_whiteroof_scaling_lun  (:)   ! lun white roof surface scaling temperature (K)          
-     real(r8), pointer :: t_greenroof_surface_lun  (:)   ! lun green roof surface temperature (K)     
+     real(r8), pointer :: t_greenroof_surface_lun  (:)   ! lun green roof surface temperature (K) 
+     real(r8), pointer :: t_road_perv_surface_lun  (:)   ! lun impervious road surface temperature (K)
+     real(r8), pointer :: t_road_imperv_surface_lun(:)   ! lun pervious road surface temperature (K)
+     real(r8), pointer :: t_sunwall_surface_lun    (:)   ! lun sunwall surface temperature (K)
+     real(r8), pointer :: t_shadewall_surface_lun  (:)   ! lun shadewall surface temperature (K)
+   !   real(r8), pointer :: f_roof_factor_lun        (:)   ! lun roof surface f redistributed factor 
+   !   real(r8), pointer :: f_whiteroof_factor_lun   (:)   ! lun white roof surface f redistributed factor 
+   !   real(r8), pointer :: t_roof_scaling_lun       (:)   ! lun roof surface scaling temperature (K)          
+   !   real(r8), pointer :: t_whiteroof_scaling_lun  (:)   ! lun white roof surface scaling temperature (K)          
      real(r8), pointer :: t_roof_inner_lun         (:)   ! lun roof inside surface temperature (K)
      real(r8), pointer :: t_whiteroof_inner_lun    (:)   ! lun white roof inside surface temperature (K)
      real(r8), pointer :: t_greenroof_inner_lun    (:)   ! lun green roof inside surface temperature (K)     
@@ -68,10 +72,13 @@ module TemperatureType
      real(r8), pointer :: t_a5min_patch            (:)   ! patch 5-day running mean of min 2-m temperature
 
      real(r8), pointer :: taf_lun                  (:)   ! lun urban canopy air temperature (K)
+     real(r8), pointer :: taf2_lun                 (:)   ! lun urban canopy air temperature without surface temperature feedback (K)
 
      real(r8), pointer :: t_ref2m_patch            (:)   ! patch 2 m height surface air temperature (Kelvin)
      real(r8), pointer :: t_ref2m_r_patch          (:)   ! patch rural 2 m height surface air temperature (Kelvin)
      real(r8), pointer :: t_ref2m_u_patch          (:)   ! patch urban 2 m height surface air temperature (Kelvin)
+     real(r8), pointer :: t_ref2m_u2_patch         (:)   ! patch urban 2 m height surface air temperature without surface temperature feedback (Kelvin)
+     real(r8), pointer :: thm_u_patch              (:)   ! patch urban intermediate variable (forc_t+0.0098*forc_hgt_t) (K) 
      real(r8), pointer :: t_ref2m_min_patch        (:)   ! patch daily minimum of average 2 m height surface air temperature (K)
      real(r8), pointer :: t_ref2m_min_r_patch      (:)   ! patch daily minimum of average 2 m height surface air temperature - rural(K)
      real(r8), pointer :: t_ref2m_min_u_patch      (:)   ! patch daily minimum of average 2 m height surface air temperature - urban (K)
@@ -218,11 +225,15 @@ contains
     allocate(this%t_building_lun           (begl:endl))                      ; this%t_building_lun           (:)   = nan
     allocate(this%t_roof_surface_lun       (begl:endl))                      ; this%t_roof_surface_lun       (:)   = nan
     allocate(this%t_whiteroof_surface_lun  (begl:endl))                      ; this%t_whiteroof_surface_lun  (:)   = nan
-    allocate(this%f_roof_factor_lun        (begl:endl))                      ; this%f_roof_factor_lun        (:)   = nan 
-    allocate(this%f_whiteroof_factor_lun   (begl:endl))                      ; this%f_whiteroof_factor_lun   (:)   = nan 
-    allocate(this%t_roof_scaling_lun       (begl:endl))                      ; this%t_roof_scaling_lun       (:)   = nan 
-    allocate(this%t_whiteroof_scaling_lun  (begl:endl))                      ; this%t_whiteroof_scaling_lun  (:)   = nan 
     allocate(this%t_greenroof_surface_lun  (begl:endl))                      ; this%t_greenroof_surface_lun  (:)   = nan
+    allocate(this%t_road_perv_surface_lun  (begl:endl))                      ; this%t_road_perv_surface_lun  (:)   = nan
+    allocate(this%t_road_imperv_surface_lun(begl:endl))                      ; this%t_road_imperv_surface_lun(:)   = nan
+    allocate(this%t_sunwall_surface_lun    (begl:endl))                      ; this%t_sunwall_surface_lun    (:)   = nan
+    allocate(this%t_shadewall_surface_lun  (begl:endl))                      ; this%t_shadewall_surface_lun  (:)   = nan
+   !  allocate(this%f_roof_factor_lun        (begl:endl))                      ; this%f_roof_factor_lun        (:)   = nan 
+   !  allocate(this%f_whiteroof_factor_lun   (begl:endl))                      ; this%f_whiteroof_factor_lun   (:)   = nan 
+   !  allocate(this%t_roof_scaling_lun       (begl:endl))                      ; this%t_roof_scaling_lun       (:)   = nan 
+   !  allocate(this%t_whiteroof_scaling_lun  (begl:endl))                      ; this%t_whiteroof_scaling_lun  (:)   = nan 
     allocate(this%t_roof_inner_lun         (begl:endl))                      ; this%t_roof_inner_lun         (:)   = nan
     allocate(this%t_whiteroof_inner_lun    (begl:endl))                      ; this%t_whiteroof_inner_lun    (:)   = nan
     allocate(this%t_greenroof_inner_lun    (begl:endl))                      ; this%t_greenroof_inner_lun    (:)   = nan
@@ -246,10 +257,13 @@ contains
     allocate(this%t_a5min_patch            (begp:endp))                      ; this%t_a5min_patch            (:)   = nan
 
     allocate(this%taf_lun                  (begl:endl))                      ; this%taf_lun                  (:)   = nan
+    allocate(this%taf2_lun                 (begl:endl))                      ; this%taf2_lun                 (:)   = nan
 
     allocate(this%t_ref2m_patch            (begp:endp))                      ; this%t_ref2m_patch            (:)   = nan
     allocate(this%t_ref2m_r_patch          (begp:endp))                      ; this%t_ref2m_r_patch          (:)   = nan
     allocate(this%t_ref2m_u_patch          (begp:endp))                      ; this%t_ref2m_u_patch          (:)   = nan
+    allocate(this%t_ref2m_u2_patch         (begp:endp))                      ; this%t_ref2m_u2_patch         (:)   = nan
+    allocate(this%thm_u_patch              (begp:endp))                      ; this%thm_u_patch              (:)   = nan
     allocate(this%t_ref2m_min_patch        (begp:endp))                      ; this%t_ref2m_min_patch        (:)   = nan
     allocate(this%t_ref2m_min_r_patch      (begp:endp))                      ; this%t_ref2m_min_r_patch      (:)   = nan
     allocate(this%t_ref2m_min_u_patch      (begp:endp))                      ; this%t_ref2m_min_u_patch      (:)   = nan
@@ -391,6 +405,16 @@ contains
          avgflag='A', long_name='Urban 2m air temperature', &
          ptr_patch=this%t_ref2m_u_patch, set_nourb=spval, default='inactive')
 
+    this%t_ref2m_u2_patch(begp:endp) = spval
+    call hist_addfld1d (fname='TSA_U2', units='K',  &
+         avgflag='A', long_name='Urban 2m air temperature without surface temperature feedback', &
+         ptr_patch=this%t_ref2m_u2_patch, set_nourb=spval, default='inactive')
+
+    this%thm_u_patch(begp:endp) = spval
+    call hist_addfld1d (fname='THM_U', units='K',  &
+         avgflag='A', long_name='Urban intermediate variable (forc_t+0.0098*forc_hgt_t)', &
+         ptr_patch=this%thm_u_patch, set_nourb=spval, default='inactive')
+
     this%t_ref2m_min_u_patch(begp:endp) = spval
     call hist_addfld1d (fname='TREFMNAV_U', units='K',  &
          avgflag='A', long_name='Urban daily minimum of average 2-m temperature', &
@@ -501,36 +525,60 @@ contains
         avgflag='A', long_name='white roof surface temperature', &
         ptr_lunit=this%t_whiteroof_surface_lun, set_nourb=spval, l2g_scale_type='unity', &
         default='inactive')
-        
-    this%f_roof_factor_lun(begl:endl) = spval
-    call hist_addfld1d(fname='FROOF_FACTOR', units='K',  &
-        avgflag='A', long_name='roof surface f redistributed factor', &
-        ptr_lunit=this%f_roof_factor_lun, set_nourb=spval, l2g_scale_type='unity', &
-        default='inactive')   
-                    
-    this%f_whiteroof_factor_lun(begl:endl) = spval
-    call hist_addfld1d(fname='FWHITEROOF_FACTOR', units='K',  &
-        avgflag='A', long_name='white roof surface redistributed factor', &
-        ptr_lunit=this%f_whiteroof_factor_lun, set_nourb=spval, l2g_scale_type='unity', &
-        default='inactive')   
-                    
-    this%t_roof_scaling_lun(begl:endl) = spval
-    call hist_addfld1d(fname='TROOF_SCALING', units='K',  &
-        avgflag='A', long_name='roof surface scaling temperature', &
-        ptr_lunit=this%t_roof_scaling_lun, set_nourb=spval, l2g_scale_type='unity', &
-        default='inactive')   
-                    
-    this%t_whiteroof_scaling_lun(begl:endl) = spval
-    call hist_addfld1d(fname='TWHITEROOF_SCALING', units='K',  &
-        avgflag='A', long_name='white roof surface scaling temperature', &
-        ptr_lunit=this%t_whiteroof_scaling_lun, set_nourb=spval, l2g_scale_type='unity', &
-        default='inactive')   
-                    
+
     this%t_greenroof_surface_lun(begl:endl) = spval
     call hist_addfld1d(fname='TGREENROOF_SURFACE', units='K',  &
         avgflag='A', long_name='green roof surface temperature', &
         ptr_lunit=this%t_greenroof_surface_lun, set_nourb=spval, l2g_scale_type='unity', &
         default='inactive')
+
+    this%t_road_perv_surface_lun(begl:endl) = spval
+    call hist_addfld1d(fname='TROADPERV_SURFACE', units='K',  &
+        avgflag='A', long_name='pervious road surface temperature', &
+        ptr_lunit=this%t_road_perv_surface_lun, set_nourb=spval, l2g_scale_type='unity', &
+        default='inactive')
+
+    this%t_road_imperv_surface_lun(begl:endl) = spval
+    call hist_addfld1d(fname='TROADIMPERV_SURFACE', units='K',  &
+        avgflag='A', long_name='impervious road surface temperature', &
+        ptr_lunit=this%t_road_imperv_surface_lun, set_nourb=spval, l2g_scale_type='unity', &
+        default='inactive')
+
+    this%t_sunwall_surface_lun(begl:endl) = spval
+    call hist_addfld1d(fname='TSUNWALL_SURFACE', units='K',  &
+        avgflag='A', long_name='sunwall surface temperature', &
+        ptr_lunit=this%t_sunwall_surface_lun, set_nourb=spval, l2g_scale_type='unity', &
+        default='inactive')
+
+    this%t_shadewall_surface_lun(begl:endl) = spval
+    call hist_addfld1d(fname='TSHADEWALL_SURFACE', units='K',  &
+        avgflag='A', long_name='shadewall surface temperature', &
+        ptr_lunit=this%t_shadewall_surface_lun, set_nourb=spval, l2g_scale_type='unity', &
+        default='inactive')
+
+   !  this%f_roof_factor_lun(begl:endl) = spval
+   !  call hist_addfld1d(fname='FROOF_FACTOR', units='K',  &
+   !      avgflag='A', long_name='roof surface f redistributed factor', &
+   !      ptr_lunit=this%f_roof_factor_lun, set_nourb=spval, l2g_scale_type='unity', &
+   !      default='inactive')   
+                    
+   !  this%f_whiteroof_factor_lun(begl:endl) = spval
+   !  call hist_addfld1d(fname='FWHITEROOF_FACTOR', units='K',  &
+   !      avgflag='A', long_name='white roof surface redistributed factor', &
+   !      ptr_lunit=this%f_whiteroof_factor_lun, set_nourb=spval, l2g_scale_type='unity', &
+   !      default='inactive')   
+                    
+   !  this%t_roof_scaling_lun(begl:endl) = spval
+   !  call hist_addfld1d(fname='TROOF_SCALING', units='K',  &
+   !      avgflag='A', long_name='roof surface scaling temperature', &
+   !      ptr_lunit=this%t_roof_scaling_lun, set_nourb=spval, l2g_scale_type='unity', &
+   !      default='inactive')   
+                    
+   !  this%t_whiteroof_scaling_lun(begl:endl) = spval
+   !  call hist_addfld1d(fname='TWHITEROOF_SCALING', units='K',  &
+   !      avgflag='A', long_name='white roof surface scaling temperature', &
+   !      ptr_lunit=this%t_whiteroof_scaling_lun, set_nourb=spval, l2g_scale_type='unity', &
+   !      default='inactive')   
                      
     if ( is_prog_buildtemp )then
        this%t_roof_inner_lun(begl:endl) = spval
@@ -1072,6 +1120,10 @@ contains
     call restartvar(ncid=ncid, flag=flag, varname='taf', xtype=ncd_double, dim1name='landunit',                       &
          long_name='urban canopy air temperature', units='K',                                                         &
          interpinic_flag='interp', readvar=readvar, data=this%taf_lun)
+
+    call restartvar(ncid=ncid, flag=flag, varname='taf2', xtype=ncd_double, dim1name='landunit',                       &
+         long_name='urban canopy air temperature without surface temperature feedback', units='K',                                                         &
+         interpinic_flag='interp', readvar=readvar, data=this%taf2_lun)
 
     if (use_crop) then
        call restartvar(ncid=ncid, flag=flag,  varname='gdd1020', xtype=ncd_double,  &

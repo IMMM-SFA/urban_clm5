@@ -47,7 +47,7 @@ contains
     use clm_time_manager , only : get_step_size
     use clm_varcon       , only : hvap, cpair, grav, vkc, tfrz, sb 
     use landunit_varcon  , only : istsoil, istcrop
-    use column_varcon    , only : icol_roof, icol_whiteroof, icol_greenroof, icol_sunwall, icol_shadewall, icol_road_perv
+    use column_varcon    , only : icol_roof, icol_whiteroof, icol_greenroof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
     use subgridAveMod    , only : p2c
     !
     ! !ARGUMENTS:
@@ -155,6 +155,10 @@ contains
          eflx_gnet_roof      =>   energyflux_inst%eflx_gnet_roof_lun        , & ! Output: [real(r8) (:)   ]  roof net ground heat flux (W/m**2) [+ to atm] 
          eflx_gnet_whiteroof =>   energyflux_inst%eflx_gnet_whiteroof_lun   , & ! Output: [real(r8) (:)   ]  white roof net ground heat flux (W/m**2) [+ to atm] 
          eflx_gnet_greenroof =>   energyflux_inst%eflx_gnet_greenroof_lun   , & ! Output: [real(r8) (:)   ]  green roof net ground heat flux (W/m**2) [+ to atm] 
+         eflx_gnet_sunwall   =>   energyflux_inst%eflx_gnet_sunwall_lun     , & ! Output: [real(r8) (:)   ]  sunwall net ground heat flux (W/m**2) [+ to atm] 
+         eflx_gnet_shadewall =>   energyflux_inst%eflx_gnet_shadewall_lun   , & ! Output: [real(r8) (:)   ]  shadewall net ground heat flux (W/m**2) [+ to atm] 
+         eflx_gnet_improad   =>   energyflux_inst%eflx_gnet_improad_lun     , & ! Output: [real(r8) (:)   ]  improad net ground heat flux (W/m**2) [+ to atm] 
+         eflx_gnet_perroad   =>   energyflux_inst%eflx_gnet_perroad_lun     , & ! Output: [real(r8) (:)   ]  perroad net ground heat flux (W/m**2) [+ to atm] 
 
          eflx_sh_grnd            => energyflux_inst%eflx_sh_grnd_patch      , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
          eflx_sh_veg             => energyflux_inst%eflx_sh_veg_patch       , & ! Output: [real(r8) (:)   ]  sensible heat flux from leaves (W/m**2) [+ to atm]
@@ -385,6 +389,7 @@ contains
          ! For urban sunwall, shadewall, and roof columns, the "soil" energy balance check
          ! must include the heat flux from the interior of the building.
          if (col%itype(c)==icol_sunwall .or. col%itype(c)==icol_shadewall .or. col%itype(c)==icol_roof .or. col%itype(c)==icol_whiteroof .or. col%itype(c)==icol_greenroof) then
+         ! if (col%itype(c)==icol_roof .or. col%itype(c)==icol_whiteroof .or. col%itype(c)==icol_greenroof) then
             errsoi_patch(p) = errsoi_patch(p) + eflx_building_heat_errsoi(c) 
          end if
       end do
@@ -393,8 +398,9 @@ contains
             p = filter_nolakep(fp)
             c = patch%column(p)
 
-            if ((col%itype(c) /= icol_sunwall .and. col%itype(c) /= icol_shadewall &
+           if ((col%itype(c) /= icol_sunwall .and. col%itype(c) /= icol_shadewall &
                  .and. col%itype(c) /= icol_roof .and. col%itype(c) /= icol_whiteroof) .or. ( j <= nlevurb)) then
+            ! if ((col%itype(c) /= icol_roof .and. col%itype(c) /= icol_whiteroof) .or. ( j <= nlevurb)) then
                ! area weight heat absorbed by snow layers
                if (j >= col%snl(c)+1 .and. j < 1) errsoi_patch(p) = errsoi_patch(p) &
                     - frac_sno_eff(c)*(t_soisno(c,j)-tssbef(c,j))/fact(c,j)
@@ -479,6 +485,14 @@ contains
             eflx_gnet_greenroof(l) = eflx_soil_grnd(p) !sabg(p) - lwnet_greenroof_surface(l) - eflx_lh_greenroof(l) - eflx_sh_greenroof(l)
             !write(iulog,*) 'sabs, lwnet_greenroof_surface, eflx_lh_greenroof, eflx_sh_greenroof, eflx_gnet_greenroof, dlrad, eflx_soil_grnd', sabg(p), lwnet_greenroof_surface(l), eflx_lh_greenroof(l), eflx_sh_greenroof(l), eflx_gnet_greenroof(l), dlrad(p), eflx_soil_grnd(p)
             !write(iulog,*) 'eflx_lh_greenroof, ET, qflx_evap_veg, qflx_evap_soi', eflx_lh_greenroof(l), eflx_lh_greenroof(l)/hvap, qflx_evap_tot(p), qflx_evap_veg(p), qflx_evap_soi(p)
+         else if (ctype(c) == icol_sunwall) then
+            eflx_gnet_sunwall(l)= eflx_soil_grnd(p)
+         else if (ctype(c) == icol_shadewall) then
+            eflx_gnet_shadewall(l)= eflx_soil_grnd(p)
+         else if (ctype(c) == icol_road_perv) then
+            eflx_gnet_improad(l)= eflx_soil_grnd(p)
+         else if (ctype(c) == icol_road_imperv) then
+            eflx_gnet_perroad(l)= eflx_soil_grnd(p)                                    
          end if
       end do
 
