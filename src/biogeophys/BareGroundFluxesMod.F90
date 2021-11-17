@@ -119,6 +119,8 @@ contains
 
          tc_ref2m               => humanindex_inst%tc_ref2m_patch               , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (C)
          vap_ref2m              => humanindex_inst%vap_ref2m_patch              , & ! Output: [real(r8) (:)   ]  2 m height vapor pressure (Pa)
+         vap_ref2m_r            => humanindex_inst%vap_ref2m_r_patch            , & ! Output: [real(r8) (:)   ]  Rural 2 m height vapor pressure (Pa)
+         vpd_ref2m_r            => humanindex_inst%vpd_ref2m_r_patch            , & ! Output: [real(r8) (:)   ]  Rural 2 m height vapor pressure deficit (Pa)
          appar_temp_ref2m       => humanindex_inst%appar_temp_ref2m_patch       , & ! Output: [real(r8) (:)   ]  2 m apparent temperature (C)
          appar_temp_ref2m_r     => humanindex_inst%appar_temp_ref2m_r_patch     , & ! Output: [real(r8) (:)   ]  Rural 2 m apparent temperature (C)
          swbgt_ref2m            => humanindex_inst%swbgt_ref2m_patch            , & ! Output: [real(r8) (:)   ]  2 m Simplified Wetbulb Globe temperature (C)
@@ -201,6 +203,7 @@ contains
 
          forc_hgt_u_patch       => frictionvel_inst%forc_hgt_u_patch            , & ! Input:
          u10_clm                => frictionvel_inst%u10_clm_patch               , & ! Input:  [real(r8) (:)   ]  10 m height winds (m/s)
+         u10_clm_r                => frictionvel_inst%u10_clm_r_patch           , & ! Input:  [real(r8) (:)   ]  Rural 10 m height winds (m/s)         
          zetamax                => frictionvel_parms_inst%zetamaxstable         , & ! Input:  [real(r8)       ]  max zeta value under stable conditions
          z0mg_col               => frictionvel_inst%z0mg_col                    , & ! Output: [real(r8) (:)   ]  roughness length, momentum [m]                                        
          z0hg_col               => frictionvel_inst%z0hg_col                    , & ! Output: [real(r8) (:)   ]  roughness length, sensible heat [m]                                   
@@ -420,6 +423,9 @@ contains
               thip_ref2m_r(p)           = thip_ref2m(p)
               swmp80_ref2m_r(p)         = swmp80_ref2m(p)
               swmp65_ref2m_r(p)         = swmp65_ref2m(p)
+              u10_clm_r(p)              = u10_clm(p)
+              vap_ref2m_r(p)            = vap_ref2m(p)
+              vpd_ref2m_r(p)            = e_ref2m - vap_ref2m(p)
             end if
          end if
       end do

@@ -383,6 +383,8 @@ contains
 
          tc_ref2m               => humanindex_inst%tc_ref2m_patch               , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (C)
          vap_ref2m              => humanindex_inst%vap_ref2m_patch              , & ! Output: [real(r8) (:)   ]  2 m height vapor pressure (Pa)
+         vap_ref2m_r            => humanindex_inst%vap_ref2m_r_patch            , & ! Output: [real(r8) (:)   ]  Rural 2 m height vapor pressure (Pa)
+         vpd_ref2m_r            => humanindex_inst%vpd_ref2m_r_patch            , & ! Output: [real(r8) (:)   ]  Rural 2 m height vapor pressure deficit (Pa)
          appar_temp_ref2m       => humanindex_inst%appar_temp_ref2m_patch       , & ! Output: [real(r8) (:)   ]  2 m apparent temperature (C)
          appar_temp_ref2m_r     => humanindex_inst%appar_temp_ref2m_r_patch     , & ! Output: [real(r8) (:)   ]  Rural 2 m apparent temperature (C)
          swbgt_ref2m            => humanindex_inst%swbgt_ref2m_patch            , & ! Output: [real(r8) (:)   ]  2 m Simplified Wetbulb Globe temperature (C)
@@ -433,6 +435,7 @@ contains
          rootr                  => soilstate_inst%rootr_patch                   , & ! Output: [real(r8) (:,:) ]  effective fraction of roots in each soil layer                      
 
          u10_clm                => frictionvel_inst%u10_clm_patch               , & ! Input:  [real(r8) (:)   ]  10 m height winds (m/s)
+         u10_clm_r              => frictionvel_inst%u10_clm_r_patch             , & ! Input:  [real(r8) (:)   ]  Rural 10 m height winds (m/s)                  
          forc_hgt_u_patch       => frictionvel_inst%forc_hgt_u_patch            , & ! Input:  [real(r8) (:)   ]  observational height of wind at patch level [m]                          
          z0mg                   => frictionvel_inst%z0mg_col                    , & ! Input:  [real(r8) (:)   ]  roughness length of ground, momentum [m]                              
          zetamax                => frictionvel_parms_inst%zetamaxstable         , & ! Input:  [real(r8)       ]  max zeta value under stable conditions
@@ -1223,6 +1226,9 @@ contains
             thip_ref2m_r(p)           = thip_ref2m(p)
             swmp80_ref2m_r(p)         = swmp80_ref2m(p)
             swmp65_ref2m_r(p)         = swmp65_ref2m(p)
+            u10_clm_r(p)              = u10_clm(p)
+            vap_ref2m_r(p)            = vap_ref2m(p)
+            vpd_ref2m_r(p)            = e_ref2m - vap_ref2m(p)
          end if
 
          ! Downward longwave radiation below the canopy

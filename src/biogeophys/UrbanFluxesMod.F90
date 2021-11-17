@@ -278,6 +278,8 @@ contains
 
          tc_ref2m            => humanindex_inst%tc_ref2m_patch              , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (C)
          vap_ref2m           => humanindex_inst%vap_ref2m_patch             , & ! Output: [real(r8) (:)   ]  2 m height vapor pressure (Pa)
+         vap_ref2m_u         => humanindex_inst%vap_ref2m_u_patch           , & ! Output: [real(r8) (:)   ]  Urban 2 m height vapor pressure (Pa)
+         vpd_ref2m_u         => humanindex_inst%vpd_ref2m_u_patch           , & ! Output: [real(r8) (:)   ]  Urban 2 m height vapor pressure deficit (Pa)
          appar_temp_ref2m    => humanindex_inst%appar_temp_ref2m_patch      , & ! Output: [real(r8) (:)   ]  2 m apparent temperature (C)
          appar_temp_ref2m_u  => humanindex_inst%appar_temp_ref2m_u_patch    , & ! Output: [real(r8) (:)   ]  Urban 2 m apparent temperature (C)
          swbgt_ref2m         => humanindex_inst%swbgt_ref2m_patch           , & ! Output: [real(r8) (:)   ]  2 m Simplified Wetbulb Globe temperature (C)
@@ -327,6 +329,7 @@ contains
          zetamax             =>   frictionvel_parms_inst%zetamaxstable      , & ! Input:  [real(r8)       ]  max zeta value under stable conditions
          ram1                =>   frictionvel_inst%ram1_patch               , & ! Output: [real(r8) (:)   ]  aerodynamical resistance (s/m) 
          u10_clm             =>   frictionvel_inst%u10_clm_patch            , & ! Input:  [real(r8) (:)   ]  10 m height winds (m/s)
+         u10_clm_u           =>   frictionvel_inst%u10_clm_u_patch          , & ! Input:  [real(r8) (:)   ]  Urban 10 m height winds (m/s)                  
 
          htvp                =>   energyflux_inst%htvp_col                  , & ! Input:  [real(r8) (:)   ]  latent heat of evaporation (/sublimation) (J/kg)  
          dlrad               =>   energyflux_inst%dlrad_patch               , & ! Output: [real(r8) (:)   ]  downward longwave radiation below the canopy (W/m**2)
@@ -346,6 +349,7 @@ contains
          canyon_wind         =>   energyflux_inst%canyon_wind_lun           , & ! Output: [real(r8) (:)   ]  green roof net wind speed inside canyon (m/s)
          eflx_traffic        =>   energyflux_inst%eflx_traffic_lun          , & ! Output: [real(r8) (:)   ]  traffic sensible heat flux (W/m**2)               
          eflx_wasteheat      =>   energyflux_inst%eflx_wasteheat_lun        , & ! Output: [real(r8) (:)   ]  sensible heat flux from urban heating/cooling sources of waste heat (W/m**2)
+         eflx_ventilation    =>   energyflux_inst%eflx_ventilation_lun    , & ! Input:  [real(r8) (:)   ]  sensible heat flux from building ventilation (W/m**2)
          eflx_urban_ac       =>   energyflux_inst%eflx_urban_ac_lun         , & ! Input:  [real(r8) (:)   ]  urban air conditioning flux (W/m**2)              
          eflx_heat_from_ac   =>   energyflux_inst%eflx_heat_from_ac_lun     , & ! Output: [real(r8) (:)   ]  sensible heat flux put back into canyon due to removal by AC (W/m**2)
          eflx_urban_heat     =>   energyflux_inst%eflx_urban_heat_lun       , & ! Input:  [real(r8) (:)   ]  urban heating flux (W/m**2)
@@ -365,6 +369,11 @@ contains
          qflx_tran_veg       =>   waterflux_inst%qflx_tran_veg_patch        , & ! Output: [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)  
          qflx_evap_veg       =>   waterflux_inst%qflx_evap_veg_patch        , & ! Output: [real(r8) (:)   ]  vegetation evaporation (mm H2O/s) (+ = to atm)    
          qflx_evap_tot       =>   waterflux_inst%qflx_evap_tot_patch        , & ! Output: [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg     
+
+         eflx_building              => energyflux_inst%eflx_building_lun             , & ! Input:  [real(r8) (:)]  building heat flux from change in interior building air temperature (W/m**2)
+         eflx_cv_building           => energyflux_inst%eflx_cv_building_lun          , & ! Input:  [real(r8) (:)]  conduction flux from interior surface of roofs, walls and floors into building (W/m**2) 
+         eflx_building_heat_errsoi  => energyflux_inst%eflx_building_heat_errsoi_col , & ! Input: [real(r8) (:)]  heat flux from urban building interior to walls, roof (W/m**2)
+         eflx_anthro                => energyflux_inst%eflx_anthro_patch             , & ! Input:  [real(r8) (:)   ]  total anthropogenic heat flux (W/m**2) 
 
          fs_greenroof       =>   energyflux_inst%fs_greenroof_lun         , & ! Output: [real(r8) (:)   ]  green roof adjusting factor for solar radiation
          fw_greenroof       =>   energyflux_inst%fw_greenroof_lun         , & ! Output: [real(r8) (:)   ]  green roof adjusting factor for soil water content
@@ -393,6 +402,18 @@ contains
          l = filter_nourbanl(fl)
          taf(l) = spval
          qaf(l) = spval
+         if ( IsSimpleBuildTemp() )then
+            eflx_building_heat_errsoi(c) = spval
+            eflx_urban_ac_col(c) = spval
+            eflx_urban_heat_col(c) = spval
+            eflx_anthro(p) = spval
+         else
+            eflx_building(l) = spval
+            eflx_urban_ac(l) = spval
+            eflx_urban_heat(l) = spval
+            eflx_ventilation(l) = spval
+            eflx_cv_building(l) = spval
+         end if           
       end do
 
       ! Get time step
@@ -718,29 +739,23 @@ contains
 
                ! scaled sensible heat conductance
                wtus(c) = wtroad_perv(l)*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
-               !wtus(c) = 0._r8
                wtus_road_perv(l) = wtus(c)
                ! unscaled sensible heat conductance
                wtus_road_perv_unscl(l) = 1._r8/canyon_resistance(l)
-               !wtus_road_perv_unscl(l) = 0._r8
 
                ! scaled latent heat conductance
                wtuq(c) = wtroad_perv(l)*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
-               !wtuq(c) = 0._r8
                wtuq_road_perv(l) = wtuq(c)
                ! unscaled latent heat conductance
                wtuq_road_perv_unscl(l) = 1._r8/canyon_resistance(l)
-               wtuq_road_perv_unscl(l) = 0._r8
 
             else if (ctype(c) == icol_road_imperv) then
 
                ! scaled sensible heat conductance
                wtus(c) = (1._r8-wtroad_perv(l))*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
-               !wtus(c) = 0._r8
                wtus_road_imperv(l) = wtus(c)
                ! unscaled sensible heat conductance
                wtus_road_imperv_unscl(l) = 1._r8/canyon_resistance(l)
-               !wtus_road_perv_unscl(l) = 0._r8
 
                if (snow_depth(c) > 0._r8) then
                   fwet_road_imperv = min(snow_depth(c)/0.05_r8, 1._r8)
@@ -748,11 +763,9 @@ contains
                   fwet_road_imperv = (max(0._r8, h2osoi_liq(c,1)+h2osoi_ice(c,1))/pondmx_urban)**0.666666666666_r8
                   fwet_road_imperv = min(fwet_road_imperv,1._r8)
                end if
-               if (qaf(l) > qg(c)) then 
+               if (qaf(l) > qg(c)) then
                   fwet_road_imperv = 1._r8
                end if
-               !fwet_road_imperv = 0._r8
-
                ! scaled latent heat conductance
                wtuq(c) = fwet_road_imperv*(1._r8-wtroad_perv(l))*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
                wtuq_road_imperv(l) = wtuq(c)
@@ -763,11 +776,9 @@ contains
 
                ! scaled sensible heat conductance
                wtus(c) = canyon_hwr(l)*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
-               !wtus(c) = 0._r8
                wtus_sunwall(l) = wtus(c)
                ! unscaled sensible heat conductance
                wtus_sunwall_unscl(l) = 1._r8/canyon_resistance(l)
-               !wtus_sunwall_unscl(l) = 0._r8
 
                ! scaled latent heat conductance
                wtuq(c) = 0._r8
@@ -782,11 +793,9 @@ contains
 
                ! scaled sensible heat conductance
                wtus(c) = canyon_hwr(l)*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
-               !wtus(c) = 0._r8
                wtus_shadewall(l) = wtus(c)
                ! unscaled sensible heat conductance
                wtus_shadewall_unscl(l) = 1._r8/canyon_resistance(l)
-               !wtus_shadewall_unscl(l) = 0._r8
 
                ! scaled latent heat conductance
                wtuq(c) = 0._r8
@@ -1164,6 +1173,9 @@ contains
             thip_ref2m_u(p)           = thip_ref2m(p)
             swmp80_ref2m_u(p)         = swmp80_ref2m(p)
             swmp65_ref2m_u(p)         = swmp65_ref2m(p)
+            u10_clm_u(p)              = u10_clm(p)
+            vap_ref2m_u(p)            = vap_ref2m(p)
+            vpd_ref2m_u(p)            = e_ref2m - vap_ref2m(p)
          end if
 
          ! Variables needed by history tape
@@ -1223,7 +1235,7 @@ contains
      eflx_wasteheat   => energyflux_inst%eflx_wasteheat_lun    , & ! Output:  [real(r8) (:)]  sensible heat flux from urban heating/cooling sources of waste heat (W/m**2)
      eflx_heat_from_ac=> energyflux_inst%eflx_heat_from_ac_lun , & ! Output:  [real(r8) (:)]  sensible heat flux put back into canyon due to removal by AC (W/m**2)
      eflx_urban_ac    => energyflux_inst%eflx_urban_ac_lun     , & ! Input:  [real(r8) (:)]  urban air conditioning flux (W/m**2)              
-     eflx_urban_heat  => energyflux_inst%eflx_urban_heat_lun     & ! Input:  [real(r8) (:)]  urban heating flux (W/m**2)                       
+    eflx_urban_heat  => energyflux_inst%eflx_urban_heat_lun     & ! Input:  [real(r8) (:)]  urban heating flux (W/m**2)                       
     )
     do fl = 1, num_urbanl
        l = filter_urbanl(fl)
@@ -1258,6 +1270,7 @@ contains
           ! If air conditioning on, always replace heat removed with heat into canyon
           if (trim(urban_hac) == urban_hac_on .or. trim(urban_hac) == urban_wasteheat_on) then
             eflx_heat_from_ac(l) = abs(eflx_urban_ac(l))
+            
           else
             eflx_heat_from_ac(l) = 0._r8
           end if
@@ -1354,6 +1367,7 @@ contains
      ht_roof       =>    lun%ht_roof                    , & ! Input:  [real(r8) (:)]    height of urban roof (m)
      canyon_hwr    =>    lun%canyon_hwr                 , & ! Input:  [real(r8) (:)]    ratio of building height to street width 
      wtlunit_roof  =>    lun%wtlunit_roof               , & ! Input:  [real(r8) (:)]    weight of roof with respect to landunit
+     t_building_bef_clm45 => temperature_inst%t_building_bef_clm45_lun      , & ! Output: [real(r8) (:)]  internal building temperature at previous time step (K) 
      t_building    =>    temperature_inst%t_building_lun            & ! Output: [real(r8) (:)]  internal building temperature (K) 
     )
 
@@ -1380,6 +1394,7 @@ contains
        l = filter_urbanl(fl)
      
        lngth_roof = (ht_roof(l)/canyon_hwr(l))*wtlunit_roof(l)/(1._r8-wtlunit_roof(l))
+       t_building_bef_clm45(l) = t_building(l)
        t_building(l) = (ht_roof(l)*(t_shadewall_innerl(l) + t_sunwall_innerl(l)) &
                        +lngth_roof*((1._r8 - white_roof_fraction - green_roof_fraction)*t_roof_innerl(l) + white_roof_fraction*t_whiteroof_innerl(l) + green_roof_fraction*t_greenroof_innerl(l)))/(2._r8*ht_roof(l)+lngth_roof)
     end do

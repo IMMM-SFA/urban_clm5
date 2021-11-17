@@ -42,6 +42,7 @@ module TemperatureType
      real(r8), pointer :: t_grnd_col               (:)   ! col ground temperature (Kelvin)
      real(r8), pointer :: t_grnd_r_col             (:)   ! col rural ground temperature (Kelvin)
      real(r8), pointer :: t_grnd_u_col             (:)   ! col urban ground temperature (Kelvin) (needed by Hydrology2Mod)
+     real(r8), pointer :: t_building_bef_clm45_lun       (:)   ! lun internal building air temperature at previous time step (K)
      real(r8), pointer :: t_building_lun           (:)   ! lun internal building air temperature (K)
      real(r8), pointer :: t_roof_surface_lun       (:)   ! lun roof surface temperature (K)
      real(r8), pointer :: t_whiteroof_surface_lun  (:)   ! lun white roof surface temperature (K)
@@ -222,6 +223,7 @@ contains
     allocate(this%t_grnd_col               (begc:endc))                      ; this%t_grnd_col               (:)   = nan
     allocate(this%t_grnd_r_col             (begc:endc))                      ; this%t_grnd_r_col             (:)   = nan
     allocate(this%t_grnd_u_col             (begc:endc))                      ; this%t_grnd_u_col             (:)   = nan
+    allocate(this%t_building_bef_clm45_lun (begl:endl))                      ; this%t_building_bef_clm45_lun (:)   = nan
     allocate(this%t_building_lun           (begl:endl))                      ; this%t_building_lun           (:)   = nan
     allocate(this%t_roof_surface_lun       (begl:endl))                      ; this%t_roof_surface_lun       (:)   = nan
     allocate(this%t_whiteroof_surface_lun  (begl:endl))                      ; this%t_whiteroof_surface_lun  (:)   = nan
@@ -616,6 +618,11 @@ contains
             avgflag='A', long_name='floor temperature', &
             ptr_lunit=this%t_floor_lun, set_nourb=spval, l2g_scale_type='unity', &
             default='inactive')
+    else
+       this%t_building_bef_clm45_lun(begl:endl) = spval
+       call hist_addfld1d(fname='TBUILD_BEF', units='K',  &
+            avgflag='A', long_name=lname, &
+            ptr_lunit=this%t_building_bef_clm45_lun, set_nourb=spval, l2g_scale_type='unity')
     end if
 
     this%heat1_grc(begg:endg) = spval

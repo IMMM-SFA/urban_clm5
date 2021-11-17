@@ -39,6 +39,8 @@ module FrictionVelocityMod
      real(r8), pointer, public :: forc_hgt_q_patch (:)   ! patch specific humidity forcing height (10m+z0m+d) (m)
      real(r8), pointer, public :: u10_patch        (:)   ! patch 10-m wind (m/s) (for dust model)
      real(r8), pointer, public :: u10_clm_patch    (:)   ! patch 10-m wind (m/s) (for clm_map2gcell)
+     real(r8), pointer, public :: u10_clm_r_patch  (:)   ! patch Rural 10-m wind (m/s) (for clm_map2gcell)
+     real(r8), pointer, public :: u10_clm_u_patch  (:)   ! patch Urban 10-m wind (m/s) (for clm_map2gcell)     
      real(r8), pointer, public :: va_patch         (:)   ! patch atmospheric wind speed plus convective velocity (m/s)
      real(r8), pointer, public :: vds_patch        (:)   ! patch deposition velocity term (m/s) (for dry dep SO4, NH4NO3)
      real(r8), pointer, public :: fv_patch         (:)   ! patch friction velocity (m/s) (for dust model)
@@ -116,6 +118,8 @@ contains
     allocate(this%forc_hgt_q_patch (begp:endp)) ; this%forc_hgt_q_patch (:)   = nan
     allocate(this%u10_patch        (begp:endp)) ; this%u10_patch        (:)   = nan
     allocate(this%u10_clm_patch    (begp:endp)) ; this%u10_clm_patch    (:)   = nan
+    allocate(this%u10_clm_r_patch  (begp:endp)) ; this%u10_clm_r_patch  (:)   = nan
+    allocate(this%u10_clm_u_patch  (begp:endp)) ; this%u10_clm_u_patch  (:)   = nan
     allocate(this%va_patch         (begp:endp)) ; this%va_patch         (:)   = nan
     allocate(this%vds_patch        (begp:endp)) ; this%vds_patch        (:)   = nan
     allocate(this%fv_patch         (begp:endp)) ; this%fv_patch         (:)   = nan
@@ -129,7 +133,6 @@ contains
     allocate(this%z0mg_col         (begc:endc)) ; this%z0mg_col         (:)   = nan
     allocate(this%z0qg_col         (begc:endc)) ; this%z0qg_col         (:)   = nan
     allocate(this%z0hg_col         (begc:endc)) ; this%z0hg_col         (:)   = nan
-    
 
   end subroutine InitAllocate
 
@@ -178,6 +181,16 @@ contains
     call hist_addfld1d (fname='U10', units='m/s', &
          avgflag='A', long_name='10-m wind', &
          ptr_patch=this%u10_clm_patch)
+
+    this%u10_clm_u_patch(begp:endp) = spval
+    call hist_addfld1d (fname='U10_U', units='m/s', &
+         avgflag='A', long_name='Urban 10-m wind', &
+         ptr_patch=this%u10_clm_u_patch, set_nourb=spval, default='inactive')
+
+    this%u10_clm_r_patch(begp:endp) = spval
+    call hist_addfld1d (fname='U10_R', units='m/s', &
+         avgflag='A', long_name='Rural 10-m wind', &
+         ptr_patch=this%u10_clm_r_patch, set_spec=spval, default='inactive')
 
     call hist_addfld1d (fname='U10_ICE', units='m/s',  &
          avgflag='A', long_name='10-m wind (ice landunits only)', &

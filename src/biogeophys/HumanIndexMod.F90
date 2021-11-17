@@ -43,6 +43,10 @@ module HumanIndexMod
   type,    public :: humanindex_type   
      real(r8), pointer :: tc_ref2m_patch              (:) ! Patch 2 m height surface air temperature (C)
      real(r8), pointer :: vap_ref2m_patch             (:) ! Patch 2 m height vapor pressure (Pa)
+     real(r8), pointer :: vap_ref2m_u_patch           (:) ! Patch Urban 2 m height vapor pressure (Pa)
+     real(r8), pointer :: vap_ref2m_r_patch           (:) ! Patch Rural 2 m height vapor pressure (Pa)
+     real(r8), pointer :: vpd_ref2m_u_patch           (:) ! Patch Urban 2 m height vapor pressure deficit (Pa)
+     real(r8), pointer :: vpd_ref2m_r_patch           (:) ! Patch Rural 2 m height vapor pressure deficit (Pa)
      real(r8), pointer :: appar_temp_ref2m_patch      (:) ! Patch 2 m apparent temperature (C)
      real(r8), pointer :: appar_temp_ref2m_r_patch    (:) ! Patch Rural 2 m apparent temperature (C)
      real(r8), pointer :: swbgt_ref2m_patch           (:) ! Patch 2 m Simplified Wetbulb Globe temperature (C)
@@ -184,6 +188,10 @@ subroutine InitAllocate(this, bounds)
     begp = bounds%begp; endp= bounds%endp
 
     allocate(this%vap_ref2m_patch          (begp:endp))                      ; this%vap_ref2m_patch          (:)   = nan
+    allocate(this%vap_ref2m_u_patch        (begp:endp))                      ; this%vap_ref2m_u_patch        (:)   = nan
+    allocate(this%vap_ref2m_r_patch        (begp:endp))                      ; this%vap_ref2m_r_patch        (:)   = nan
+    allocate(this%vpd_ref2m_u_patch        (begp:endp))                      ; this%vpd_ref2m_u_patch        (:)   = nan
+    allocate(this%vpd_ref2m_r_patch        (begp:endp))                      ; this%vpd_ref2m_r_patch        (:)   = nan
     allocate(this%humidex_ref2m_u_patch    (begp:endp))                      ; this%humidex_ref2m_u_patch    (:)   = nan
     allocate(this%humidex_ref2m_patch      (begp:endp))                      ; this%humidex_ref2m_patch      (:)   = nan
     allocate(this%humidex_ref2m_r_patch    (begp:endp))                      ; this%humidex_ref2m_r_patch    (:)   = nan
@@ -249,6 +257,26 @@ subroutine InitHistory(this, bounds)
 !------------------------------------------------------------------------
 
     begp = bounds%begp; endp= bounds%endp
+
+    this%vap_ref2m_u_patch(begp:endp) = spval
+    call hist_addfld1d (fname='VP_U', units='C',  &
+            avgflag='A', long_name='Urban 2 m vapor pressure', &
+            ptr_patch=this%vap_ref2m_u_patch, set_nourb=spval, default='inactive')
+
+    this%vap_ref2m_r_patch(begp:endp) = spval
+    call hist_addfld1d (fname='VP_R', units='C',  &
+            avgflag='A', long_name='Rural 2 m vapor pressure', &
+            ptr_patch=this%vap_ref2m_r_patch, set_spec=spval, default='inactive')
+
+    this%vpd_ref2m_u_patch(begp:endp) = spval
+    call hist_addfld1d (fname='VPD_U', units='C',  &
+            avgflag='A', long_name='Urban 2 m vapor pressure deficit', &
+            ptr_patch=this%vpd_ref2m_u_patch, set_nourb=spval, default='inactive')
+
+    this%vpd_ref2m_r_patch(begp:endp) = spval
+    call hist_addfld1d (fname='VPD_R', units='C',  &
+            avgflag='A', long_name='Rural 2 m vapor pressure deficit', &
+            ptr_patch=this%vpd_ref2m_r_patch, set_spec=spval, default='inactive')
 
     this%appar_temp_ref2m_patch(begp:endp) = spval
     call hist_addfld1d (fname='APPAR_TEMP', units='C',  &

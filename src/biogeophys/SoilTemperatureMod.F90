@@ -145,6 +145,7 @@ contains
     use clm_varpar               , only : nlevsno, nlevgrnd, nlevurb
     use clm_varctl               , only : iulog
     use clm_varcon               , only : cnfac, cpice, cpliq, denh2o
+    use clm_varcon               , only : rair, pstd, cpair
     use landunit_varcon          , only : istsoil, istcrop
     use column_varcon            , only : icol_roof, icol_whiteroof, icol_greenroof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
     use BandDiagonalMod          , only : BandDiagonal
@@ -178,6 +179,7 @@ contains
     real(r8) :: tk (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)         ! thermal conductivity [W/(m K)]
     real(r8) :: fn (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)         ! heat diffusion through the layer interface [W/m2]
     real(r8) :: fn1(bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)         ! heat diffusion through the layer interface [W/m2]
+    real(r8) :: enrgy_bal_BEM (bounds%begc:bounds%endc)         ! building energy model energy balance (W m-2)    
     real(r8) :: dzm                                                      ! used in computing tridiagonal matrix
     real(r8) :: dzp                                                      ! used in computing tridiagonal matrix
     real(r8) :: sabg_lyr_col(bounds%begc:bounds%endc,-nlevsno+1:1)       ! absorbed solar radiation (col,lyr) [W/m2]
@@ -197,6 +199,7 @@ contains
     real(r8) :: hs_top_snow(bounds%begc:bounds%endc)                     ! heat flux on top snow layer [W/m2]
     real(r8) :: hs_h2osfc(bounds%begc:bounds%endc)                       ! heat flux on standing water [W/m2]
     integer  :: jbot(bounds%begc:bounds%endc)                            ! bottom level at each column
+    real(r8) :: rho_dair(bounds%begl:bounds%endl)          ! density of dry air at standard pressure and t_building (kg m-3)
     !-----------------------------------------------------------------------
 
     associate(                                                                   & 
@@ -263,10 +266,11 @@ contains
          t_h2osfc                => temperature_inst%t_h2osfc_col           , & ! Output: [real(r8) (:)   ]  surface water temperature               
          t_soisno                => temperature_inst%t_soisno_col           , & ! Output: [real(r8) (:,:) ]  soil temperature (Kelvin)             
          t_grnd                  => temperature_inst%t_grnd_col             , & ! Output: [real(r8) (:)   ]  ground surface temperature [K]          
+         t_building_bef_clm45    => temperature_inst%t_building_bef_clm45_lun , & ! Input: [real(r8) (:)]  internal building temperature at previous time step (K) 
          t_building              => temperature_inst%t_building_lun         , & ! Output: [real(r8) (:)   ]  internal building air temperature (K)       
          t_roof_inner            => temperature_inst%t_roof_inner_lun       , & ! Input:  [real(r8) (:)   ]  roof inside surface temperature (K)
-         t_whiteroof_inner            => temperature_inst%t_whiteroof_inner_lun       , & ! Input:  [real(r8) (:)   ]  white roof inside surface temperature (K)
-         t_greenroof_inner            => temperature_inst%t_greenroof_inner_lun       , & ! Input:  [real(r8) (:)   ]  green roof inside surface temperature (K)         
+         t_whiteroof_inner       => temperature_inst%t_whiteroof_inner_lun  , & ! Input:  [real(r8) (:)   ]  white roof inside surface temperature (K)
+         t_greenroof_inner       => temperature_inst%t_greenroof_inner_lun  , & ! Input:  [real(r8) (:)   ]  green roof inside surface temperature (K)         
          t_sunw_inner            => temperature_inst%t_sunw_inner_lun       , & ! Input:  [real(r8) (:)   ]  sunwall inside surface temperature (K)
          t_shdw_inner            => temperature_inst%t_shdw_inner_lun       , & ! Input:  [real(r8) (:)   ]  shadewall inside surface temperature (K)
          xmf                     => temperature_inst%xmf_col                , & ! Output: [real(r8) (:)   ] melting or freezing within a time step [kg/m2]
@@ -449,13 +453,8 @@ contains
                        ! the bottom "soil" layer and the equations are derived assuming a prescribed internal
                        ! building temperature. (See Oleson urban notes of 6/18/03).
                        ! Note new formulation for fn, this will be used below in net energey flux computations
-                        ! if (col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof) then
                            fn1(c,j) = tk(c,j) * (t_building(l) - t_soisno(c,j))/(zi(c,j) - z(c,j))
                            fn(c,j)  = tk(c,j) * (t_building(l) - tssbef(c,j))/(zi(c,j) - z(c,j))
-                        ! else
-                        !    fn1(c,j) = 0._r8
-                        !    fn(c,j) = 0._r8
-                        ! end if
                      else
                         ! the bottom "soil" layer and the equations are derived assuming a prognostic inner
                         ! surface temperature.
@@ -499,14 +498,13 @@ contains
          l = col%landunit(c)
          if (lun%urbpoi(l)) then
             if (col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall .or. col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof) then
-            ! if (col%itype(c) == icol_roof .or. col%itype(c) == icol_whiteroof) then
                eflx_building_heat_errsoi(c) = cnfac*fn(c,nlevurb) + (1._r8-cnfac)*fn1(c,nlevurb)
             else if (col%itype(c) == icol_greenroof) then
                eflx_building_heat_errsoi(c) = cnfac*fn(c,nlevgrnd) + (1._r8-cnfac)*fn1(c,nlevgrnd)
             else
                eflx_building_heat_errsoi(c) = 0._r8
             end if
-            if ( IsSimpleBuildTemp() )then
+            if ( IsSimpleBuildTemp() )then            
                if (cool_on(l)) then
                  eflx_urban_ac_col(c) = abs(eflx_building_heat_errsoi(c))
                  eflx_urban_heat_col(c) = 0._r8
@@ -1486,7 +1484,7 @@ contains
     use clm_varcon     , only : sb, hvap
     use column_varcon  , only : icol_road_perv, icol_road_imperv
     use clm_varpar     , only : nlevsno, max_patch_per_col
-    use UrbanParamsType, only : IsSimpleBuildTemp
+    use UrbanParamsType, only : IsSimpleBuildTemp, IsProgBuildTemp
     !
     ! !ARGUMENTS:
     implicit none
@@ -1535,6 +1533,7 @@ contains
     associate(                                                                &
          snl                     => col%snl                                 , & ! Input:  [integer (:)    ]  number of snow layers
          z                       => col%z                                   , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)
+         wtroad_perv             => lun%wtroad_perv                         , & ! Input:  [real(r8) (:)   ]  weight of pervious road wrt total road            
          
          forc_lwrad              => atm2lnd_inst%forc_lwrad_downscaled_col  , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)
          
@@ -1558,13 +1557,18 @@ contains
          dlrad                   => energyflux_inst%dlrad_patch             , & ! Input:  [real(r8) (:)   ]  downward longwave radiation blow the canopy [W/m2]
          eflx_traffic            => energyflux_inst%eflx_traffic_lun        , & ! Input:  [real(r8) (:)   ]  traffic sensible heat flux (W/m**2)     
          eflx_wasteheat          => energyflux_inst%eflx_wasteheat_lun      , & ! Input:  [real(r8) (:)   ]  sensible heat flux from urban heating/cooling sources of waste heat (W/m**2)
+         eflx_ventilation        => energyflux_inst%eflx_ventilation_lun    , & ! Input:  [real(r8) (:)   ]  sensible heat flux from building ventilation (W/m**2)
          eflx_heat_from_ac       => energyflux_inst%eflx_heat_from_ac_lun   , & ! Input:  [real(r8) (:)   ]  sensible heat flux put back into canyon due to removal by AC (W/m**2)
+         eflx_wasteheat_road     => energyflux_inst%eflx_wasteheat_road_lun      , & ! Input:  [real(r8) (:)   ]  road sensible heat flux from urban heating/cooling sources of waste heat (W/m**2)
+         eflx_heat_from_ac_road  => energyflux_inst%eflx_heat_from_ac_road_lun   , & ! Input:  [real(r8) (:)   ]  road sensible heat flux put back into canyon due to removal by AC (W/m**2)
+         eflx_traffic_road       => energyflux_inst%eflx_traffic_road_lun        , & ! Input:  [real(r8) (:)   ]  road traffic sensible heat flux (W/m**2) 
          eflx_sh_snow            => energyflux_inst%eflx_sh_snow_patch      , & ! Input:  [real(r8) (:)   ]  sensible heat flux from snow (W/m**2) [+ to atm]
          eflx_sh_soil            => energyflux_inst%eflx_sh_soil_patch      , & ! Input:  [real(r8) (:)   ]  sensible heat flux from soil (W/m**2) [+ to atm]
          eflx_sh_h2osfc          => energyflux_inst%eflx_sh_h2osfc_patch    , & ! Input:  [real(r8) (:)   ]  sensible heat flux from surface water (W/m**2) [+ to atm]
          eflx_sh_grnd            => energyflux_inst%eflx_sh_grnd_patch      , & ! Input:  [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
          eflx_lwrad_net          => energyflux_inst%eflx_lwrad_net_patch    , & ! Input:  [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm]
          eflx_wasteheat_patch    => energyflux_inst%eflx_wasteheat_patch    , & ! Input:  [real(r8) (:)   ]  sensible heat flux from urban heating/cooling sources of waste heat (W/m**2)
+         eflx_ventilation_patch  => energyflux_inst%eflx_ventilation_patch  , & ! Input:  [real(r8) (:)   ]  sensible heat flux from building ventilation (W/m**2)
          eflx_heat_from_ac_patch => energyflux_inst%eflx_heat_from_ac_patch , & ! Input:  [real(r8) (:)   ]  sensible heat flux put back into canyon due to removal by AC (W/m**2)
          eflx_traffic_patch      => energyflux_inst%eflx_traffic_patch      , & ! Input:  [real(r8) (:)   ]  traffic sensible heat flux (W/m**2)     
          eflx_anthro             => energyflux_inst%eflx_anthro_patch       , & ! Input:  [real(r8) (:)   ]  total anthropogenic heat flux (W/m**2)  
@@ -1633,11 +1637,22 @@ contains
 
                      ! All wasteheat and traffic flux goes into canyon floor
                      if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then
+                        ! Note that we divide the following landunit variables by 1-wtlunit_roof which 
+                        ! essentially converts the flux from W/m2 of urban area to W/m2 of canyon floor area                     
                         eflx_wasteheat_patch(p) = eflx_wasteheat(l)/(1._r8-lun%wtlunit_roof(l))
                         eflx_heat_from_ac_patch(p) = eflx_heat_from_ac(l)/(1._r8-lun%wtlunit_roof(l))
                         eflx_traffic_patch(p) = eflx_traffic(l)/(1._r8-lun%wtlunit_roof(l))
+                        eflx_wasteheat_road(l) = eflx_wasteheat_patch(p)
+                        eflx_heat_from_ac_road(l) = eflx_heat_from_ac_patch(p)
+                        eflx_traffic_road(l) = eflx_traffic_patch(p)    
+                        if ( IsSimpleBuildTemp() ) then
+                           eflx_ventilation_patch(p) = 0._r8
+                        else if ( IsProgBuildTemp() ) then
+                           eflx_ventilation_patch(p) = eflx_ventilation(l)/(1._r8-lun%wtlunit_roof(l))
+                        end if                                       
                      else
                         eflx_wasteheat_patch(p) = 0._r8
+                        eflx_ventilation_patch(p) = 0._r8
                         eflx_heat_from_ac_patch(p) = 0._r8
                         eflx_traffic_patch(p) = 0._r8
                      end if
@@ -1646,7 +1661,8 @@ contains
                      eflx_gnet(p) = sabg(p) + dlrad(p)  &
                           - eflx_lwrad_net(p) &
                           - (eflx_sh_grnd(p) + qflx_evap_soi(p)*htvp(c) + qflx_tran_veg(p)*hvap) &
-                          + eflx_wasteheat_patch(p) + eflx_heat_from_ac_patch(p) + eflx_traffic_patch(p)
+                          + eflx_wasteheat_patch(p) + eflx_heat_from_ac_patch(p) + eflx_traffic_patch(p) &
+                          + eflx_ventilation_patch(p)
 		                 if ( IsSimpleBuildTemp() ) then
                         eflx_anthro(p)   = eflx_wasteheat_patch(p) + eflx_traffic_patch(p)
                      end if
@@ -4826,12 +4842,12 @@ contains
           heat_on(l) = .false. 
           if (t_building(l) > t_building_max(l)) then
             t_building(l) = t_building_max(l)
-            cool_on(l) = .false.
+            cool_on(l) = .true.
             heat_on(l) = .false.
           else if (t_building(l) < t_building_min(l)) then
             t_building(l) = t_building_min(l)
             cool_on(l) = .false.
-            heat_on(l) = .false.
+            heat_on(l) = .true.
           end if
       end if
     end do

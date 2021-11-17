@@ -18,7 +18,8 @@ module UrbBuildTempOleson2015Mod
   use EnergyFluxType    , only : energyflux_type
   use TemperatureType   , only : temperature_type
   use LandunitType      , only : lun                
-  use ColumnType        , only : col                
+  use ColumnType        , only : col            
+
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -298,6 +299,11 @@ contains
     real(r8) :: enrgy_bal_shdw(bounds%begl:bounds%endl)    ! shadewall inside energy balance (W m-2)
     real(r8) :: enrgy_bal_floor(bounds%begl:bounds%endl)   ! floor inside energy balance (W m-2)
     real(r8) :: enrgy_bal_buildair(bounds%begl:bounds%endl)! building air energy balance (W m-2)
+    real(r8) :: enrgy_bal_BEM(bounds%begl:bounds%endl)     ! building energy model energy balance (W m-2)    
+    real(r8) :: eflx_building_roof(bounds%begl:bounds%endl)     ! building energy model energy balance (W m-2)    
+    real(r8) :: eflx_building_wall(bounds%begl:bounds%endl)     ! building energy model energy balance (W m-2)    
+    real(r8) :: dz_roof_innerl(bounds%begl:bounds%endl)    ! inner roof thickness (m)
+    real(r8) :: dz_wall_innerl(bounds%begl:bounds%endl)    ! inner wall thickness (m)
     real(r8) :: sum                        ! sum of view factors for floor, wall, roof
     integer  :: n                          ! number of linear equations (= neq)
     integer  :: nrhs                       ! number of right hand sides (= 1) 
@@ -337,10 +343,15 @@ contains
     t_building_max    => urbantv_inst%t_building_max       , & ! Input:  [real(r8) (:)]  maximum internal building air temperature (K)
     t_building_min    => urbanparams_inst%t_building_min   , & ! Input:  [real(r8) (:)]  minimum internal building air temperature (K)
 
+    cv_wall           =>    urbanparams_inst%cv_wall	     , & ! Input:  [real(r8) (:,:) ]  thermal conductivity of urban wall    
+    cv_roof           =>    urbanparams_inst%cv_roof	     , & ! Input:  [real(r8) (:,:) ]  thermal conductivity of urban roof    
+    dz                =>    col%dz			                   , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                       
+
     eflx_building     => energyflux_inst%eflx_building_lun , & ! Output:  [real(r8) (:)]  building heat flux from change in interior building air temperature (W/m**2)
     eflx_urban_ac     => energyflux_inst%eflx_urban_ac_lun , & ! Output:  [real(r8) (:)]  urban air conditioning flux (W/m**2)
-    eflx_urban_heat   => energyflux_inst%eflx_urban_heat_lun , & ! Output:  [real(r8) (:)]  urban heating flux (W/m**2)
-    eflx_building_heat_errsoi_troof2 => energyflux_inst%eflx_building_heat_errsoi_troof2_lun & ! Output: [real(r8) (:)]  total heat flux from urban building interior to roof (W/m**2)
+    eflx_urban_heat   => energyflux_inst%eflx_urban_heat_lun, & ! Output:  [real(r8) (:)]  urban heating flux (W/m**2)
+    eflx_ventilation  => energyflux_inst%eflx_ventilation_lun, & ! Output:  [real(r8) (:)]  sensible heat flux from building ventilation (W/m**2)
+    eflx_cv_building  => energyflux_inst%eflx_cv_building_lun  & ! Output:  [real(r8) (:)]  conduction flux from interior surface of roofs, walls and floors into building (W/m**2) 
     )
 
     ! Get step size
@@ -404,6 +415,7 @@ contains
            t_roof_innerl_bef(l) = tssbef(c,nlevurb)
            t_roof_innerl(l) = t_soisno(c,nlevurb)
            tk_roof_innerl(l) = tk(c,nlevurb)
+           dz_roof_innerl(l) = dz(c,nlevurb)
          else if (ctype(c) == icol_whiteroof) then
            zi_whiteroof_innerl(l) = zi(c,nlevurb)
            z_whiteroof_innerl(l) = z(c,nlevurb)
@@ -422,6 +434,7 @@ contains
            t_sunw_innerl_bef(l) = tssbef(c,nlevurb)
            t_sunw_innerl(l) = t_soisno(c,nlevurb)
            tk_sunw_innerl(l) = tk(c,nlevurb)
+           dz_wall_innerl(l) = dz(c,nlevurb)
          else if (ctype(c) == icol_shadewall) then
            zi_shdw_innerl(l) = zi(c,nlevurb)
            z_shdw_innerl(l) = z(c,nlevurb)
@@ -940,7 +953,16 @@ contains
            write (iulog,*) 'clm model is stopping'
            call endrun()
          end if
-       end if
+
+         ! Sensible heat flux from ventilation. It is added as a flux to the canyon floor in SoilTemperatureMod.
+         ! Note that we multiply it here by wtlunit_roof which converts it from W/m2 of building area to W/m2
+         ! of urban area. eflx_urban_ac and eflx_urban_heat are treated similarly below. This flux is balanced
+         ! by an equal and opposite flux into/out of the building and so has a net effect of zero on the energy balance
+         ! of the urban landunit.
+         eflx_ventilation(l) = wtlunit_roof(l) * ( - ht_roof(l)*(vent_ach/3600._r8) &
+                               * rho_dair(l) * cpair * (taf(l) - t_building(l)) )         
+         eflx_cv_building(l) = wtlunit_roof(l) * (qcv_roof(l) + (qcv_sunw(l) + qcv_shdw(l)) * canyon_hwr(l) + qcv_floor(l))
+      end if
     end do
 
     ! Restrict internal building air temperature to between min and max
@@ -970,8 +992,13 @@ contains
             eflx_urban_ac(l) = 0._r8
             eflx_urban_heat(l) = 0._r8
           end if
-          eflx_building(l) = wtlunit_roof(l) * (ht_roof(l) * rho_dair(l)*cpair/dtime) * (t_building(l) - t_building_bef(l))   
-          eflx_building_heat_errsoi_troof2(l) = qcd_roof(l)     
+          eflx_building(l) = wtlunit_roof(l) * (ht_roof(l) * rho_dair(l)*cpair/dtime) * (t_building(l) - t_building_bef(l))
+          enrgy_bal_BEM(l) = eflx_building(l) - eflx_cv_building(l) + eflx_ventilation(l) + eflx_urban_ac(l) - eflx_urban_heat(l)
+          if(abs(enrgy_bal_BEM(l)<0.00001_r8)) enrgy_bal_BEM(l) = 0._r8
+          if(enrgy_bal_BEM(l)>.10_r8) then
+             write(iulog,*) "enrgy_bal_BEM(l) =  eflx_building(l) - eflx_cv_building(l) + eflx_ventilation(l) + eflx_urban_ac(l) - eflx_urban_heat(l)"
+             write(iulog,*) enrgy_bal_BEM(l), eflx_building(l), eflx_cv_building(l), eflx_ventilation(l), eflx_urban_ac(l), eflx_urban_heat(l) 
+          end if
        end if
     end do
 
