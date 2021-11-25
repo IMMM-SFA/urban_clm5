@@ -147,31 +147,15 @@ contains
          lwnet_roof_surface      =>    energyflux_inst%lwnet_roof_surface_lun      , & ! Output: [real(r8) (:,:) ]  urban roof net longwave radiation (W/m**2) 
          lwnet_whiteroof_surface =>    energyflux_inst%lwnet_whiteroof_surface_lun , & ! Output: [real(r8) (:,:) ]  urban white roof net longwave radiation (W/m**2) 
          lwnet_greenroof_surface =>    energyflux_inst%lwnet_greenroof_surface_lun , & ! Output: [real(r8) (:,:) ]  urban green roof net longwave radiation (W/m**2) 
-         lwnet_sunwall           =>    energyflux_inst%lwnet_sunwall_lun           , & ! Output: [real(r8) (:,:) ]  sunwall net longwave radiation (W/m**2) 
-         lwnet_shadewall         =>    energyflux_inst%lwnet_shadewall_lun         , & ! Output: [real(r8) (:,:) ]  shadewall net longwave radiation (W/m**2) 
-         lwnet_improad           =>    energyflux_inst%lwnet_improad_lun           , & ! Output: [real(r8) (:,:) ]  improad net longwave radiation (W/m**2) 
-         lwnet_perroad           =>    energyflux_inst%lwnet_perroad_lun           , & ! Output: [real(r8) (:,:) ]  perroad net longwave radiation (W/m**2) 
          eflx_sh_roof            =>   energyflux_inst%eflx_sh_roof_lun             , & ! Output: [real(r8) (:)   ]  roof sensible heat flux (W/m**2) [+ to atm] 
          eflx_sh_whiteroof       =>   energyflux_inst%eflx_sh_whiteroof_lun        , & ! Output: [real(r8) (:)   ]  white roof sensible heat flux (W/m**2) [+ to atm] 
          eflx_sh_greenroof       =>   energyflux_inst%eflx_sh_greenroof_lun        , & ! Output: [real(r8) (:)   ]  green roof sensible heat flux (W/m**2) [+ to atm] 
-         eflx_sh_sunwall         =>   energyflux_inst%eflx_sh_sunwall_lun          , & ! Output: [real(r8) (:)   ]  sunwall sensible heat flux (W/m**2) [+ to atm] 
-         eflx_sh_shadewall       =>   energyflux_inst%eflx_sh_shadewall_lun        , & ! Output: [real(r8) (:)   ]  shadewall sensible heat flux (W/m**2) [+ to atm] 
-         eflx_sh_improad         =>   energyflux_inst%eflx_sh_improad_lun          , & ! Output: [real(r8) (:)   ]  improad sensible heat flux (W/m**2) [+ to atm] 
-         eflx_sh_perroad         =>   energyflux_inst%eflx_sh_perroad_lun          , & ! Output: [real(r8) (:)   ]  perroad sensible heat flux (W/m**2) [+ to atm] 
          eflx_lh_roof            =>   energyflux_inst%eflx_lh_roof_lun             , & ! Output: [real(r8) (:)   ]  roof latent heat flux (W/m**2) [+ to atm] 
          eflx_lh_whiteroof       =>   energyflux_inst%eflx_lh_whiteroof_lun        , & ! Output: [real(r8) (:)   ]  white roof latent heat flux (W/m**2) [+ to atm] 
          eflx_lh_greenroof       =>   energyflux_inst%eflx_lh_greenroof_lun        , & ! Output: [real(r8) (:)   ]  green roof latent heat flux (W/m**2) [+ to atm] 
-         eflx_lh_sunwall         =>   energyflux_inst%eflx_lh_sunwall_lun          , & ! Output: [real(r8) (:)   ]  sunwall latent heat flux (W/m**2) [+ to atm] 
-         eflx_lh_shadewall       =>   energyflux_inst%eflx_lh_shadewall_lun        , & ! Output: [real(r8) (:)   ]  shadewall latent heat flux (W/m**2) [+ to atm] 
-         eflx_lh_improad         =>   energyflux_inst%eflx_lh_improad_lun          , & ! Output: [real(r8) (:)   ]  improad latent heat flux (W/m**2) [+ to atm] 
-         eflx_lh_perroad         =>   energyflux_inst%eflx_lh_perroad_lun          , & ! Output: [real(r8) (:)   ]  perroad latent heat flux (W/m**2) [+ to atm] 
          eflx_gnet_roof          =>   energyflux_inst%eflx_gnet_roof_lun           , & ! Output: [real(r8) (:)   ]  roof net ground heat flux (W/m**2) [+ to atm] 
          eflx_gnet_whiteroof     =>   energyflux_inst%eflx_gnet_whiteroof_lun      , & ! Output: [real(r8) (:)   ]  white roof net ground heat flux (W/m**2) [+ to atm] 
          eflx_gnet_greenroof     =>   energyflux_inst%eflx_gnet_greenroof_lun      , & ! Output: [real(r8) (:)   ]  green roof net ground heat flux (W/m**2) [+ to atm] 
-         eflx_gnet_sunwall       =>   energyflux_inst%eflx_gnet_sunwall_lun        , & ! Output: [real(r8) (:)   ]  sunwall net ground heat flux (W/m**2) [+ to atm] 
-         eflx_gnet_shadewall     =>   energyflux_inst%eflx_gnet_shadewall_lun      , & ! Output: [real(r8) (:)   ]  shadewall net ground heat flux (W/m**2) [+ to atm] 
-         eflx_gnet_improad       =>   energyflux_inst%eflx_gnet_improad_lun        , & ! Output: [real(r8) (:)   ]  improad net ground heat flux (W/m**2) [+ to atm] 
-         eflx_gnet_perroad       =>   energyflux_inst%eflx_gnet_perroad_lun        , & ! Output: [real(r8) (:)   ]  perroad net ground heat flux (W/m**2) [+ to atm] 
 
          eflx_sh_grnd            => energyflux_inst%eflx_sh_grnd_patch      , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
          eflx_sh_veg             => energyflux_inst%eflx_sh_veg_patch       , & ! Output: [real(r8) (:)   ]  sensible heat flux from leaves (W/m**2) [+ to atm]
@@ -496,29 +480,7 @@ contains
             lwnet_greenroof_surface(l) = eflx_lwrad_net(p)       
             eflx_sh_greenroof(l)  = eflx_sh_tot(p)                              
             eflx_lh_greenroof(l)  = eflx_lh_tot(p)
-            eflx_gnet_greenroof(l) = eflx_soil_grnd(p) !sabg(p) - lwnet_greenroof_surface(l) - eflx_lh_greenroof(l) - eflx_sh_greenroof(l)
-            !write(iulog,*) 'sabs, lwnet_greenroof_surface, eflx_lh_greenroof, eflx_sh_greenroof, eflx_gnet_greenroof, dlrad, eflx_soil_grnd', sabg(p), lwnet_greenroof_surface(l), eflx_lh_greenroof(l), eflx_sh_greenroof(l), eflx_gnet_greenroof(l), dlrad(p), eflx_soil_grnd(p)
-            !write(iulog,*) 'eflx_lh_greenroof, ET, qflx_evap_veg, qflx_evap_soi', eflx_lh_greenroof(l), eflx_lh_greenroof(l)/hvap, qflx_evap_tot(p), qflx_evap_veg(p), qflx_evap_soi(p)
-         else if (ctype(c) == icol_sunwall) then
-            lwnet_sunwall(l) = eflx_lwrad_net(p)        
-            eflx_sh_sunwall(l)  = eflx_sh_tot(p)
-            eflx_lh_sunwall(l)  = eflx_lh_tot(p)
-            eflx_gnet_sunwall(l)= eflx_soil_grnd(p)
-         else if (ctype(c) == icol_shadewall) then
-            lwnet_shadewall(l) = eflx_lwrad_net(p)        
-            eflx_sh_shadewall(l)  = eflx_sh_tot(p)
-            eflx_lh_shadewall(l)  = eflx_lh_tot(p)
-            eflx_gnet_shadewall(l)= eflx_soil_grnd(p)
-         else if (ctype(c) == icol_road_imperv) then
-            lwnet_improad(l) = eflx_lwrad_net(p)        
-            eflx_sh_improad(l)  = eflx_sh_tot(p)
-            eflx_lh_improad(l)  = eflx_lh_tot(p)
-            eflx_gnet_improad(l)= eflx_soil_grnd(p)
-         else if (ctype(c) == icol_road_perv) then
-            lwnet_perroad(l) = eflx_lwrad_net(p)        
-            eflx_sh_perroad(l)  = eflx_sh_tot(p)
-            eflx_lh_perroad(l)  = eflx_lh_tot(p)
-            eflx_gnet_perroad(l)= eflx_soil_grnd(p)                                    
+            eflx_gnet_greenroof(l) = eflx_soil_grnd(p) 
          end if
       end do
 

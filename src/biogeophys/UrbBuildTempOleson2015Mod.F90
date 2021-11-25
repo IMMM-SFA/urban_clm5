@@ -300,10 +300,6 @@ contains
     real(r8) :: enrgy_bal_floor(bounds%begl:bounds%endl)   ! floor inside energy balance (W m-2)
     real(r8) :: enrgy_bal_buildair(bounds%begl:bounds%endl)! building air energy balance (W m-2)
     real(r8) :: enrgy_bal_BEM(bounds%begl:bounds%endl)     ! building energy model energy balance (W m-2)    
-    real(r8) :: eflx_building_roof(bounds%begl:bounds%endl)     ! building energy model energy balance (W m-2)    
-    real(r8) :: eflx_building_wall(bounds%begl:bounds%endl)     ! building energy model energy balance (W m-2)    
-    real(r8) :: dz_roof_innerl(bounds%begl:bounds%endl)    ! inner roof thickness (m)
-    real(r8) :: dz_wall_innerl(bounds%begl:bounds%endl)    ! inner wall thickness (m)
     real(r8) :: sum                        ! sum of view factors for floor, wall, roof
     integer  :: n                          ! number of linear equations (= neq)
     integer  :: nrhs                       ! number of right hand sides (= 1) 
@@ -342,10 +338,6 @@ contains
 
     t_building_max    => urbantv_inst%t_building_max       , & ! Input:  [real(r8) (:)]  maximum internal building air temperature (K)
     t_building_min    => urbanparams_inst%t_building_min   , & ! Input:  [real(r8) (:)]  minimum internal building air temperature (K)
-
-    cv_wall           =>    urbanparams_inst%cv_wall	     , & ! Input:  [real(r8) (:,:) ]  thermal conductivity of urban wall    
-    cv_roof           =>    urbanparams_inst%cv_roof	     , & ! Input:  [real(r8) (:,:) ]  thermal conductivity of urban roof    
-    dz                =>    col%dz			                   , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                       
 
     eflx_building     => energyflux_inst%eflx_building_lun , & ! Output:  [real(r8) (:)]  building heat flux from change in interior building air temperature (W/m**2)
     eflx_urban_ac     => energyflux_inst%eflx_urban_ac_lun , & ! Output:  [real(r8) (:)]  urban air conditioning flux (W/m**2)
@@ -415,7 +407,6 @@ contains
            t_roof_innerl_bef(l) = tssbef(c,nlevurb)
            t_roof_innerl(l) = t_soisno(c,nlevurb)
            tk_roof_innerl(l) = tk(c,nlevurb)
-           dz_roof_innerl(l) = dz(c,nlevurb)
          else if (ctype(c) == icol_whiteroof) then
            zi_whiteroof_innerl(l) = zi(c,nlevurb)
            z_whiteroof_innerl(l) = z(c,nlevurb)
@@ -434,7 +425,6 @@ contains
            t_sunw_innerl_bef(l) = tssbef(c,nlevurb)
            t_sunw_innerl(l) = t_soisno(c,nlevurb)
            tk_sunw_innerl(l) = tk(c,nlevurb)
-           dz_wall_innerl(l) = dz(c,nlevurb)
          else if (ctype(c) == icol_shadewall) then
            zi_shdw_innerl(l) = zi(c,nlevurb)
            z_shdw_innerl(l) = z(c,nlevurb)

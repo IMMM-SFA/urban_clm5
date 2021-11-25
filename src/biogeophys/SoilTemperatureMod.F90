@@ -145,7 +145,6 @@ contains
     use clm_varpar               , only : nlevsno, nlevgrnd, nlevurb
     use clm_varctl               , only : iulog
     use clm_varcon               , only : cnfac, cpice, cpliq, denh2o
-    use clm_varcon               , only : rair, pstd, cpair
     use landunit_varcon          , only : istsoil, istcrop
     use column_varcon            , only : icol_roof, icol_whiteroof, icol_greenroof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
     use BandDiagonalMod          , only : BandDiagonal
@@ -179,7 +178,6 @@ contains
     real(r8) :: tk (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)         ! thermal conductivity [W/(m K)]
     real(r8) :: fn (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)         ! heat diffusion through the layer interface [W/m2]
     real(r8) :: fn1(bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)         ! heat diffusion through the layer interface [W/m2]
-    real(r8) :: enrgy_bal_BEM (bounds%begc:bounds%endc)         ! building energy model energy balance (W m-2)    
     real(r8) :: dzm                                                      ! used in computing tridiagonal matrix
     real(r8) :: dzp                                                      ! used in computing tridiagonal matrix
     real(r8) :: sabg_lyr_col(bounds%begc:bounds%endc,-nlevsno+1:1)       ! absorbed solar radiation (col,lyr) [W/m2]
@@ -199,7 +197,6 @@ contains
     real(r8) :: hs_top_snow(bounds%begc:bounds%endc)                     ! heat flux on top snow layer [W/m2]
     real(r8) :: hs_h2osfc(bounds%begc:bounds%endc)                       ! heat flux on standing water [W/m2]
     integer  :: jbot(bounds%begc:bounds%endc)                            ! bottom level at each column
-    real(r8) :: rho_dair(bounds%begl:bounds%endl)          ! density of dry air at standard pressure and t_building (kg m-3)
     !-----------------------------------------------------------------------
 
     associate(                                                                   & 
@@ -266,7 +263,6 @@ contains
          t_h2osfc                => temperature_inst%t_h2osfc_col           , & ! Output: [real(r8) (:)   ]  surface water temperature               
          t_soisno                => temperature_inst%t_soisno_col           , & ! Output: [real(r8) (:,:) ]  soil temperature (Kelvin)             
          t_grnd                  => temperature_inst%t_grnd_col             , & ! Output: [real(r8) (:)   ]  ground surface temperature [K]          
-         t_building_bef_clm45    => temperature_inst%t_building_bef_clm45_lun , & ! Input: [real(r8) (:)]  internal building temperature at previous time step (K) 
          t_building              => temperature_inst%t_building_lun         , & ! Output: [real(r8) (:)   ]  internal building air temperature (K)       
          t_roof_inner            => temperature_inst%t_roof_inner_lun       , & ! Input:  [real(r8) (:)   ]  roof inside surface temperature (K)
          t_whiteroof_inner       => temperature_inst%t_whiteroof_inner_lun  , & ! Input:  [real(r8) (:)   ]  white roof inside surface temperature (K)
@@ -1533,7 +1529,6 @@ contains
     associate(                                                                &
          snl                     => col%snl                                 , & ! Input:  [integer (:)    ]  number of snow layers
          z                       => col%z                                   , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)
-         wtroad_perv             => lun%wtroad_perv                         , & ! Input:  [real(r8) (:)   ]  weight of pervious road wrt total road            
          
          forc_lwrad              => atm2lnd_inst%forc_lwrad_downscaled_col  , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)
          
@@ -1559,9 +1554,6 @@ contains
          eflx_wasteheat          => energyflux_inst%eflx_wasteheat_lun      , & ! Input:  [real(r8) (:)   ]  sensible heat flux from urban heating/cooling sources of waste heat (W/m**2)
          eflx_ventilation        => energyflux_inst%eflx_ventilation_lun    , & ! Input:  [real(r8) (:)   ]  sensible heat flux from building ventilation (W/m**2)
          eflx_heat_from_ac       => energyflux_inst%eflx_heat_from_ac_lun   , & ! Input:  [real(r8) (:)   ]  sensible heat flux put back into canyon due to removal by AC (W/m**2)
-         eflx_wasteheat_road     => energyflux_inst%eflx_wasteheat_road_lun      , & ! Input:  [real(r8) (:)   ]  road sensible heat flux from urban heating/cooling sources of waste heat (W/m**2)
-         eflx_heat_from_ac_road  => energyflux_inst%eflx_heat_from_ac_road_lun   , & ! Input:  [real(r8) (:)   ]  road sensible heat flux put back into canyon due to removal by AC (W/m**2)
-         eflx_traffic_road       => energyflux_inst%eflx_traffic_road_lun        , & ! Input:  [real(r8) (:)   ]  road traffic sensible heat flux (W/m**2) 
          eflx_sh_snow            => energyflux_inst%eflx_sh_snow_patch      , & ! Input:  [real(r8) (:)   ]  sensible heat flux from snow (W/m**2) [+ to atm]
          eflx_sh_soil            => energyflux_inst%eflx_sh_soil_patch      , & ! Input:  [real(r8) (:)   ]  sensible heat flux from soil (W/m**2) [+ to atm]
          eflx_sh_h2osfc          => energyflux_inst%eflx_sh_h2osfc_patch    , & ! Input:  [real(r8) (:)   ]  sensible heat flux from surface water (W/m**2) [+ to atm]
@@ -1642,9 +1634,6 @@ contains
                         eflx_wasteheat_patch(p) = eflx_wasteheat(l)/(1._r8-lun%wtlunit_roof(l))
                         eflx_heat_from_ac_patch(p) = eflx_heat_from_ac(l)/(1._r8-lun%wtlunit_roof(l))
                         eflx_traffic_patch(p) = eflx_traffic(l)/(1._r8-lun%wtlunit_roof(l))
-                        eflx_wasteheat_road(l) = eflx_wasteheat_patch(p)
-                        eflx_heat_from_ac_road(l) = eflx_heat_from_ac_patch(p)
-                        eflx_traffic_road(l) = eflx_traffic_patch(p)    
                         if ( IsSimpleBuildTemp() ) then
                            eflx_ventilation_patch(p) = 0._r8
                         else if ( IsProgBuildTemp() ) then

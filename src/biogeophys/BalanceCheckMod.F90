@@ -147,8 +147,6 @@ contains
      !-----------------------------------------------------------------------
 
      associate(                                                                   & 
-          ctype                   =>   col%itype                                , & ! Input:  [integer  (:)   ]  column type  
-
           volr                    =>    atm2lnd_inst%volr_grc                   , & ! Input:  [real(r8) (:)   ]  river water storage (m3)                 
           forc_solad              =>    atm2lnd_inst%forc_solad_grc             , & ! Input:  [real(r8) (:,:) ]  direct beam radiation (vis=forc_sols , nir=forc_soll )
           forc_solai              =>    atm2lnd_inst%forc_solai_grc             , & ! Input:  [real(r8) (:,:) ]  diffuse radiation     (vis=forc_solsd, nir=forc_solld)
@@ -251,16 +249,6 @@ contains
           ftid                    =>    surfalb_inst%ftid_patch                 , & ! Input:  [real(r8) (:,:)]  down diffuse flux below canopy per unit direct flux
           ftii                    =>    surfalb_inst%ftii_patch                 , & ! Input:  [real(r8) (:,:)]  down diffuse flux below canopy per unit diffuse flux
 
-          eflx_soil_grnd_u        => energyflux_inst%eflx_soil_grnd_u_patch  , & ! Output: [real(r8) (:)   ]  urban soil heat flux (W/m**2) [+ = into soil]
-          eflx_soil_grnd_r        => energyflux_inst%eflx_soil_grnd_r_patch  , & ! Output: [real(r8) (:)   ]  rural soil heat flux (W/m**2) [+ = into soil]
-          eflx_sh_tot_u           => energyflux_inst%eflx_sh_tot_u_patch     , & ! Output: [real(r8) (:)   ]  urban total sensible heat flux (W/m**2) [+ to atm]
-          eflx_sh_tot_r           => energyflux_inst%eflx_sh_tot_r_patch     , & ! Output: [real(r8) (:)   ]  rural total sensible heat flux (W/m**2) [+ to atm]
-          eflx_lh_tot_u           => energyflux_inst%eflx_lh_tot_u_patch     , & ! Output: [real(r8) (:)   ]  urban total latent heat flux (W/m**2)  [+ to atm]
-          eflx_lh_tot_r           => energyflux_inst%eflx_lh_tot_r_patch     , & ! Output: [real(r8) (:)   ]  rural total latent heat flux (W/m**2)  [+ to atm]
-          eflx_lwrad_net_r        => energyflux_inst%eflx_lwrad_net_r_patch  , & ! Output: [real(r8) (:)   ]  rural net infrared (longwave) rad (W/m**2) [+ = to atm]
-          eflx_lwrad_out_r        => energyflux_inst%eflx_lwrad_out_r_patch  , & ! Output: [real(r8) (:)   ]  rural emitted infrared (longwave) rad (W/m**2)
-          eflx_lwrad_net_u        => energyflux_inst%eflx_lwrad_net_u_patch  , & ! Output: [real(r8) (:)   ]  urban net infrared (longwave) rad (W/m**2) [+ = to atm]
-          eflx_lwrad_out_u        => energyflux_inst%eflx_lwrad_out_u_patch  , & ! Output: [real(r8) (:)   ]  urban emitted infrared (longwave) rad (W/m**2)
           netrad_u                => energyflux_inst%netrad_u_patch          , & ! Output: [real(r8) (:)   ]  urban net radiation (positive downward) (W/m**2)
           netrad_r                => energyflux_inst%netrad_r_patch          , & ! Output: [real(r8) (:)   ]  rural net radiation (positive downward) (W/m**2)
 
@@ -587,23 +575,8 @@ contains
 
              if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
                 netrad_r(p) = netrad(p)
-               !  eflx_lwrad_net_r(p) = eflx_lwrad_net(p)
-               !  eflx_lwrad_out_r(p) = eflx_lwrad_out(p)
-               !  eflx_lh_tot_r(p)= eflx_lh_tot(p)
-               !  eflx_sh_tot_r(p)= eflx_sh_tot(p)
-               !  eflx_soil_grnd_r(p) = eflx_soil_grnd(p)
              else if (lun%urbpoi(l)) then
                 netrad_u(p) = netrad(p)
-               !  errseb(p) = netrad(p) - eflx_sh_tot(p) - eflx_lh_tot(p) - eflx_soil_grnd(p) + eflx_wasteheat_patch(p) + eflx_heat_from_ac_patch(p) + eflx_traffic_patch(p)
-               !  write(iulog,*) 'urban error1',errseb(p),ctype(c)
-               !  errseb(p) = netrad_u(p) - eflx_sh_tot_u(p) - eflx_lh_tot_u(p) - eflx_soil_grnd_u(p) + eflx_wasteheat_patch(p) + eflx_heat_from_ac_patch(p) + eflx_traffic_patch(p)
-               !  write(iulog,*) 'urban error2',errseb(p),ctype(c)               
-               !  eflx_lwrad_net_u(p) = eflx_lwrad_net(p)
-               !  eflx_lwrad_out_u(p) = eflx_lwrad_out(p)
-               !  eflx_lh_tot_u(p)= eflx_lh_tot(p)
-               !  eflx_sh_tot_u(p)= eflx_sh_tot(p)
-               !  eflx_soil_grnd_u(p) = eflx_soil_grnd(p)
-               !if(errseb(p)>0.00001)write(iulog,*) 'urban error',errseb(p),netrad(p),eflx_lh_tot(p),eflx_sh_tot(p),eflx_soil_grnd(p),eflx_wasteheat_patch(p),eflx_heat_from_ac_patch(p),eflx_traffic_patch(p)
              end if
           end if
        end do

@@ -1367,7 +1367,6 @@ contains
      ht_roof       =>    lun%ht_roof                    , & ! Input:  [real(r8) (:)]    height of urban roof (m)
      canyon_hwr    =>    lun%canyon_hwr                 , & ! Input:  [real(r8) (:)]    ratio of building height to street width 
      wtlunit_roof  =>    lun%wtlunit_roof               , & ! Input:  [real(r8) (:)]    weight of roof with respect to landunit
-     t_building_bef_clm45 => temperature_inst%t_building_bef_clm45_lun      , & ! Output: [real(r8) (:)]  internal building temperature at previous time step (K) 
      t_building    =>    temperature_inst%t_building_lun            & ! Output: [real(r8) (:)]  internal building temperature (K) 
     )
 
@@ -1394,7 +1393,6 @@ contains
        l = filter_urbanl(fl)
      
        lngth_roof = (ht_roof(l)/canyon_hwr(l))*wtlunit_roof(l)/(1._r8-wtlunit_roof(l))
-       t_building_bef_clm45(l) = t_building(l)
        t_building(l) = (ht_roof(l)*(t_shadewall_innerl(l) + t_sunwall_innerl(l)) &
                        +lngth_roof*((1._r8 - white_roof_fraction - green_roof_fraction)*t_roof_innerl(l) + white_roof_fraction*t_whiteroof_innerl(l) + green_roof_fraction*t_greenroof_innerl(l)))/(2._r8*ht_roof(l)+lngth_roof)
     end do
