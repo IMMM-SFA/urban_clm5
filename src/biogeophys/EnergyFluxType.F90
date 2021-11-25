@@ -894,21 +894,6 @@ contains
          avgflag='A', long_name='sensible heat flux put into canyon due to heat removed from air conditioning at urban scale', &
          ptr_lunit=this%eflx_heat_from_ac_lun, set_nourb=spval, l2g_scale_type='unity', default='inactive')
 
-    this%eflx_wasteheat_road_lun(begl:endl) = spval
-    call hist_addfld1d (fname='WASTEHEAT_road', units='W/m^2',  &
-         avgflag='A', long_name='road sensible heat flux from heating/cooling sources of urban waste heat', &
-         ptr_lunit=this%eflx_wasteheat_road_lun, set_nourb=spval, l2g_scale_type='unity', default='inactive')
-
-    this%eflx_heat_from_ac_road_lun(begl:endl) = spval
-    call hist_addfld1d (fname='HEAT_FROM_AC_road', units='W/m^2',  &
-         avgflag='A', long_name='road sensible heat flux put into canyon due to heat removed from air conditioning', &
-         ptr_lunit=this%eflx_heat_from_ac_road_lun, set_nourb=spval, l2g_scale_type='unity', default='inactive')
-
-    this%eflx_traffic_road_lun(begl:endl) = spval
-    call hist_addfld1d (fname='TRAFFICFLUX_road', units='W/m^2',  &
-         avgflag='A', long_name='road traffic sensible heat fluxt', &
-         ptr_lunit=this%eflx_traffic_road_lun, set_nourb=spval, l2g_scale_type='unity', default='inactive')
-
     if ( is_simple_buildtemp )then
        this%eflx_anthro_patch(begp:endp) = spval
        call hist_addfld1d (fname='Qanth', units='W/m^2',  &
