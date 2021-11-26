@@ -46,14 +46,6 @@ module TemperatureType
      real(r8), pointer :: t_roof_surface_lun       (:)   ! lun roof surface temperature (K)
      real(r8), pointer :: t_whiteroof_surface_lun  (:)   ! lun white roof surface temperature (K)
      real(r8), pointer :: t_greenroof_surface_lun  (:)   ! lun green roof surface temperature (K) 
-     real(r8), pointer :: t_road_perv_surface_lun  (:)   ! lun impervious road surface temperature (K)
-     real(r8), pointer :: t_road_imperv_surface_lun(:)   ! lun pervious road surface temperature (K)
-     real(r8), pointer :: t_sunwall_surface_lun    (:)   ! lun sunwall surface temperature (K)
-     real(r8), pointer :: t_shadewall_surface_lun  (:)   ! lun shadewall surface temperature (K)
-   !   real(r8), pointer :: f_roof_factor_lun        (:)   ! lun roof surface f redistributed factor 
-   !   real(r8), pointer :: f_whiteroof_factor_lun   (:)   ! lun white roof surface f redistributed factor 
-   !   real(r8), pointer :: t_roof_scaling_lun       (:)   ! lun roof surface scaling temperature (K)          
-   !   real(r8), pointer :: t_whiteroof_scaling_lun  (:)   ! lun white roof surface scaling temperature (K)          
      real(r8), pointer :: t_roof_inner_lun         (:)   ! lun roof inside surface temperature (K)
      real(r8), pointer :: t_whiteroof_inner_lun    (:)   ! lun white roof inside surface temperature (K)
      real(r8), pointer :: t_greenroof_inner_lun    (:)   ! lun green roof inside surface temperature (K)     
@@ -226,14 +218,6 @@ contains
     allocate(this%t_roof_surface_lun       (begl:endl))                      ; this%t_roof_surface_lun       (:)   = nan
     allocate(this%t_whiteroof_surface_lun  (begl:endl))                      ; this%t_whiteroof_surface_lun  (:)   = nan
     allocate(this%t_greenroof_surface_lun  (begl:endl))                      ; this%t_greenroof_surface_lun  (:)   = nan
-    allocate(this%t_road_perv_surface_lun  (begl:endl))                      ; this%t_road_perv_surface_lun  (:)   = nan
-    allocate(this%t_road_imperv_surface_lun(begl:endl))                      ; this%t_road_imperv_surface_lun(:)   = nan
-    allocate(this%t_sunwall_surface_lun    (begl:endl))                      ; this%t_sunwall_surface_lun    (:)   = nan
-    allocate(this%t_shadewall_surface_lun  (begl:endl))                      ; this%t_shadewall_surface_lun  (:)   = nan
-   !  allocate(this%f_roof_factor_lun        (begl:endl))                      ; this%f_roof_factor_lun        (:)   = nan 
-   !  allocate(this%f_whiteroof_factor_lun   (begl:endl))                      ; this%f_whiteroof_factor_lun   (:)   = nan 
-   !  allocate(this%t_roof_scaling_lun       (begl:endl))                      ; this%t_roof_scaling_lun       (:)   = nan 
-   !  allocate(this%t_whiteroof_scaling_lun  (begl:endl))                      ; this%t_whiteroof_scaling_lun  (:)   = nan 
     allocate(this%t_roof_inner_lun         (begl:endl))                      ; this%t_roof_inner_lun         (:)   = nan
     allocate(this%t_whiteroof_inner_lun    (begl:endl))                      ; this%t_whiteroof_inner_lun    (:)   = nan
     allocate(this%t_greenroof_inner_lun    (begl:endl))                      ; this%t_greenroof_inner_lun    (:)   = nan
@@ -531,55 +515,7 @@ contains
         avgflag='A', long_name='green roof surface temperature', &
         ptr_lunit=this%t_greenroof_surface_lun, set_nourb=spval, l2g_scale_type='unity', &
         default='inactive')
-
-    this%t_road_perv_surface_lun(begl:endl) = spval
-    call hist_addfld1d(fname='TROADPERV_SURFACE', units='K',  &
-        avgflag='A', long_name='pervious road surface temperature', &
-        ptr_lunit=this%t_road_perv_surface_lun, set_nourb=spval, l2g_scale_type='unity', &
-        default='inactive')
-
-    this%t_road_imperv_surface_lun(begl:endl) = spval
-    call hist_addfld1d(fname='TROADIMPERV_SURFACE', units='K',  &
-        avgflag='A', long_name='impervious road surface temperature', &
-        ptr_lunit=this%t_road_imperv_surface_lun, set_nourb=spval, l2g_scale_type='unity', &
-        default='inactive')
-
-    this%t_sunwall_surface_lun(begl:endl) = spval
-    call hist_addfld1d(fname='TSUNWALL_SURFACE', units='K',  &
-        avgflag='A', long_name='sunwall surface temperature', &
-        ptr_lunit=this%t_sunwall_surface_lun, set_nourb=spval, l2g_scale_type='unity', &
-        default='inactive')
-
-    this%t_shadewall_surface_lun(begl:endl) = spval
-    call hist_addfld1d(fname='TSHADEWALL_SURFACE', units='K',  &
-        avgflag='A', long_name='shadewall surface temperature', &
-        ptr_lunit=this%t_shadewall_surface_lun, set_nourb=spval, l2g_scale_type='unity', &
-        default='inactive')
-
-   !  this%f_roof_factor_lun(begl:endl) = spval
-   !  call hist_addfld1d(fname='FROOF_FACTOR', units='K',  &
-   !      avgflag='A', long_name='roof surface f redistributed factor', &
-   !      ptr_lunit=this%f_roof_factor_lun, set_nourb=spval, l2g_scale_type='unity', &
-   !      default='inactive')   
                     
-   !  this%f_whiteroof_factor_lun(begl:endl) = spval
-   !  call hist_addfld1d(fname='FWHITEROOF_FACTOR', units='K',  &
-   !      avgflag='A', long_name='white roof surface redistributed factor', &
-   !      ptr_lunit=this%f_whiteroof_factor_lun, set_nourb=spval, l2g_scale_type='unity', &
-   !      default='inactive')   
-                    
-   !  this%t_roof_scaling_lun(begl:endl) = spval
-   !  call hist_addfld1d(fname='TROOF_SCALING', units='K',  &
-   !      avgflag='A', long_name='roof surface scaling temperature', &
-   !      ptr_lunit=this%t_roof_scaling_lun, set_nourb=spval, l2g_scale_type='unity', &
-   !      default='inactive')   
-                    
-   !  this%t_whiteroof_scaling_lun(begl:endl) = spval
-   !  call hist_addfld1d(fname='TWHITEROOF_SCALING', units='K',  &
-   !      avgflag='A', long_name='white roof surface scaling temperature', &
-   !      ptr_lunit=this%t_whiteroof_scaling_lun, set_nourb=spval, l2g_scale_type='unity', &
-   !      default='inactive')   
-                     
     if ( is_prog_buildtemp )then
        this%t_roof_inner_lun(begl:endl) = spval
        call hist_addfld1d(fname='TROOF_INNER', units='K',  &

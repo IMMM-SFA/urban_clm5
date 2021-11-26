@@ -102,8 +102,6 @@ contains
 
     real(r8) :: canyontop_wind(bounds%begl:bounds%endl)              ! wind at canyon top (m/s) 
     real(r8) :: canyon_u_wind(bounds%begl:bounds%endl)               ! u-component of wind speed inside canyon (m/s)
-    !real(r8) :: canyon_wind(bounds%begl:bounds%endl)                 ! net wind speed inside canyon (m/s)
-    !real(r8) :: canyon_resistance(bounds%begl:bounds%endl)           ! resistance to heat and moisture transfer from canyon road/walls to canyon air (s/m)
 
     real(r8) :: ur(bounds%begl:bounds%endl)                          ! wind speed at reference height (m/s)
     real(r8) :: ustar(bounds%begl:bounds%endl)                       ! friction velocity (m/s)
@@ -561,7 +559,6 @@ contains
             ! previously and vertical wind from friction velocity (Masson 2000)
 
             canyon_wind(l) = sqrt(canyon_u_wind(l)**2._r8 + ustar(l)**2._r8)
-            !canyon_wind(l) = sqrt(canyon_u_wind(l)**2._r8)
 
             ! Determine canyon_resistance (currently this single resistance determines the
             ! resistance from urban surfaces (roof, pervious and impervious road, sunlit and
@@ -606,11 +603,9 @@ contains
 
                ! scaled sensible heat conductance
                wtus(c) = wtlunit_roof(l)*(1._r8 - white_roof_fraction - green_roof_fraction)/canyon_resistance(l)
-               !wtus(c) = 0._r8
                wtus_roof(l) = wtus(c)
                ! unscaled sensible heat conductance
                wtus_roof_unscl(l) = 1._r8/canyon_resistance(l)
-               !wtus_roof_unscl(l) = 0._r8
 
                if (snow_depth(c) > 0._r8) then
                   fwet_roof(l) = min(snow_depth(c)/0.05_r8, 1._r8)
@@ -621,7 +616,6 @@ contains
                if (qaf(l) > qg(c)) then 
                   fwet_roof(l) = 1._r8
                end if
-               !fwet_roof(l) = 0._r8
                
                call QSat(taf(l), forc_pbot(g), e_ref2m, de2mdT, qsat_ref2m, dqsat2mdT)
                call QSat(t_soisno(c,1), forc_pbot(g), es_roof(l), esdT_roof(l), qs_roof(l), qsdT_roof(l))
@@ -684,7 +678,6 @@ contains
                !   fwet_greenroof = 1._r8
                !end if
                fwet_greenroof(l) = 1._r8
-               fwet_greenroof(l) = 0._r8
 
                f_greenroof(l) = 0.55_r8*(forc_solar(g)/green_roof_sdlim)*(2./green_roof_lai)
                fs_greenroof(l) = (0.004_r8*sabs_greenroof_surface(l)+0.05_r8)/0.81/(0.004_r8*sabs_greenroof_surface(l)+1.0_r8)
@@ -710,7 +703,6 @@ contains
                end if
                fw_greenroof(l) = 1.0_r8/fw_greenroof(l)
 
-               ! call QSat(taf(l), forc_pbot(g), e_ref2m, de2mdT, qsat_ref2m, dqsat2mdT)
                call QSat(t_soisno(c,1), forc_pbot(g), es_greenroof(l), esdT_greenroof(l), qs_greenroof(l), qsdT_greenroof(l))
                ea_greenroof(l) = forc_pbot(g)*qaf(l)/(0.622_r8+0.378_r8*qaf(l))
                vpd_greenroof(l) = (es_greenroof(l)-ea_greenroof(l))/100.0_r8

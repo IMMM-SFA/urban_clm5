@@ -140,10 +140,6 @@ contains
          t_roof_surface         =>    temperature_inst%t_roof_surface_lun       , & ! Output: [real(r8) (:)]  roof surface temperature (K) 
          t_whiteroof_surface    =>    temperature_inst%t_whiteroof_surface_lun  , & ! Output: [real(r8) (:)]  white roof surface temperature (K)   
          t_greenroof_surface    =>    temperature_inst%t_greenroof_surface_lun  , & ! Output: [real(r8) (:)]  green roof surface temperature (K)
-         t_road_perv_surface    =>    temperature_inst%t_road_perv_surface_lun  , & ! Output: [real(r8) (:)]  pervious road surface temperature (K) 
-         t_road_imperv_surface  =>    temperature_inst%t_road_imperv_surface_lun, & ! Output: [real(r8) (:)]  impervious road surface temperature (K)   
-         t_sunwall_surface      =>    temperature_inst%t_sunwall_surface_lun    , & ! Output: [real(r8) (:)]  sunwall surface temperature (K)
-         t_shadewall_surface    =>    temperature_inst%t_shadewall_surface_lun  , & ! Output: [real(r8) (:)]  shadewall surface temperature (K) 
 
          snow_depth         => waterstate_inst%snow_depth_col         , & ! Input:  [real(r8) (:)   ]  snow height of snow covered area (m)     
          snowdp             => waterstate_inst%snowdp_col             , & ! Input:  [real(r8) (:)   ]  area-averaged snow height (m)       
@@ -459,15 +455,6 @@ contains
             t_whiteroof_surface(l) = t_soisno(c,1)          
          else if (col%itype(c) == icol_greenroof) then
             t_greenroof_surface(l) = t_soisno(c,1)    
-            !write(iulog,*) 't_greenroof_surface', t_greenroof_surface(l)         
-         else if (col%itype(c) == icol_road_perv) then
-            t_road_perv_surface(l) = t_soisno(c,1)
-         else if (col%itype(c) == icol_road_imperv) then
-            t_road_imperv_surface(l) = t_soisno(c,1)
-         else if (col%itype(c) == icol_sunwall  ) then
-            t_sunwall_surface(l) = t_soisno(c,1)
-         else if (col%itype(c) == icol_shadewall) then
-            t_shadewall_surface(l) = t_soisno(c,1)
          end if                
       end do
 
