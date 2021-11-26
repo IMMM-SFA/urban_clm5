@@ -228,13 +228,7 @@ contains
       do fc = 1, num_urbanc
         c = filter_urbanc(fc)
         if (col%itype(c) == icol_greenroof) then
-          h2osoi_vol_greenroof(c,:)=h2osoi_vol(c,1:nlevsoi)          
-      !     write(iulog,*) 'h2osoi_vol_greenroof',h2osoi_vol_greenroof(c,1:nlevsoi)
-      !     sucsat_greenroof(c,:) = sucsat(c,:)
-      !     watsat_greenroof(c,:) = watsat(c,:)        
-      !   else if (col%itype(c) == icol_road_perv) then
-      !     h2osoi_vol_roadperv(c,:) = h2osoi_vol(c,:)
-      !     watsat_roadperv(c,:) = watsat(c,:)      
+          h2osoi_vol_greenroof(c,:)=h2osoi_vol(c,1:nlevsoi)           
         end if
       end do
 

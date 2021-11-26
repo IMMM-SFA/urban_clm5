@@ -2209,7 +2209,6 @@ contains
           xs1(c) = max(max(h2osoi_liq(c,1)-watmin,0._r8)- &
                max(0._r8,(pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_ice(c,1)-watmin)),0._r8)
           h2osoi_liq(c,1) = h2osoi_liq(c,1) - xs1(c)
-          !xs2(c) = max(h2osoi_liq(c,1)-(watsat(c,1)*dzmm(c,1)),0._r8)
 
           if (lun%urbpoi(col%landunit(c))) then
              qflx_rsub_sat(c)     = xs1(c) / dtime
@@ -2218,10 +2217,6 @@ contains
              h2osfc(c) = h2osfc(c) + xs1(c)
              qflx_rsub_sat(c)     = 0._r8
           endif
-          ! add in ice check
-!          xs1(c)          = max(max(h2osoi_ice(c,1),0._r8)-max(0._r8,(pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_liq(c,1))),0._r8)
-!          h2osoi_ice(c,1) = min(max(0._r8,pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_liq(c,1)), h2osoi_ice(c,1))
-!          qflx_ice_runoff_xs(c) = xs1(c) / dtime
        end do
 
        do fc = 1, num_hydrologyc
