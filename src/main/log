@@ -1,3 +1,0 @@
-clm_driver.F90:            elai               = canopystate_inst%elai_patch(bounds_clump%begp:bounds_clump%endp), &
-clm_driver.F90:         elai               => canopystate_inst%elai_patch               , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow    
-clm_varcon.F90:  real(r8) :: tlsai_crit = 2.0_r8                           ! critical value of elai+esai for which aerodynamic parameters are maximum
